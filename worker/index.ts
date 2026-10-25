@@ -14,6 +14,7 @@ const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 1000);
 const opcionesPuente = {
   maxIntentos: Number(process.env.PUENTE_MAX_INTENTOS ?? 8),
   baseBackoffMs: Number(process.env.PUENTE_BACKOFF_BASE_MS ?? 2000),
+  leaseSegundos: Number(process.env.PUENTE_LEASE_S ?? 60),
 };
 let detener = false;
 

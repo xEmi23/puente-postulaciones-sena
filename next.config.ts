@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
+  // Evita que `next dev` genere AGENTS.md en la raíz del repositorio.
+  agentRules: false,
 };
 
 export default nextConfig;

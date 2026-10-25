@@ -5,7 +5,7 @@ import { sembrarDemo } from "../prisma/datos-demo";
 // Restablece la demostración: borra y re-siembra SOLO los datos marcados demo = true.
 // Se niega a correr en producción o contra una base que no sea local.
 
-export function verificarEntornoSeguro(env: NodeJS.ProcessEnv): string | null {
+export function verificarEntornoSeguro(env: { NODE_ENV?: string; DATABASE_URL?: string }): string | null {
   if (env.NODE_ENV === "production") return "NODE_ENV=production: demo:reset no se ejecuta en producción.";
   const url = env.DATABASE_URL;
   if (!url) return "Falta DATABASE_URL.";

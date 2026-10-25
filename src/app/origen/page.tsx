@@ -28,7 +28,7 @@ export default async function CatalogoVacantes() {
                   <li className="o-chip">{v.modalidad}</li>
                 </ul>
                 <p style={{ margin: 0, color: "#57534e", fontSize: "0.92rem" }}>{v.descripcion.slice(0, 140)}…</p>
-                <p style={{ margin: "auto 0 0", fontSize: "0.8rem", color: "#78716c" }}>
+                <p style={{ margin: "auto 0 0", fontSize: "0.8rem", color: "#57534e" }}>
                   Código {v.codigo}
                   {v.publicadaEn ? ` · Publicada el ${fecha(v.publicadaEn)}` : ""}
                 </p>

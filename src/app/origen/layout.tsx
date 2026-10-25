@@ -25,7 +25,8 @@ export default function LayoutOrigen({ children }: { children: React.ReactNode }
         {children}
       </main>
       <footer className="o-pie">
-        Portal ficticio que imita el contrato de entrega de Apply Connect. No es LinkedIn ni está afiliado a LinkedIn.
+        Portal ficticio que imita el contrato de entrega de Apply Connect. No es LinkedIn ni está afiliado a LinkedIn. ·{" "}
+        <Link href="/origen/admin">Administrar el simulador</Link>
       </footer>
     </div>
   );

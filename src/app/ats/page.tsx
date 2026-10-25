@@ -16,6 +16,9 @@ export default async function Procesos() {
           <h1>Procesos de selección</h1>
           <p className="a-sub">Postulaciones recibidas automáticamente desde el portal de origen a través del puente.</p>
         </div>
+        <Link href="/ats/procesos/nuevo" className="a-boton">
+          Nuevo proceso
+        </Link>
       </div>
       {procesos.length === 0 ? (
         <p className="vacio">No hay procesos. Ejecuta «npm run demo:reset» para sembrar los procesos de demostración.</p>

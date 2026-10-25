@@ -46,13 +46,18 @@ function leerCodigoError(cuerpo: string): string | undefined {
   }
 }
 
-export async function entregarUno(outboxId: string, opciones: OpcionesDespacho = {}): Promise<void> {
-  const fetchImpl = opciones.fetchImpl ?? fetch;
-  const cfg = config();
-  const fila = await prisma.outboxOrigen.findUniqueOrThrow({ where: { id: outboxId } });
-  if (fila.estado !== "PENDIENTE") return;
+export interface ResultadoEnvio {
+  httpStatus?: number;
+  respuesta: string;
+  error?: string;
+  duracionMs: number;
+  exito: boolean;
+  codigoError?: string;
+}
 
-  const numero = fila.intentos + 1;
+/** POST firmado al webhook del puente. `firma` permite a la consola de pruebas enviar una firma alterada. */
+export async function enviarAlWebhook(cuerpo: string, fetchImpl: typeof fetch = fetch, firma?: string): Promise<ResultadoEnvio> {
+  const cfg = config();
   const inicio = Date.now();
   let httpStatus: number | undefined;
   let respuesta = "";
@@ -62,9 +67,9 @@ export async function entregarUno(outboxId: string, opciones: OpcionesDespacho =
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-LI-Signature": firmarCuerpo(fila.payload, cfg.SIM_CLIENT_SECRET),
+        "X-LI-Signature": firma ?? firmarCuerpo(cuerpo, cfg.SIM_CLIENT_SECRET),
       },
-      body: fila.payload,
+      body: cuerpo,
       signal: AbortSignal.timeout(TIMEOUT_MS),
       redirect: "manual",
     });
@@ -73,9 +78,40 @@ export async function entregarUno(outboxId: string, opciones: OpcionesDespacho =
   } catch (e) {
     error = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
   }
-  const duracionMs = Date.now() - inicio;
   const exito = httpStatus !== undefined && httpStatus >= 200 && httpStatus < 300;
-  const codigoError = exito ? undefined : leerCodigoError(respuesta);
+  return { httpStatus, respuesta, error, duracionMs: Date.now() - inicio, exito, codigoError: exito ? undefined : leerCodigoError(respuesta) };
+}
+
+/**
+ * Reenvía manualmente el mismo evento (mismo cuerpo, misma firma), como haría LinkedIn al reintentar.
+ * Registra el intento sin cambiar el estado de una entrega ya enviada.
+ */
+export async function reenviarEvento(outboxId: string, fetchImpl?: typeof fetch): Promise<ResultadoEnvio> {
+  const fila = await prisma.outboxOrigen.findUniqueOrThrow({ where: { id: outboxId } });
+  const r = await enviarAlWebhook(fila.payload, fetchImpl);
+  await prisma.$transaction([
+    prisma.intentoEntregaOrigen.create({
+      data: {
+        outboxId,
+        numero: fila.intentos + 1,
+        httpStatus: r.httpStatus ?? null,
+        codigoError: r.codigoError ?? null,
+        respuesta: r.respuesta,
+        duracionMs: r.duracionMs,
+        error: r.error ? `Reenvío manual: ${r.error}` : "Reenvío manual",
+      },
+    }),
+    prisma.outboxOrigen.update({ where: { id: outboxId }, data: { intentos: { increment: 1 } } }),
+  ]);
+  return r;
+}
+
+export async function entregarUno(outboxId: string, opciones: OpcionesDespacho = {}): Promise<void> {
+  const fila = await prisma.outboxOrigen.findUniqueOrThrow({ where: { id: outboxId } });
+  if (fila.estado !== "PENDIENTE") return;
+
+  const numero = fila.intentos + 1;
+  const { httpStatus, respuesta, error, duracionMs, exito, codigoError } = await enviarAlWebhook(fila.payload, opciones.fetchImpl);
   const sinReintento = codigoError !== undefined && CODIGOS_SIN_REINTENTO.has(codigoError);
   const agotado = numero >= MAX_INTENTOS_ENTREGA;
 

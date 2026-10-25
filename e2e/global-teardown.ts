@@ -1,5 +1,5 @@
-import { matarTodo } from "./procesos";
+import { detenerTodo } from "./procesos";
 
 export default async function globalTeardown() {
-  matarTodo();
+  await detenerTodo();
 }

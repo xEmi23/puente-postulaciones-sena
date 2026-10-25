@@ -10,8 +10,9 @@ export const dynamic = "force-dynamic";
 
 const CALIFICACION: Record<string, string> = { SIN_CALIFICAR: "Sin calificar" };
 
-export default async function TableroProceso({ params }: { params: Promise<{ id: string }> }) {
+export default async function TableroProceso({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ creado?: string }> }) {
   const { id } = await params;
+  const { creado } = await searchParams;
   const procesoId = Number(id);
   if (!Number.isInteger(procesoId)) notFound();
   const proceso = await prisma.proceso.findUnique({
@@ -49,6 +50,7 @@ export default async function TableroProceso({ params }: { params: Promise<{ id:
         </div>
       </div>
       <div role="status" aria-live="polite">
+        {creado && <div className="alerta alerta-exito">Proceso {proceso.id} creado. Vincúlalo a una vacante en el panel del puente → Correspondencias.</div>}
         {nuevas > 0 && (
           <div className="a-aviso-nuevo" data-testid="aviso-nuevos">
             <span>
@@ -72,7 +74,7 @@ export default async function TableroProceso({ params }: { params: Promise<{ id:
               </span>
             </h2>
             {etapa.postulaciones.length === 0 ? (
-              <p style={{ fontSize: "0.8rem", color: "#6b7280", textAlign: "center", marginTop: "2rem" }}>Sin postulantes</p>
+              <p style={{ fontSize: "0.8rem", color: "#4b5563", textAlign: "center", marginTop: "2rem" }}>Sin postulantes</p>
             ) : (
               <ul className="a-tarjetas">
                 {etapa.postulaciones.map((p) => (

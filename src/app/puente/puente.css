@@ -2,10 +2,10 @@
 .m-puente {
   --p-fondo: #f8fafc;
   --p-tinta: #0f172a;
-  --p-suave: #64748b;
+  --p-suave: #475569;
   --p-borde: #e2e8f0;
-  --p-acento: #059669;
-  --p-acento-oscuro: #047857;
+  --p-acento: #047857;
+  --p-acento-oscuro: #065f46;
   background: var(--p-fondo);
   color: var(--p-tinta);
   min-height: calc(100vh - 34px);

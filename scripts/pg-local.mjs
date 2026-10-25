@@ -6,8 +6,15 @@ import path from "node:path";
 import "dotenv/config";
 
 const DATA = path.resolve(".pgdata");
+// El puerto sale de DATABASE_URL (setup-env elige uno libre desde 5433).
+const PORT = (() => {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").port || "5433";
+  } catch {
+    return "5433";
+  }
+})();
 const LOG = path.resolve(".pglog", "postgres.log");
-const PORT = "5433";
 
 function binDir() {
   if (process.env.PG_BIN) return process.env.PG_BIN;
@@ -27,8 +34,8 @@ function credenciales() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("Falta DATABASE_URL en .env (ejecuta node scripts/setup-env.mjs).");
   const u = new URL(url);
-  if (!["localhost", "127.0.0.1"].includes(u.hostname) || u.port !== PORT) {
-    throw new Error(`DATABASE_URL no apunta al clúster local (localhost:${PORT}); este script no hace nada.`);
+  if (!["localhost", "127.0.0.1"].includes(u.hostname)) {
+    throw new Error("DATABASE_URL no apunta a localhost; este script no hace nada.");
   }
   return { user: decodeURIComponent(u.username), password: decodeURIComponent(u.password) };
 }

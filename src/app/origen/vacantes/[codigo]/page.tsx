@@ -37,7 +37,7 @@ export default async function DetalleVacante({ params }: Props) {
             {!abierta && <li className="o-chip o-chip-cerrada">Cerrada</li>}
           </ul>
           <p style={{ whiteSpace: "pre-line" }}>{vacante.descripcion}</p>
-          <p style={{ fontSize: "0.85rem", color: "#78716c" }}>
+          <p style={{ fontSize: "0.85rem", color: "#57534e" }}>
             Código de la vacante: <code>{vacante.codigo}</code>
             {vacante.publicadaEn ? ` · Publicada el ${fecha(vacante.publicadaEn)}` : ""}
           </p>

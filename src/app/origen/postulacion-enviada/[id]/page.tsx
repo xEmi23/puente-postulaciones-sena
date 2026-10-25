@@ -37,7 +37,7 @@ export default async function PostulacionEnviada({ params }: { params: Promise<{
           {ETIQUETA_ENTREGA[entrega]}
         </span>
       </p>
-      <p style={{ fontSize: "0.85rem", color: "#78716c" }}>
+      <p style={{ fontSize: "0.85rem", color: "#57534e" }}>
         Referencia de la postulación: <code data-testid="job-application-id">{p.jobApplicationId}</code>
       </p>
       <Link href="/origen" className="o-boton o-boton-secundario">

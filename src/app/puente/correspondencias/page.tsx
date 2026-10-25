@@ -25,7 +25,7 @@ async function guardar(formData: FormData) {
   if (!procesos.some((p) => p.id === procesoAtsId)) redirect(`/puente/correspondencias?error=${encodeURIComponent(`El proceso ${procesoAtsId} no existe en el ATS.`)}`);
   await prisma.correspondencia.upsert({
     where: { externalJobId },
-    create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}`, demo: false },
+    create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
     update: { procesoAtsId, activa: true, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
   });
   redirect(`/puente/correspondencias?ok=${encodeURIComponent(`Vacante ${externalJobId} vinculada al proceso ${procesoAtsId}.`)}`);

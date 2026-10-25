@@ -171,3 +171,33 @@ code,
   color: var(--texto-suave);
   font-size: 0.95rem;
 }
+
+.cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--texto-suave);
+}
+.cargando-punto {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cargando-punto {
+    animation: none;
+  }
+  * {
+    transition: none !important;
+  }
+}

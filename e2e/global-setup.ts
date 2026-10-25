@@ -1,8 +1,8 @@
-import { iniciarApp, iniciarWorker, matarTodo, prepararBase } from "./procesos";
+import { iniciarApp, iniciarSupervisor, iniciarWorker, prepararBase } from "./procesos";
 
 export default async function globalSetup() {
-  matarTodo();
   prepararBase();
+  await iniciarSupervisor();
   await iniciarApp();
-  iniciarWorker();
+  await iniciarWorker();
 }

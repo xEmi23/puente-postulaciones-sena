@@ -106,3 +106,51 @@ Problemas encontrados y corregidos:
 
 - El caso «ATS lento» (LENTO) tarda 12 s por defecto. En la demo conviene NO_DISPONIBLE, que es inmediato.
 - La reconciliación depende de la consulta por referencia externa, que es **capacidad del simulador**. En un ATS real habría que confirmar que existe un equivalente (ver docs/contratos.md §3).
+
+## Fase P3: Pulido y demostración del 29/10 (2026-10-25)
+
+### Auditoría de los criterios del 29/10 (con pruebas, no con resúmenes)
+
+Cada criterio tiene una prueba de Playwright en `e2e/criterios-29oct.spec.ts`, ejecutada contra la app compilada y el worker reales. Resultado: **8/8 cumplen** (ejecutado 3 veces: dos en este repositorio y una en la instalación limpia).
+
+| # | Criterio | Resultado | Cómo se verifica |
+|---|---|---|---|
+| 1 | Preparar una vacante en origen y destino y vincularlas | **Cumple** | Publica la vacante en `/origen/admin`, crea el proceso en `/ats/procesos/nuevo` y la vincula en `/puente/correspondencias` (validada contra el ATS por HTTP) |
+| 2 | Postular una persona ficticia con un PDF | **Cumple** | Formulario del portal con `fixtures/cv/*.pdf` |
+| 3 | Ver la transferencia sin copiar nada | **Cumple** | La confirmación cambia sola a «Entregada»; el panel muestra Completado y los 4 pasos (se actualiza solo) |
+| 4 | Ver la postulación en «Postulantes» del proceso correcto | **Cumple** | Tarjeta en la primera columna del proceso nuevo, «Sin calificar», fuente, aviso «1 postulante nuevo…»; ausente en 9001 y 9002 |
+| 5 | Descargar el CV y comprobar el hash | **Cumple** | SHA-256 del archivo descargado = SHA-256 del original |
+| 6 | Reenviar el evento sin duplicar | **Cumple** | «Reenviar evento» → `HTTP 200 · DUPLICADO`; una sola tarjeta; evento en la línea de tiempo |
+| 7 | Rechazo controlado de entradas inválidas | **Cumple** | Formulario (no PDF) y 6 casos de la consola: 401 SIGNATURE_MISMATCH, 400 MISSING_REQUIRED_RESPONSE, 400 INPUT_VALIDATION_FAILED ×3, 422 JOB_POSTING_CLOSED |
+| 8 | Reiniciar app y worker sin perder datos ni operaciones pendientes | **Cumple** | a) worker caído → postulación pendiente en la outbox; b) se mata la app → al volver sigue pendiente; c) vuelve el worker → entrega y tarjeta; d) se matan app y worker **a mitad de una llamada al ATS** (ya escribió el documento) → al volver termina con un solo documento (Idempotency-Key) |
+
+Verificación a mano: prueba de humo con `npm run dev` + `npm run worker` en el puerto 3100 y un navegador real (entrega, tarjeta en Postulantes de 9002 y hash idéntico). El guion completo (`docs/guion-demo.md`) **no** lo ensayó una persona: queda PENDIENTE para el equipo.
+
+### Pulido
+
+- **Escritorio y móvil:** proyecto `movil` (Pixel 7) sin desbordes horizontales; el tablero del ATS se desplaza dentro de su propio contenedor.
+- **Teclado:** enlace «Saltar al contenido», orden de tabulación del formulario y foco al primer campo con error (con pruebas).
+- **Accesibilidad:** axe WCAG 2.1 AA en 21 pantallas sin violaciones serias ni críticas. Se corrigió el contraste del botón del panel (3,76 → 5,5) y de los encabezados de tabla (4,34 → más de 7).
+- **Estados:** `loading.tsx` en los tres módulos, `error.tsx` global, `not-found.tsx` y estados vacíos en todas las listas.
+- **Aviso «Entorno de simulación»** en el layout raíz, presente en todas las pantallas.
+- **Identidad visual:** origen «Vitrina Empleo» (claro, verde azulado, redondeado); ATS «Selecta» (barra lateral índigo, denso); panel del puente (pizarra con acento verde).
+- **demo:reset:** borra y re-siembra solo `demo = true`; se niega con `NODE_ENV=production` o base no local (con pruebas).
+- `setup-env` elige un puerto libre de PostgreSQL desde 5433.
+- `next.config.ts`: `agentRules: false` para que `next dev` no genere `AGENTS.md` en el repositorio.
+
+### Documentos
+
+`README.md`, `docs/arquitectura.md` (diagramas Mermaid), `docs/mapeo-datos.md`, `docs/guion-demo.md`, `docs/uso-ia.md`, `docs/resultados-pruebas.md`.
+
+### Instalación limpia (siguiendo solo el README)
+
+Se copiaron los archivos versionables (sin `.env`, `node_modules`, `.pgdata` ni la ficha) a una carpeta nueva del directorio temporal y se ejecutó: `npm install` (exit 0), `npm run setup` (exit 0; eligió el puerto 5434 porque el 5433 estaba ocupado, creó las 3 bases, migró y sembró), `npx playwright install chromium`, `npm run typecheck` (0), `npm run lint` (0), `npm test` (**50/50**) y `npm run test:e2e` (**20/20**). Luego `npm run pg:stop`.
+
+### Comandos ejecutados y resultado real
+
+Ver `docs/resultados-pruebas.md`: typecheck 0 · lint 0 · Vitest **50/50** · Playwright **20/20** (dos corridas) · instalación limpia en verde.
+
+### Pendientes y riesgos
+
+- **PENDIENTE (equipo):** ensayar el guion a mano en el equipo de la demo y revisar la lista de `docs/uso-ia.md`.
+- **Riesgo:** las pruebas solo corren en Chromium.

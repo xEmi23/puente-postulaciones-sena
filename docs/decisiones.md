@@ -106,3 +106,17 @@
   - Si se agotan los intentos con una escritura de resultado desconocido (`ATS_SIN_RESPUESTA`) → **REQUIERE_VERIFICACION** (el panel ofrece «Reconciliar»). En otro caso → FALLIDO_REINTENTABLE detenido.
 - **Ajuste por entorno:** `PUENTE_MAX_INTENTOS` y `PUENTE_BACKOFF_BASE_MS` (los E2E usan 3 y 300 ms).
 - **Motivo:** no insistir con errores definitivos, no repetir a ciegas una escritura incierta y no perder el progreso por paso.
+
+## D-15 · Administración del simulador de origen y consola de pruebas
+
+- **Fecha:** 2026-10-25
+- **Decisión:** `/origen/admin` (con sesión de demo) permite publicar y editar vacantes, cerrarlas o reabrirlas, ver la outbox y **reenviar un evento** (mismo cuerpo, misma firma). `/origen/admin/consola` envía al webhook entregas inválidas predefinidas (equivale a Postman, ficha 2.8). En el ATS, «Nuevo proceso» crea procesos con la plantilla de etapas.
+- **Alternativa descartada:** preparar vacantes y procesos solo con seeds, o reenviar con `curl`. No permitiría demostrar a mano los criterios 1, 6 y 7.
+- **Motivo:** cada criterio del 29/10 se puede mostrar desde la interfaz.
+
+## D-16 · Supervisor de procesos para las pruebas E2E
+
+- **Fecha:** 2026-10-25
+- **Decisión:** `e2e/supervisor.mjs`, iniciado por `globalSetup`, es dueño de la app (`next start`, puerto 3200) y del worker durante toda la ejecución. Las pruebas piden los reinicios por HTTP (puerto 3299).
+- **Alternativa descartada:** arrancarlos desde el proceso de la prueba. Morían al cambiar de proyecto de Playwright (fallo real observado).
+- **Motivo:** probar el criterio 8 (reiniciar sin perder datos) de forma estable.

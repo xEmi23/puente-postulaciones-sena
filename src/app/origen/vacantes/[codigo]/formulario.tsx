@@ -65,7 +65,7 @@ export function FormularioPostulacion({ vacanteId, maxMb }: Props) {
 
   return (
     <form ref={formRef} action={accion} noValidate aria-describedby="nota-obligatorios">
-      <p id="nota-obligatorios" className="o-ayuda" style={{ fontSize: "0.85rem", color: "#78716c", marginTop: 0 }}>
+      <p id="nota-obligatorios" className="o-ayuda" style={{ fontSize: "0.85rem", color: "#57534e", marginTop: 0 }}>
         Los campos con * son obligatorios.
       </p>
       {e.general && (
@@ -109,7 +109,7 @@ export function FormularioPostulacion({ vacanteId, maxMb }: Props) {
           </p>
         )}
       </div>
-      <p style={{ fontSize: "0.8rem", color: "#78716c" }}>
+      <p style={{ fontSize: "0.8rem", color: "#57534e" }}>
         Al postularte aceptas que tus datos se compartan con la empresa que publicó la vacante. Este es un entorno de simulación:
         usa solo datos ficticios.
       </p>

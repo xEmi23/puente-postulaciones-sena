@@ -1,21 +1,21 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, openSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, openSync } from "node:fs";
 import path from "node:path";
 import { config as cargarEnv } from "dotenv";
 
-// Arranque y parada de la app (next start) y del worker para las pruebas E2E.
+// Arranque y parada de la app (next start) y del worker para las pruebas E2E, a través de e2e/supervisor.mjs.
 
 export const PUERTO = 3200;
 export const BASE = `http://localhost:${PUERTO}`;
-const ESTADO = path.resolve("test-results", ".procesos-e2e.json");
+const PUERTO_CONTROL = 3299;
+const CONTROL = `http://127.0.0.1:${PUERTO_CONTROL}`;
 
 export function entornoE2E(): NodeJS.ProcessEnv {
-  const env = { ...process.env };
   const leido = cargarEnv({ quiet: true, processEnv: {} }).parsed ?? {};
-  Object.assign(env, leido);
   if (!leido.DATABASE_URL_E2E) throw new Error("Falta DATABASE_URL_E2E en .env");
   return {
-    ...env,
+    ...process.env,
+    ...leido,
     DATABASE_URL: leido.DATABASE_URL_E2E,
     APP_BASE_URL: BASE,
     ORIGEN_BASE_URL: BASE,
@@ -28,80 +28,44 @@ export function entornoE2E(): NodeJS.ProcessEnv {
     WORKER_INTERVALO_MS: "300",
     PUENTE_MAX_INTENTOS: "3",
     PUENTE_BACKOFF_BASE_MS: "300",
+    PUENTE_LEASE_S: "12",
+    SIMULADOR_DEMORA_LENTO_MS: "8000",
+    E2E_PUERTO_CONTROL: String(PUERTO_CONTROL),
+    E2E_PUERTO_APP: String(PUERTO),
   };
 }
 
-type Pids = { app?: number; worker?: number };
-const leerPids = (): Pids => (existsSync(ESTADO) ? JSON.parse(readFileSync(ESTADO, "utf8")) : {});
-const guardarPids = (p: Pids) => {
-  mkdirSync(path.dirname(ESTADO), { recursive: true });
-  writeFileSync(ESTADO, JSON.stringify(p));
-};
-
-function matarArbol(pid: number | undefined) {
-  if (!pid) return;
-  if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" });
-  else {
+async function control(accion: string, intentos = 1) {
+  for (let i = 0; i < intentos; i++) {
     try {
-      process.kill(-pid, "SIGKILL");
-    } catch {
-      /* ya terminó */
+      const r = await fetch(`${CONTROL}${accion}`, { method: "POST" });
+      if (r.ok) return;
+      throw new Error(`El supervisor respondió ${r.status} a ${accion}`);
+    } catch (e) {
+      if (i === intentos - 1) throw e;
+      await new Promise((ok) => setTimeout(ok, 300));
     }
   }
 }
 
-function lanzar(nombre: string, args: string[]): ChildProcess {
+export async function iniciarSupervisor() {
+  await control("/todo/stop").catch(() => undefined); // restos de una ejecución anterior
+  await new Promise((ok) => setTimeout(ok, 300));
   mkdirSync("test-results", { recursive: true });
-  const log = openSync(path.resolve("test-results", `${nombre}.log`), "a");
-  const hijo = spawn(process.execPath, args, { env: entornoE2E(), stdio: ["ignore", log, log], detached: process.platform !== "win32", windowsHide: true });
-  hijo.unref();
-  return hijo;
+  const log = openSync(path.resolve("test-results", "supervisor.log"), "a");
+  const s = spawn(process.execPath, [path.resolve("e2e/supervisor.mjs")], { env: entornoE2E(), stdio: ["ignore", log, log], detached: true, windowsHide: true });
+  s.unref();
 }
 
-export async function esperarUrl(url: string, ms = 60_000) {
-  const fin = Date.now() + ms;
-  while (Date.now() < fin) {
-    try {
-      const r = await fetch(url);
-      if (r.status < 500) return;
-    } catch {
-      /* aún no responde */
-    }
-    await new Promise((ok) => setTimeout(ok, 300));
-  }
-  throw new Error(`No respondió a tiempo: ${url}`);
-}
-
-export async function iniciarApp() {
-  const app = lanzar("app", [path.resolve("node_modules/next/dist/bin/next"), "start", "-p", String(PUERTO)]);
-  guardarPids({ ...leerPids(), app: app.pid });
-  await esperarUrl(`${BASE}/origen`);
-}
-
-export function iniciarWorker() {
-  const w = lanzar("worker", ["--import", "tsx", path.resolve("worker/index.ts")]);
-  guardarPids({ ...leerPids(), worker: w.pid });
-}
-
+export const iniciarApp = () => control("/app/start", 20);
+export const iniciarWorker = () => control("/worker/start", 20);
 /** Mata el proceso sin darle tiempo a terminar (simula una caída). */
-export function matarApp() {
-  matarArbol(leerPids().app);
-  guardarPids({ ...leerPids(), app: undefined });
-}
-export function matarWorker() {
-  matarArbol(leerPids().worker);
-  guardarPids({ ...leerPids(), worker: undefined });
-}
-
-export function matarTodo() {
-  matarApp();
-  matarWorker();
-  rmSync(ESTADO, { force: true });
-}
+export const matarApp = () => control("/app/stop");
+export const matarWorker = () => control("/worker/stop");
+export const detenerTodo = () => control("/todo/stop").catch(() => undefined);
 
 export function prepararBase() {
-  const env = entornoE2E();
-  const opciones = { env, stdio: "pipe" as const, shell: true };
+  const opciones = { env: entornoE2E(), stdio: "pipe" as const, shell: true };
   let r = spawnSync("npx", ["prisma", "migrate", "deploy"], opciones);
   if (r.status !== 0) throw new Error(`migrate deploy falló: ${r.stderr}`);
   r = spawnSync("npx", ["tsx", "scripts/demo-reset.ts"], opciones);

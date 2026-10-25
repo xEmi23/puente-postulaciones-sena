@@ -203,3 +203,34 @@ export async function listarProcesos(): Promise<RespuestaAts> {
     },
   };
 }
+
+export const ETAPAS_PLANTILLA = ["Postulantes", "Preselección", "Entrevista RR. HH.", "Prueba técnica", "Oferta", "Contratados"];
+
+const esquemaProceso = z.object({
+  nombre: z.string().trim().min(5, "El nombre debe tener al menos 5 caracteres.").max(120),
+  area: z.string().trim().min(2, "Indica el área.").max(60),
+  ciudad: z.string().trim().min(2, "Indica la ciudad.").max(60),
+});
+
+/** Crea un proceso con la plantilla de etapas (la primera siempre es «Postulantes»). Uso desde la interfaz del ATS. */
+export async function crearProceso(entrada: Record<string, unknown>): Promise<{ ok: true; id: number } | { ok: false; errores: Record<string, string> }> {
+  const r = esquemaProceso.safeParse(entrada);
+  if (!r.success) {
+    const errores: Record<string, string> = {};
+    for (const i of r.error.issues) errores[String(i.path[0])] ??= i.message;
+    return { ok: false, errores };
+  }
+  for (let intento = 0; intento < 3; intento++) {
+    const max = await prisma.proceso.aggregate({ _max: { id: true } });
+    const id = Math.max(9000, max._max.id ?? 9000) + 1;
+    try {
+      await prisma.proceso.create({
+        data: { id, ...r.data, etapas: { create: ETAPAS_PLANTILLA.map((nombre, i) => ({ nombre, orden: i + 1 })) } },
+      });
+      return { ok: true, id };
+    } catch (e) {
+      if (!esViolacionUnica(e)) throw e;
+    }
+  }
+  return { ok: false, errores: { general: "No se pudo asignar un identificador al proceso." } };
+}
