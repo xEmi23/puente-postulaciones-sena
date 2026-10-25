@@ -61,3 +61,12 @@ Las filas de P5 están al final del archivo.
 | 2026-10-25 | copia limpia de P5 | **Instalación limpia 2**: `npm install` → `npm run setup` (aplicó `inicial` y `cierre_vacantes` en bases vacías, puerto 5434) → typecheck · lint · test · test:e2e | 0 · 0 · **76/76** · **23/23** |
 
 Suites agregadas en P5: `tests/p5.test.ts` (cierre y reapertura de vacantes, CV interrumpido, autenticación con el ATS, reanudación), `tests/contratos/contrato-origen.test.ts` (7, origen frente a F1/F2 y el ejemplo oficial), `tests/contratos/contrato-puente-y-ats.test.ts` (9, puente frente a F1/F2 y ATS frente a §3), `e2e/p5.spec.ts` (3).
+
+## Ajuste de etapas
+
+| Fecha | Commit base | Comando | Resultado |
+|---|---|---|---|
+| 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm run typecheck` · `npm run lint` | exit 0 · exit 0 |
+| 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm test` | 11 archivos, **78/78** (nuevo `tests/etapas.test.ts`) |
+| 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm run test:e2e` | **24/24** (nuevo `e2e/etapas.spec.ts`: 9 columnas, tipos, Descartar/Restaurar) |
+| 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm run build` | exit 0 |

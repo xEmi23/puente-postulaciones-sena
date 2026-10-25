@@ -3,6 +3,7 @@ import { prisma, esViolacionUnica } from "@/lib/db";
 import { config } from "@/lib/config";
 import { igualesSeguro } from "@/lib/firma";
 import { pareceUnPdf, sha256Hex, nombreArchivoSeguro } from "@/lib/archivos";
+import { ETAPAS_REFERENCIA, etapasParaCrear } from "./etapas";
 
 // ATS simulado. Su API es el "contrato del simulador" (docs/contratos.md §ATS): no reproduce rutas
 // oficiales de BUK. Capacidades propias del simulador: Idempotency-Key y consulta por referencia externa.
@@ -204,7 +205,7 @@ export async function listarProcesos(): Promise<RespuestaAts> {
   };
 }
 
-export const ETAPAS_PLANTILLA = ["Postulantes", "Preselección", "Entrevista RR. HH.", "Prueba técnica", "Oferta", "Contratados"];
+export const ETAPAS_PLANTILLA = ETAPAS_REFERENCIA.map((e) => e.nombre);
 
 const esquemaProceso = z.object({
   nombre: z.string().trim().min(5, "El nombre debe tener al menos 5 caracteres.").max(120),
@@ -225,7 +226,7 @@ export async function crearProceso(entrada: Record<string, unknown>): Promise<{ 
     const id = Math.max(9000, max._max.id ?? 9000) + 1;
     try {
       await prisma.proceso.create({
-        data: { id, ...r.data, etapas: { create: ETAPAS_PLANTILLA.map((nombre, i) => ({ nombre, orden: i + 1 })) } },
+        data: { id, ...r.data, etapas: { create: etapasParaCrear() } },
       });
       return { ok: true, id };
     } catch (e) {

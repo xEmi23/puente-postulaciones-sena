@@ -25,12 +25,26 @@ export default async function TableroProceso({ params, searchParams }: { params:
     },
   });
   if (!proceso) notFound();
-  const nuevas = proceso.etapas.flatMap((e) => e.postulaciones).filter((p) => !p.vista).length;
+  const nuevas = proceso.etapas.flatMap((e) => e.postulaciones).filter((p) => !p.vista && !p.descartadaEn).length;
 
   async function marcarVistas() {
     "use server";
     await exigirSesionAccion();
     await prisma.postulacionAts.updateMany({ where: { procesoId, vista: false }, data: { vista: true } });
+    revalidatePath(`/ats/procesos/${procesoId}`);
+  }
+
+  async function descartar(formData: FormData) {
+    "use server";
+    await exigirSesionAccion();
+    await prisma.postulacionAts.updateMany({ where: { id: String(formData.get("id")), procesoId }, data: { descartadaEn: new Date(), vista: true } });
+    revalidatePath(`/ats/procesos/${procesoId}`);
+  }
+
+  async function restaurar(formData: FormData) {
+    "use server";
+    await exigirSesionAccion();
+    await prisma.postulacionAts.updateMany({ where: { id: String(formData.get("id")), procesoId }, data: { descartadaEn: null } });
     revalidatePath(`/ats/procesos/${procesoId}`);
   }
 
@@ -65,34 +79,71 @@ export default async function TableroProceso({ params, searchParams }: { params:
         )}
       </div>
       <ol className="a-tablero" aria-label="Etapas del proceso">
-        {proceso.etapas.map((etapa) => (
-          <li key={etapa.id} className="a-columna" data-etapa={etapa.nombre}>
-            <h2>
-              <span>{etapa.nombre}</span>
-              <span className="a-contador" aria-label={`${etapa.postulaciones.length} postulantes`}>
-                {etapa.postulaciones.length}
-              </span>
-            </h2>
-            {etapa.postulaciones.length === 0 ? (
-              <p style={{ fontSize: "0.8rem", color: "#4b5563", textAlign: "center", marginTop: "2rem" }}>Sin postulantes</p>
-            ) : (
-              <ul className="a-tarjetas">
-                {etapa.postulaciones.map((p) => (
-                  <li key={p.id} className={`a-tarjeta${p.vista ? "" : " a-tarjeta-nueva"}`} data-testid="tarjeta-postulante">
-                    <Link href={`/ats/candidatos/${p.candidatoId}`}>
-                      {p.candidato.nombre} {p.candidato.apellido}
-                    </Link>
-                    <div style={{ marginTop: "0.35rem" }}>
-                      <span className="a-insignia">{CALIFICACION[p.calificacion] ?? p.calificacion}</span>
-                      <span className="a-insignia a-insignia-fuente">{p.fuente}</span>
-                    </div>
-                    <p className="a-tarjeta-meta">Postulación: {fecha(p.creadaEn)}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
+        {proceso.etapas.map((etapa) => {
+          const activas = etapa.postulaciones.filter((p) => !p.descartadaEn);
+          const descartadas = etapa.postulaciones.filter((p) => p.descartadaEn);
+          return (
+            <li key={etapa.id} className="a-columna" data-etapa={etapa.nombre}>
+              <h2>
+                <span>
+                  {etapa.nombre}
+                  <span className="a-tipo-etapa" data-tipo-etapa={etapa.tipo ?? "Final"}>
+                    {etapa.tipo ?? "Etapa final"}
+                  </span>
+                </span>
+                <span className="a-contador" aria-label={`${activas.length} postulantes`}>
+                  {activas.length}
+                </span>
+              </h2>
+              {activas.length === 0 ? (
+                <p className="a-columna-vacia">Sin postulantes</p>
+              ) : (
+                <ul className="a-tarjetas">
+                  {activas.map((p) => (
+                    <li key={p.id} className={`a-tarjeta${p.vista ? "" : " a-tarjeta-nueva"}`} data-testid="tarjeta-postulante">
+                      <Link href={`/ats/candidatos/${p.candidatoId}`}>
+                        {p.candidato.nombre} {p.candidato.apellido}
+                      </Link>
+                      <div style={{ marginTop: "0.35rem" }}>
+                        <span className="a-insignia">{CALIFICACION[p.calificacion] ?? p.calificacion}</span>
+                        <span className="a-insignia a-insignia-fuente">{p.fuente}</span>
+                      </div>
+                      <p className="a-tarjeta-meta">Postulación: {fecha(p.creadaEn)}</p>
+                      <form action={descartar}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button type="submit" className="a-boton-texto" aria-label={`Descartar a ${p.candidato.nombre} ${p.candidato.apellido}`}>
+                          Descartar
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <details className="a-descartados" data-testid="descartados">
+                <summary>Descartados ({descartadas.length})</summary>
+                {descartadas.length === 0 ? (
+                  <p className="a-columna-vacia">Nadie descartado en esta etapa.</p>
+                ) : (
+                  <ul className="a-tarjetas">
+                    {descartadas.map((p) => (
+                      <li key={p.id} className="a-tarjeta a-tarjeta-descartada" data-testid="tarjeta-descartada">
+                        <Link href={`/ats/candidatos/${p.candidatoId}`}>
+                          {p.candidato.nombre} {p.candidato.apellido}
+                        </Link>
+                        <form action={restaurar}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button type="submit" className="a-boton-texto" aria-label={`Restaurar a ${p.candidato.nombre} ${p.candidato.apellido}`}>
+                            Restaurar
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </details>
+            </li>
+          );
+        })}
       </ol>
     </>
   );

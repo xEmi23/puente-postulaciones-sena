@@ -189,3 +189,17 @@ Problemas encontrados y corregidos: la limpieza demo de eventos de estado borrab
 - **PENDIENTE (equipo):** `docs/referencia-ats.md` real (D-11), revisión de `docs/uso-ia.md` y ensayo del guion.
 - **PENDIENTE (P4 y P6):** dependen de la retroalimentación del 29/10 y del cierre del 13/11.
 - **Riesgo:** el evento de estado de vacante es del simulador; en un caso real el cierre vendría del ATS (habría que confirmarlo con la empresa).
+
+## Ajuste: etapas según la referencia del ATS real (2026-10-25)
+
+- **Etapas** de todos los procesos (sembrados y nuevos): Postulantes · Por contactar · Referidos · Sagrilaft · Prueba técnica · Entrevista técnica · Valoración psicológica · Suspendido · Contratados. Fuente única: `src/modules/ats/etapas.ts`. «Contratados» viene del centro de ayuda de BUK, no de la foto.
+- **Tipo de etapa** visible en cada columna (Filtro / Validaciones / Entrevistas; «Etapa final» en Contratados). La asignación por etapa es un **Supuesto pendiente** (D-11 actualizada).
+- **«Descartados (n)»** plegable en cada columna, con «Descartar» y «Restaurar». La tarjeta no cambia de etapa. Migración `etapas_tipo_descartados`: solo agrega columnas.
+- `CLAUDE.md`: se agregaron las reglas de anonimización, identidad visual propia y etiquetas de certeza.
+
+Comandos y resultado real: `npm run typecheck` 0 · `npm run lint` 0 (0 advertencias) · `npm test` **78/78** (11 archivos) · `npm run test:e2e` **24/24** · `npm run build` 0.
+
+**PENDIENTE (equipo):**
+- `docs/referencia-ats.md` y `CLAUDE_equipo.md` no estaban en la carpeta al hacer este ajuste. Agregarlos para:
+  - confirmar el tipo de cada etapa;
+  - completar la fusión de CLAUDE.md y borrar `CLAUDE_equipo.md` después.

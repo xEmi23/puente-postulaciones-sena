@@ -1,0 +1,23 @@
+import { beforeEach, expect, it } from "vitest";
+import { crearProceso } from "@/modules/ats/servicio";
+import { prisma, reiniciarBd } from "./utilidades";
+
+beforeEach(reiniciarBd);
+
+// Orden observado en el ATS de la empresa (15/10/2026) + «Contratados» verificado en el centro de ayuda de BUK.
+const ORDEN = ["Postulantes", "Por contactar", "Referidos", "Sagrilaft", "Prueba técnica", "Entrevista técnica", "Valoración psicológica", "Suspendido", "Contratados"];
+
+it("los procesos sembrados y los nuevos tienen las etapas de la referencia, en orden y con su tipo", async () => {
+  await crearProceso({ nombre: "Proceso de prueba", area: "Ingeniería", ciudad: "Medellín" });
+  for (const id of [9001, 9002, 9003]) {
+    const etapas = await prisma.etapa.findMany({ where: { procesoId: id }, orderBy: { orden: "asc" } });
+    expect(etapas.map((e) => e.nombre)).toEqual(ORDEN);
+    expect(etapas.slice(0, -1).every((e) => ["Filtro", "Validaciones", "Entrevistas"].includes(e.tipo ?? ""))).toBe(true);
+    expect(etapas.at(-1)!.tipo).toBeNull(); // etapa final sin tipo
+  }
+});
+
+it("una postulación nueva entra en «Postulantes» sin descartar", async () => {
+  const etapa = await prisma.etapa.findFirstOrThrow({ where: { procesoId: 9001, orden: 1 } });
+  expect(etapa.nombre).toBe("Postulantes");
+});

@@ -1,8 +1,7 @@
 import type { PrismaClient } from "../src/generated/prisma/client";
+import { etapasParaCrear } from "../src/modules/ats/etapas";
 
-// Datos ficticios de la demostración. Las etapas siguen docs/referencia-ats-supuesta.md:
-// "Postulantes" primera y "Contratados" última están verificadas en el centro de ayuda de BUK;
-// las intermedias son un SUPUESTO PENDIENTE hasta tener docs/referencia-ats.md del equipo.
+// Datos ficticios de la demostración. Las etapas vienen de src/modules/ats/etapas.ts (ATS de la empresa, 15/10/2026).
 
 export const PROCESOS = [
   {
@@ -10,14 +9,12 @@ export const PROCESOS = [
     nombre: "Desarrollador/a Backend Java",
     area: "Ingeniería",
     ciudad: "Medellín",
-    etapas: ["Postulantes", "Preselección", "Entrevista RR. HH.", "Prueba técnica", "Entrevista técnica", "Oferta", "Contratados"],
   },
   {
     id: 9002,
     nombre: "Analista de Calidad de Software (QA)",
     area: "Calidad",
     ciudad: "Medellín (híbrido)",
-    etapas: ["Postulantes", "Preselección", "Entrevista RR. HH.", "Prueba técnica", "Oferta", "Contratados"],
   },
 ] as const;
 
@@ -78,7 +75,7 @@ export async function sembrarDemo(prisma: PrismaClient) {
         nombre: p.nombre,
         area: p.area,
         ciudad: p.ciudad,
-        etapas: { create: p.etapas.map((nombre, i) => ({ nombre, orden: i + 1 })) },
+        etapas: { create: etapasParaCrear() },
       },
     });
   }

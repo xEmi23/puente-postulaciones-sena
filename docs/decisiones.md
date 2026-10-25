@@ -82,6 +82,17 @@
 - **Decisión:** «Postulantes» como primera etapa y «Contratados» como última (verificado en el centro de ayuda de BUK, F6). Intermedias supuestas: Preselección, Entrevista RR. HH., Prueba técnica, (Entrevista técnica), Oferta. Ver `docs/referencia-ats-supuesta.md`.
 - **PENDIENTE:** reemplazar por las etapas reales cuando el equipo agregue `docs/referencia-ats.md`. Solo hay que editar `prisma/datos-demo.ts` y ejecutar `npm run demo:reset`.
 
+### Actualizado por Claude Code (2026-10-25): etapas según el ATS de la empresa
+
+- **Nueva fuente:** **observación directa del ATS de la empresa** en la socialización del 15/10/2026 (fotos), descrita por el equipo. Reemplaza el supuesto anterior.
+- **Etapas, en orden** (procesos 9001, 9002 y los que se creen): Postulantes · Por contactar · Referidos · Sagrilaft · Prueba técnica · Entrevista técnica · Valoración psicológica · Suspendido · Contratados.
+  - Postulantes … Suspendido: **Verificado** por observación directa (la foto se corta en «Suspendido»).
+  - Contratados: **Verificado** en el centro de ayuda de BUK (F6), **no** en la foto.
+- **Tipo de etapa** (Filtro / Validaciones / Entrevistas): **Supuesto pendiente** para cada etapa. El equipo indicó que la referencia muestra el tipo, pero no qué tipo corresponde a cada etapa, y el archivo `docs/referencia-ats.md` **no está en el repositorio** (búsqueda del 2026-10-25). Asignación provisional: Filtro (Postulantes, Por contactar, Referidos, Suspendido), Validaciones (Sagrilaft, Prueba técnica, Valoración psicológica), Entrevistas (Entrevista técnica) y sin tipo en Contratados (etapa final). Se corrige en `src/modules/ats/etapas.ts` y se aplica con `npm run demo:reset`.
+- **«Descartados (n)» por columna:** sección plegable en cada etapa; el reclutador puede descartar y restaurar sin cambiar de etapa (`PostulacionAts.descartadaEn`). Es coherente con F7 (existe «Descartados»), aunque F7 lo describe como una etapa y aquí se muestra por columna, según la referencia del equipo.
+- **Alternativa descartada:** mantener las etapas supuestas o inventar los tipos sin marcarlos.
+- **PENDIENTE:** agregar `docs/referencia-ats.md` al repositorio y confirmar el tipo de cada etapa.
+
 ## D-12 · Protección de modos de prueba y demo por host local
 
 - **Fecha:** 2026-10-25

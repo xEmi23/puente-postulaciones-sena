@@ -1,6 +1,6 @@
 # CLAUDE.md: talent-bridge
 
-> Creado por Claude Code (2026-10-25). El `CLAUDE.md` original del equipo no estaba en la carpeta. Si el equipo tiene uno, debe reemplazar o fusionar este (conservando la sección Comandos).
+> Creado por Claude Code (2026-10-25). **Pendiente:** fusionar con `CLAUDE_equipo.md` (contexto original del equipo), que no está en la carpeta. Mientras tanto se agregaron aquí las reglas del equipo que se conocen.
 
 ## Qué es
 
@@ -20,6 +20,10 @@ Prototipo para el Reto #1 SENA (Innovación Abierta 2026-2). Hoy el reclutador d
 - Documentos del equipo en `docs/`: no sobrescribirlos; agregar secciones «Actualizado por Claude Code (fecha)».
 - Los esquemas `origen`, `puente` y `ats` no se leen entre sí; se comunican por HTTP.
 - Textos de la interfaz en español. Aviso «Entorno de simulación» en cada pantalla.
+- **No usar el nombre de la empresa retadora ni nombres de personas reales** en código, datos, interfaz ni documentos publicables (la ficha exige publicación anonimizada). Los datos de prueba usan nombres evidentemente ficticios.
+- **Identidad visual propia:** ningún módulo copia logos, colores ni marcas de LinkedIn, BUK ni de la empresa. El origen («Vitrina Empleo») y el ATS («Selecta») deben sentirse como productos distintos.
+- **Etiquetas de certeza** en toda afirmación sobre contratos o sistemas externos: **Verificado** (lo dice una fuente consultada, con URL y fecha), **Decisión interna** (lo elegimos nosotros, registrado en `docs/decisiones.md`) o **Supuesto pendiente** (falta confirmar).
+- Las etapas del ATS simulado vienen de `docs/referencia-ats.md` (observación del ATS de la empresa, 15/10/2026). Fuente única en código: `src/modules/ats/etapas.ts`.
 
 ## Comandos
 

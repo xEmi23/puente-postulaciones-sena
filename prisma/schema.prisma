@@ -282,6 +282,7 @@ model Etapa {
   proceso       Proceso          @relation(fields: [procesoId], references: [id], onDelete: Cascade)
   nombre        String
   orden         Int
+  tipo          String? // Filtro | Validaciones | Entrevistas (null en la etapa final)
   postulaciones PostulacionAts[]
 
   @@unique([procesoId, orden])
@@ -335,6 +336,7 @@ model PostulacionAts {
   fuente            String
   referenciaExterna String     @unique // jobApplicationId de origen
   vista             Boolean    @default(false)
+  descartadaEn      DateTime?  @db.Timestamptz(3) // descartada dentro de su etapa (sección «Descartados»)
   creadaEn          DateTime   @default(now()) @db.Timestamptz(3)
 
   @@unique([procesoId, candidatoId])

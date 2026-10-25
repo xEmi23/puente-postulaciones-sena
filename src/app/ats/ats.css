@@ -277,3 +277,53 @@
   border: 1px solid #c7c5d6;
   border-radius: 6px;
 }
+.a-tipo-etapa {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4338ca;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.1rem;
+}
+.a-tipo-etapa[data-tipo-etapa="Validaciones"] {
+  color: #9a3412;
+}
+.a-tipo-etapa[data-tipo-etapa="Entrevistas"] {
+  color: #166534;
+}
+.a-tipo-etapa[data-tipo-etapa="Final"] {
+  color: #374151;
+}
+.a-columna-vacia {
+  font-size: 0.8rem;
+  color: #4b5563;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+.a-boton-texto {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.35rem;
+  font: inherit;
+  font-size: 0.78rem;
+  color: #5b21b6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.a-descartados {
+  margin-top: 0.75rem;
+  border-top: 1px dashed #c7c5d6;
+  padding-top: 0.5rem;
+}
+.a-descartados summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+.a-tarjeta-descartada {
+  opacity: 0.85;
+  background: #f9fafb;
+}
