@@ -56,7 +56,10 @@ export const VACANTES = [
 
 /** Borra solo las filas marcadas demo = true (las tablas hijas caen en cascada) y vuelve a sembrar. */
 export async function sembrarDemo(prisma: PrismaClient) {
+  const codigosDemo = (await prisma.vacante.findMany({ where: { demo: true }, select: { codigo: true } })).map((v) => v.codigo);
   await prisma.$transaction([
+    // Eventos de estado (sin postulación) de las vacantes demo que se van a borrar.
+    prisma.outboxOrigen.deleteMany({ where: { postulacionId: null, vacanteCodigo: { in: codigosDemo } } }),
     prisma.vacante.deleteMany({ where: { demo: true } }),
     prisma.archivoCv.deleteMany({ where: { postulacion: null } }),
     prisma.recepcion.deleteMany({ where: { demo: true } }),

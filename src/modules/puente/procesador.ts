@@ -4,6 +4,7 @@ import { config } from "@/lib/config";
 import { pareceUnPdf, sha256Hex, nombreArchivoSeguro } from "@/lib/archivos";
 import type { PasoRecepcion, Recepcion } from "@/generated/prisma/client";
 import { urlDeMediaPermitida } from "./webhook";
+import { admitePostulacion } from "./vacantes";
 import * as ats from "./ats-cliente";
 
 // Procesador del puente (corre en el worker). Cada trabajo avanza por pasos confirmados:
@@ -112,10 +113,10 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
 
     if (rec.procesoAtsId === null) {
       const corr = await prisma.correspondencia.findUnique({ where: { externalJobId: rec.externalJobId } });
-      if (!corr || !corr.activa) {
+      if (!admitePostulacion(corr, rec.appliedAt)) {
         throw new ErrorProcesamiento("JOB_POSTING_CLOSED", "La vacante ya no tiene un proceso del ATS vinculado.", "rechazar");
       }
-      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { procesoAtsId: corr.procesoAtsId } });
+      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { procesoAtsId: corr!.procesoAtsId } });
     }
 
     if (rec.paso === "cv_descargado") {

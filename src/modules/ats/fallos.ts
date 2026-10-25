@@ -5,15 +5,16 @@ import type { RespuestaAts } from "./servicio";
 // Controles de fallos del simulador. Inertes salvo con SIMULADOR_MODO_PRUEBA=true en un entorno local (D-12):
 // el recorrido normal nunca pasa por aquí con un fallo activo.
 
-export const RUTAS_FALLO = ["candidatos", "documentos", "postulaciones", "consulta"] as const;
+// "media" es la URL del CV en el origen: los controles de prueba son infraestructura de pruebas, no parte de ningún contrato.
+export const RUTAS_FALLO = ["candidatos", "documentos", "postulaciones", "consulta", "media"] as const;
 export type RutaFallo = (typeof RUTAS_FALLO)[number];
-export const MODOS_FALLO = ["NO_DISPONIBLE", "PERDER_RESPUESTA", "LENTO", "CREDENCIALES"] as const;
+export const MODOS_FALLO = ["NO_DISPONIBLE", "PERDER_RESPUESTA", "LENTO", "CREDENCIALES", "INTERRUMPIR"] as const;
 export type ModoFallo = (typeof MODOS_FALLO)[number];
 
 const demoraLentoMs = () => Number(process.env.SIMULADOR_DEMORA_LENTO_MS ?? 12_000);
 
 /** Consume una unidad del fallo de forma atómica (restantes = -1 significa indefinido). */
-async function consumir(ruta: RutaFallo): Promise<ModoFallo | null> {
+export async function consumir(ruta: RutaFallo): Promise<ModoFallo | null> {
   const filas = await prisma.$queryRaw<{ modo: string }[]>`
     UPDATE ats."FalloSimulado"
     SET restantes = CASE WHEN restantes > 0 THEN restantes - 1 ELSE restantes END

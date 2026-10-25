@@ -120,3 +120,16 @@
 - **Decisión:** `e2e/supervisor.mjs`, iniciado por `globalSetup`, es dueño de la app (`next start`, puerto 3200) y del worker durante toda la ejecución. Las pruebas piden los reinicios por HTTP (puerto 3299).
 - **Alternativa descartada:** arrancarlos desde el proceso de la prueba. Morían al cambiar de proyecto de Playwright (fallo real observado).
 - **Motivo:** probar el criterio 8 (reiniciar sin perder datos) de forma estable.
+
+## D-17 · Cierre de vacantes propagado por la outbox, respetando a quien se postuló antes
+
+- **Fecha:** 2026-10-25 (P5)
+- **Decisión:** cerrar o reabrir una vacante en el origen genera, en la misma transacción, un evento `JOB_POSTING_STATUS` en la outbox. El puente lo recibe firmado y marca la correspondencia con `cerradaEn`. Las postulaciones hechas **antes** del cierre se aceptan aunque lleguen tarde; las posteriores reciben `JOB_POSTING_CLOSED`. Detalle en docs/contratos.md §2.1.
+- **Alternativas descartadas:** que el puente lea la tabla de vacantes del origen (rompe la separación por contrato, D-02); una llamada HTTP síncrona al cerrar (si el puente está caído, el cierre se pierde); rechazar todo lo que llegue después del cierre (castiga al postulante por una demora de entrega que no es suya).
+- **Motivo:** el cierre no se pierde ante caídas, el orden de llegada no importa y el postulante no queda perjudicado.
+
+## D-18 · Prueba de transferencia interrumpida y contratos independientes
+
+- **Fecha:** 2026-10-25 (P5)
+- **Decisión:** el modo de prueba `media → INTERRUMPIR` envía los encabezados y la mitad del PDF y luego corta la conexión. El puente lo detecta (bytes ≠ `Content-Length` o error de lectura), lo marca `CV_TRANSFERENCIA_INCOMPLETA`, no avanza de paso y reintenta. Las pruebas de contrato (`tests/contratos/`) validan el origen contra un validador escrito a mano desde F1/F2 y contra el **ejemplo oficial** de LinkedIn, sin usar el esquema Zod del puente; el ATS se prueba con HTTP crudo contra docs/contratos.md §3.
+- **Motivo:** que un error compartido entre origen y puente no pase como correcto (requisito de P5).

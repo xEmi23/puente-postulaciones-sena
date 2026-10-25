@@ -14,6 +14,14 @@ export const metadata = { title: "Administración del simulador" };
 const ESTADO_VACANTE = { BORRADOR: "Borrador", PUBLICADA: "Publicada", CERRADA: "Cerrada" } as const;
 const ESTADO_ENTREGA = { PENDIENTE: "Pendiente", ENVIADO: "Entregada", FALLIDO: "No entregada" } as const;
 
+function estadoDeEvento(payload: string): string {
+  try {
+    return (JSON.parse(payload) as { estado?: string }).estado === "CERRADA" ? "cerrada" : "publicada";
+  } catch {
+    return "—";
+  }
+}
+
 async function reenviar(formData: FormData) {
   "use server";
   await exigirSesionAccion();
@@ -100,7 +108,7 @@ export default async function AdminOrigen({ searchParams }: { searchParams: Prom
             <table className="o-tabla">
               <thead>
                 <tr>
-                  <th scope="col">Referencia</th>
+                  <th scope="col">Evento</th>
                   <th scope="col">Vacante</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Intentos</th>
@@ -111,9 +119,11 @@ export default async function AdminOrigen({ searchParams }: { searchParams: Prom
               </thead>
               <tbody>
                 {entregas.map((e) => (
-                  <tr key={e.id} data-testid="fila-entrega" data-job-application-id={e.postulacion.jobApplicationId}>
-                    <td className="mono">{referenciaCorta(e.postulacion.jobApplicationId)}</td>
-                    <td className="mono">{e.postulacion.vacante.codigo}</td>
+                  <tr key={e.id} data-testid="fila-entrega" data-job-application-id={e.postulacion?.jobApplicationId ?? ""} data-tipo={e.tipo}>
+                    <td className="mono">
+                      {e.postulacion ? referenciaCorta(e.postulacion.jobApplicationId) : `Estado de vacante: ${estadoDeEvento(e.payload)}`}
+                    </td>
+                    <td className="mono">{e.postulacion?.vacante.codigo ?? e.vacanteCodigo}</td>
                     <td>{ESTADO_ENTREGA[e.estado]}</td>
                     <td>{e.intentos}</td>
                     <td>{e.ultimoError ?? "—"}</td>

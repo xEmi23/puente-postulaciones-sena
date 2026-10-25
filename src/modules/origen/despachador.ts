@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { config } from "@/lib/config";
 import { firmarCuerpo } from "@/lib/firma";
-import { CODIGOS_SIN_REINTENTO } from "@/modules/contrato-apply-connect";
+import { CODIGOS_SIN_REINTENTO, TIPO_ESTADO_VACANTE, TIPO_EVENTO } from "@/modules/contrato-apply-connect";
 
 // Despachador del origen: simula a LinkedIn entregando cada postulación al webhook del puente.
 // Reintenta solo ante respuestas distintas de 2xx (o fallos de red), con backoff exponencial y jitter,
@@ -55,15 +55,26 @@ export interface ResultadoEnvio {
   codigoError?: string;
 }
 
+/** Destino según el tipo de evento: postulaciones al webhook; cambios de estado de vacante a su endpoint. */
+export function urlDestino(tipo: string): string {
+  const webhook = config().PUENTE_WEBHOOK_URL;
+  return tipo === TIPO_ESTADO_VACANTE ? new URL("/api/puente/vacantes/estado", webhook).toString() : webhook;
+}
+
 /** POST firmado al webhook del puente. `firma` permite a la consola de pruebas enviar una firma alterada. */
-export async function enviarAlWebhook(cuerpo: string, fetchImpl: typeof fetch = fetch, firma?: string): Promise<ResultadoEnvio> {
+export async function enviarAlWebhook(
+  cuerpo: string,
+  fetchImpl: typeof fetch = fetch,
+  firma?: string,
+  url: string = urlDestino(TIPO_EVENTO),
+): Promise<ResultadoEnvio> {
   const cfg = config();
   const inicio = Date.now();
   let httpStatus: number | undefined;
   let respuesta = "";
   let error: string | undefined;
   try {
-    const r = await fetchImpl(cfg.PUENTE_WEBHOOK_URL, {
+    const r = await fetchImpl(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,7 +99,7 @@ export async function enviarAlWebhook(cuerpo: string, fetchImpl: typeof fetch = 
  */
 export async function reenviarEvento(outboxId: string, fetchImpl?: typeof fetch): Promise<ResultadoEnvio> {
   const fila = await prisma.outboxOrigen.findUniqueOrThrow({ where: { id: outboxId } });
-  const r = await enviarAlWebhook(fila.payload, fetchImpl);
+  const r = await enviarAlWebhook(fila.payload, fetchImpl, undefined, urlDestino(fila.tipo));
   await prisma.$transaction([
     prisma.intentoEntregaOrigen.create({
       data: {
@@ -111,7 +122,12 @@ export async function entregarUno(outboxId: string, opciones: OpcionesDespacho =
   if (fila.estado !== "PENDIENTE") return;
 
   const numero = fila.intentos + 1;
-  const { httpStatus, respuesta, error, duracionMs, exito, codigoError } = await enviarAlWebhook(fila.payload, opciones.fetchImpl);
+  const { httpStatus, respuesta, error, duracionMs, exito, codigoError } = await enviarAlWebhook(
+    fila.payload,
+    opciones.fetchImpl,
+    undefined,
+    urlDestino(fila.tipo),
+  );
   const sinReintento = codigoError !== undefined && CODIGOS_SIN_REINTENTO.has(codigoError);
   const agotado = numero >= MAX_INTENTOS_ENTREGA;
 

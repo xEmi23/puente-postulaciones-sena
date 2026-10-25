@@ -66,6 +66,15 @@
 | Vacante sin correspondencia o desvinculada | 422 | `JOB_POSTING_CLOSED` | Verificado (código) / Decisión (422) |
 | Error interno al guardar | 500 | `TRANSIENT_ERROR` | Verificado (código) |
 
+### 2.1 Estado de vacante (contrato del simulador, no de LinkedIn)
+
+> Actualizado por Claude Code (2026-10-25, P5). En el mundo real el cierre lo decide el ATS y cierra la publicación en LinkedIn; Apply Connect no envía este evento al ATS. Es un mecanismo **del simulador** para propagar el cierre del origen al puente.
+
+- `POST /api/puente/vacantes/estado`, firmado igual que el webhook (`X-LI-Signature` según F2).
+- Cuerpo: `{"type":"JOB_POSTING_STATUS","externalJobId":"RT-…","estado":"CERRADA"|"PUBLICADA","cambiadoEn":<epoch ms>}`.
+- El origen lo deja en su **outbox** en la misma transacción que cambia la vacante; el despachador lo entrega con los mismos reintentos.
+- Efecto en el puente: `CERRADA` → correspondencia inactiva con `motivoCierre=ORIGEN` y `cerradaEn`. Las postulaciones con `appliedAt` anterior al cierre se siguen aceptando; las posteriores reciben `JOB_POSTING_CLOSED`. `PUBLICADA` solo reactiva lo que cerró el origen (una desvinculación manual del panel se respeta). Un evento con `cambiadoEn` más viejo que el último aplicado se ignora (`IGNORADO_EVENTO_ANTERIOR`).
+
 ## 3. Destino: ATS simulado (contrato del simulador)
 
 > **Para BUK no hay contrato de API disponible para el equipo.** Todo lo que sigue es *contrato del simulador*, diseñado por nosotros. **No son rutas oficiales de BUK** ni se atribuyen a BUK.

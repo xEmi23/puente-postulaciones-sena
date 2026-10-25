@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { firmaValida, respuestaDesafio } from "@/lib/firma";
 import { sha256Hex } from "@/lib/archivos";
 import { cuerpoError, esquemaPayload, type CodigoError } from "@/modules/contrato-apply-connect";
+import { admitePostulacion } from "./vacantes";
 
 export interface RespuestaHttp {
   status: number;
@@ -122,10 +123,12 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
   if (existente) return await responderDuplicado(existente.id, p.jobApplicationId);
 
   const correspondencia = await prisma.correspondencia.findUnique({ where: { externalJobId: p.externalJobId } });
-  if (!correspondencia || !correspondencia.activa) {
-    const motivo = correspondencia
-      ? "La vacante está desvinculada o cerrada en el puente."
-      : "La vacante no tiene correspondencia con un proceso del ATS.";
+  if (!admitePostulacion(correspondencia, new Date(p.appliedAt))) {
+    const motivo = !correspondencia
+      ? "La vacante no tiene correspondencia con un proceso del ATS."
+      : correspondencia.motivoCierre === "ORIGEN"
+        ? "La vacante se cerró en el origen antes de esta postulación."
+        : "La vacante está desvinculada en el puente.";
     await registrarRechazo("JOB_POSTING_CLOSED", motivo, extra);
     return { status: 422, body: cuerpoError("JOB_POSTING_CLOSED", { otherErrorDetails: motivo }) };
   }

@@ -90,9 +90,11 @@ model PostulacionOrigen {
 
 model OutboxOrigen {
   id               String                 @id @default(uuid()) @db.Uuid
-  postulacionId    String                 @db.Uuid
-  postulacion      PostulacionOrigen      @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
+  postulacionId    String?                @db.Uuid
+  postulacion      PostulacionOrigen?     @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
+  // EXPORT_JOB_APPLICATION (postulación) | JOB_POSTING_STATUS (cierre/reapertura de vacante, contrato del simulador)
   tipo             String                 @default("EXPORT_JOB_APPLICATION")
+  vacanteCodigo    String?
   payload          String // cuerpo JSON exacto que se firma y se envía
   estado           EstadoOutbox           @default(PENDIENTE)
   intentos         Int                    @default(0)
@@ -242,14 +244,18 @@ model EntregaRechazada {
 }
 
 model Correspondencia {
-  id            String   @id @default(uuid()) @db.Uuid
-  externalJobId String   @unique
-  procesoAtsId  Int
-  descripcion   String
-  activa        Boolean  @default(true)
-  creadaEn      DateTime @default(now()) @db.Timestamptz(3)
-  actualizadaEn DateTime @updatedAt @db.Timestamptz(3)
-  demo          Boolean  @default(true)
+  id             String    @id @default(uuid()) @db.Uuid
+  externalJobId  String    @unique
+  procesoAtsId   Int
+  descripcion    String
+  activa         Boolean   @default(true)
+  // Cierre propagado desde el origen: las postulaciones hechas antes de cerradaEn se respetan.
+  motivoCierre   String? // ORIGEN | MANUAL
+  cerradaEn      DateTime? @db.Timestamptz(3)
+  estadoOrigenEn DateTime? @db.Timestamptz(3) // último cambio de estado aplicado (descarta eventos viejos)
+  creadaEn       DateTime  @default(now()) @db.Timestamptz(3)
+  actualizadaEn  DateTime  @updatedAt @db.Timestamptz(3)
+  demo           Boolean   @default(true)
 
   @@schema("puente")
 }

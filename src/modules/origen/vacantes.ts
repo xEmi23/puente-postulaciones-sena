@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma, esViolacionUnica } from "@/lib/db";
+import { TIPO_ESTADO_VACANTE } from "@/modules/contrato-apply-connect";
 
 // Gestión de vacantes del portal de origen (lo que en el mundo real haría el ATS al publicar en LinkedIn).
 
@@ -52,11 +53,28 @@ export async function editarVacante(codigo: string, entrada: Record<string, unkn
   return { ok: true };
 }
 
-/** Cerrar: el portal deja de mostrarla y de aceptar postulaciones. */
-export async function cerrarVacante(codigo: string) {
-  await prisma.vacante.update({ where: { codigo }, data: { estado: "CERRADA" } });
+/**
+ * Cambia el estado de la vacante y, en la misma transacción, deja en la outbox un evento JOB_POSTING_STATUS
+ * para que el puente lo sepa (contrato del simulador; ver docs/contratos.md §2.1). Si el puente no está
+ * disponible, el despachador lo reintenta como cualquier otra entrega.
+ */
+async function cambiarEstado(codigo: string, estado: "CERRADA" | "PUBLICADA") {
+  const cambiadoEn = new Date();
+  await prisma.$transaction([
+    prisma.vacante.update({
+      where: { codigo },
+      data: estado === "CERRADA" ? { estado } : { estado, publicadaEn: cambiadoEn },
+    }),
+    prisma.outboxOrigen.create({
+      data: {
+        tipo: TIPO_ESTADO_VACANTE,
+        vacanteCodigo: codigo,
+        payload: JSON.stringify({ type: TIPO_ESTADO_VACANTE, externalJobId: codigo, estado, cambiadoEn: cambiadoEn.getTime() }),
+      },
+    }),
+  ]);
 }
 
-export async function reabrirVacante(codigo: string) {
-  await prisma.vacante.update({ where: { codigo }, data: { estado: "PUBLICADA", publicadaEn: new Date() } });
-}
+/** Cerrar: el portal deja de aceptar postulaciones y el puente responde JOB_POSTING_CLOSED a las posteriores al cierre. */
+export const cerrarVacante = (codigo: string) => cambiarEstado(codigo, "CERRADA");
+export const reabrirVacante = (codigo: string) => cambiarEstado(codigo, "PUBLICADA");

@@ -1,4 +1,5 @@
 import * as webhook from "@/app/api/puente/webhook/route";
+import * as estadoVacante from "@/app/api/puente/vacantes/estado/route";
 import * as media from "@/app/api/origen/media/[id]/route";
 import * as candidatos from "@/app/api/ats/v1/candidatos/route";
 import * as documentos from "@/app/api/ats/v1/candidatos/[id]/documentos/route";
@@ -29,6 +30,7 @@ async function despachar(req: Request): Promise<Response> {
   let m: RegExpMatchArray | null;
 
   if (ruta === "/api/puente/webhook") return req.method === "GET" ? webhook.GET(req) : webhook.POST(req);
+  if (ruta === "/api/puente/vacantes/estado") return estadoVacante.POST(req);
   if ((m = ruta.match(/^\/api\/origen\/media\/([^/]+)$/))) return media.GET(req, params({ id: m[1] }));
   if (ruta === "/api/ats/v1/candidatos") return candidatos.POST(req);
   if ((m = ruta.match(/^\/api\/ats\/v1\/candidatos\/([^/]+)\/documentos$/))) return documentos.POST(req, params({ id: m[1] }));

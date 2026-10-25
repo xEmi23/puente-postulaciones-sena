@@ -26,7 +26,7 @@ async function guardar(formData: FormData) {
   await prisma.correspondencia.upsert({
     where: { externalJobId },
     create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
-    update: { procesoAtsId, activa: true, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
+    update: { procesoAtsId, activa: true, motivoCierre: null, cerradaEn: null, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
   });
   redirect(`/puente/correspondencias?ok=${encodeURIComponent(`Vacante ${externalJobId} vinculada al proceso ${procesoAtsId}.`)}`);
 }
@@ -37,7 +37,10 @@ async function alternar(formData: FormData) {
   const id = String(formData.get("id"));
   const c = await prisma.correspondencia.findUnique({ where: { id } });
   if (!c) redirect("/puente/correspondencias");
-  await prisma.correspondencia.update({ where: { id }, data: { activa: !c.activa } });
+  await prisma.correspondencia.update({
+    where: { id },
+    data: c.activa ? { activa: false, motivoCierre: "MANUAL", cerradaEn: null } : { activa: true, motivoCierre: null, cerradaEn: null },
+  });
   redirect(`/puente/correspondencias?ok=${encodeURIComponent(c.activa ? `Vacante ${c.externalJobId} desvinculada: nuevas postulaciones recibirán JOB_POSTING_CLOSED.` : `Vacante ${c.externalJobId} vinculada de nuevo.`)}`);
 }
 
@@ -117,7 +120,10 @@ export default async function Correspondencias({ searchParams }: { searchParams:
                       {c.procesoAtsId} · {nombre.get(c.procesoAtsId) ?? "proceso no encontrado en el ATS"}
                     </td>
                     <td>
-                      <span className={`p-estado ${c.activa ? "p-estado-COMPLETADO" : "p-estado-RECHAZADO"}`}>{c.activa ? "Activa" : "Desvinculada"}</span>
+                      <span className={`p-estado ${c.activa ? "p-estado-COMPLETADO" : "p-estado-RECHAZADO"}`}>
+                        {c.activa ? "Activa" : c.motivoCierre === "ORIGEN" ? "Cerrada en el origen" : "Desvinculada"}
+                      </span>
+                      {c.cerradaEn && <small style={{ display: "block" }}>desde {fechaHora(c.cerradaEn)}</small>}
                     </td>
                     <td>{fechaHora(c.actualizadaEn)}</td>
                     <td>

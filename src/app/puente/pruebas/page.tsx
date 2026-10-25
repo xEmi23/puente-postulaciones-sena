@@ -13,6 +13,7 @@ const DESCRIPCION_MODO: Record<(typeof MODOS_FALLO)[number], string> = {
   PERDER_RESPUESTA: "Escribe y luego responde 503 (respuesta perdida tras la escritura).",
   LENTO: "Escribe y tarda más que el timeout del puente.",
   CREDENCIALES: "Responde 401 (credenciales del puente rechazadas).",
+  INTERRUMPIR: "Solo «media»: corta la descarga del CV a la mitad.",
 };
 
 const esquema = z.object({

@@ -154,3 +154,38 @@ Ver `docs/resultados-pruebas.md`: typecheck 0 · lint 0 · Vitest **50/50** · P
 
 - **PENDIENTE (equipo):** ensayar el guion a mano en el equipo de la demo y revisar la lista de `docs/uso-ia.md`.
 - **Riesgo:** las pruebas solo corren en Chromium.
+
+## Fase P5: Completar casos y edición de vacantes (2026-10-25)
+
+> P4 (retroalimentación del 29/10) y P6 (entrega del 13/11) **no se ejecutaron**, por instrucción: dependen de la retroalimentación y del cierre.
+
+### Qué se hizo
+
+| Requisito | Implementación | Pruebas |
+|---|---|---|
+| Editar y cerrar vacantes en el origen; al cerrar, las nuevas postulaciones reciben `JOB_POSTING_CLOSED` | `/origen/admin`: editar, cerrar y reabrir. El cierre viaja como evento firmado por la outbox (D-17). El portal deja de mostrarla y de aceptarla; el puente responde `JOB_POSTING_CLOSED` a las posteriores al cierre y respeta las anteriores; los eventos en desorden se ignoran; una desvinculación manual no se reactiva | `tests/p5.test.ts` P5.1 (6 pruebas) · `e2e/p5.spec.ts` (editar, cerrar, «Cerrada en el origen», reabrir) |
+| Transferencia del CV interrumpida | Modo `media → INTERRUMPIR`. Detección por bytes ≠ Content-Length o error de lectura → `CV_TRANSFERENCIA_INCOMPLETA`, sin avanzar de paso; reintento automático | P5.2 · E2E «transferencia interrumpida» |
+| Error de autenticación entre puente y ATS | 401 del ATS → `ATS_AUTENTICACION`: **un solo intento**, FALLIDO_REINTENTABLE detenido, explicación «Revisa ATS_API_KEY» y botón «Reintentar» | P5.3 · E2E «error de autenticación» |
+| Candidato creado pero postulación pendiente (reanudar) | El trabajo retoma en `documento_subido`: no repite candidato ni documento (caída del proceso y fallo del ATS) | P5.4 (2 pruebas) |
+| Pruebas de contrato independientes | `tests/contratos/contrato-origen.test.ts`: el origen frente a F1/F2 con un validador escrito a mano y el ejemplo oficial, sin el esquema del puente. `tests/contratos/contrato-puente-y-ats.test.ts`: el puente frente al ejemplo oficial y la tabla de errores de F1, y el challenge de F2; el ATS con HTTP crudo frente a docs/contratos.md §3 | 7 + 9 pruebas |
+
+Migración `cierre_vacantes`: solo agrega columnas (sin pérdida de datos).
+
+### Comandos ejecutados y resultado real (2026-10-25)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | exit 0 |
+| `npm run lint` | exit 0, 0 advertencias |
+| `npm test` | exit 0: **10 archivos, 76 pruebas pasadas** |
+| `npm run test:e2e` (escritorio + móvil) | exit 0: **23 pasadas** (2,4 min); segunda corrida: **23 pasadas** |
+| Instalación limpia 2 (copia nueva, migraciones desde cero) | install 0 · setup 0 · typecheck 0 · lint 0 · **76/76** · **23/23** |
+
+Problemas encontrados y corregidos: la limpieza demo de eventos de estado borraba de más (corregida antes de probar); el corte simulado del CV ocurría antes de los encabezados sobre HTTP real (ahora corta después de enviar la mitad); faltaba la ruta nueva en el fetch en proceso de las pruebas.
+
+### Pendientes y riesgos
+
+- **PENDIENTE (empresa y mentor):** aceptación de D-01.
+- **PENDIENTE (equipo):** `docs/referencia-ats.md` real (D-11), revisión de `docs/uso-ia.md` y ensayo del guion.
+- **PENDIENTE (P4 y P6):** dependen de la retroalimentación del 29/10 y del cierre del 13/11.
+- **Riesgo:** el evento de estado de vacante es del simulador; en un caso real el cierre vendría del ATS (habría que confirmarlo con la empresa).

@@ -1,0 +1,41 @@
+{
+  "_fuente": "Copiado del ejemplo 'Sample payload' de https://learn.microsoft.com/en-us/linkedin/talent/apply-connect/receive-applications (ms.date 2026-09-21, consultado 2026-10-25). Se quitó una llave de cierre sobrante del original. Datos de ejemplo de LinkedIn, no personales.",
+  "type": "EXPORT_JOB_APPLICATION",
+  "externalJobId": "jobIdOnAtsPartner",
+  "jobApplicationId": "urn:li:jobApplication:12345678",
+  "jobApplicant": "urn:li:person:abc123",
+  "appliedAt": 1602137400011,
+  "applicantSkills": [{ "skillUrn": "urn:li:skill:12345", "skillName": "Java", "jobMatched": true, "assessmentVerified": true }],
+  "questionResponses": {
+    "resumeQuestionResponses": {
+      "resumeQuestionAnswer": {
+        "mediaUrl": "https://www.linkedin.com/ambry/?x-li-ambry-ep=AQFBV...",
+        "mediaUrn": "urn:li:media:AgAAA..."
+      }
+    },
+    "contactInformationQuestionResponses": {
+      "firstNameAnswer": { "value": "First" },
+      "lastNameAnswer": { "value": "Last" },
+      "emailAnswer": { "value": "applicant@linkedin.com" }
+    },
+    "voluntarySelfIdentificationQuestionResponses": {
+      "disabilityAnswer": "NO",
+      "genderAnswer": "MALE",
+      "raceAnswer": "ASIAN",
+      "veteranStatusAnswer": "NOT_PROTECTED_VETERAN"
+    },
+    "educationQuestionResponses": { "educationExperienceQuestionSetResponses": [{ "school": { "value": "UC Berkeley" } }] },
+    "workQuestionResponses": { "workExperienceQuestionSetResponses": [{ "company": { "value": "LinkedIn" }, "title": { "value": "Software Engineer" } }] },
+    "locationAnswer": {
+      "locationStateAnswer": "San Francisco, California, United States",
+      "locationLatLong": { "longitude": -122.42016, "latitude": 37.78008 },
+      "locationCityAnswer": "San Francisco",
+      "locationCountryAnswer": "US"
+    },
+    "additionalQuestionResponses": {
+      "customQuestionSetResponses": [
+        { "customQuestionResponses": [{ "questionIdentifier": "question1", "answer": { "multipleChoiceAnswerValue": { "symbolicNames": ["right"] } } }] }
+      ]
+    }
+  }
+}

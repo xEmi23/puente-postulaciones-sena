@@ -5,6 +5,9 @@ import { z } from "zod";
 
 export const TIPO_EVENTO = "EXPORT_JOB_APPLICATION";
 
+/** Evento del simulador (no de LinkedIn): cierre o reapertura de una vacante en el origen. */
+export const TIPO_ESTADO_VACANTE = "JOB_POSTING_STATUS";
+
 export const CODIGOS_ERROR = [
   "MISSING_REQUIRED_RESPONSE",
   "INPUT_VALIDATION_FAILED",

@@ -49,3 +49,15 @@ Las filas de P5 están al final del archivo.
 - `docker compose up` (Docker no está instalado en la máquina).
 - Navegadores distintos de Chromium (Firefox y WebKit no están instalados ni configurados).
 - Pruebas con LinkedIn o BUK reales: fuera del alcance por diseño (D-01).
+
+## Fase P5
+
+| Fecha | Commit base | Comando | Resultado |
+|---|---|---|---|
+| 2026-10-25 | `a23e48b` (P3) + cambios P5 | `npm run typecheck` · `npm run lint` | exit 0 · exit 0 (0 advertencias) |
+| 2026-10-25 | `a23e48b` (P3) + cambios P5 | `npm test` | 10 archivos, **76/76** (incluye `tests/p5.test.ts` 10 y `tests/contratos/` 16) |
+| 2026-10-25 | `a23e48b` (P3) + cambios P5 | `npm run test:e2e` (escritorio + móvil) | build correcto, **23/23** (2,4 min) |
+| 2026-10-25 | `a23e48b` (P3) + cambios P5 | `npx playwright test` (segunda corrida, estabilidad) | **23/23** |
+| 2026-10-25 | copia limpia de P5 | **Instalación limpia 2**: `npm install` → `npm run setup` (aplicó `inicial` y `cierre_vacantes` en bases vacías, puerto 5434) → typecheck · lint · test · test:e2e | 0 · 0 · **76/76** · **23/23** |
+
+Suites agregadas en P5: `tests/p5.test.ts` (cierre y reapertura de vacantes, CV interrumpido, autenticación con el ATS, reanudación), `tests/contratos/contrato-origen.test.ts` (7, origen frente a F1/F2 y el ejemplo oficial), `tests/contratos/contrato-puente-y-ats.test.ts` (9, puente frente a F1/F2 y ATS frente a §3), `e2e/p5.spec.ts` (3).
