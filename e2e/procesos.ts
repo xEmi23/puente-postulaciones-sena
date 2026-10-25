@@ -26,6 +26,8 @@ export function entornoE2E(): NodeJS.ProcessEnv {
     DEMO_ADMIN_USER: "demo-e2e",
     DEMO_ADMIN_PASSWORD: "clave-e2e-solo-local",
     WORKER_INTERVALO_MS: "300",
+    PUENTE_MAX_INTENTOS: "3",
+    PUENTE_BACKOFF_BASE_MS: "300",
   };
 }
 

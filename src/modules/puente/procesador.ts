@@ -175,7 +175,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
   }
 }
 
-async function completar(rec: Recepcion, atsPostulacionId: string, detalle: string) {
+export async function completar(rec: Recepcion, atsPostulacionId: string, detalle: string) {
   await prisma.$transaction([
     prisma.recepcion.update({
       where: { id: rec.id },

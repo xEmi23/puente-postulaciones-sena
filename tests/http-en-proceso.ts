@@ -12,6 +12,17 @@ const params = <T>(p: T) => ({ params: Promise.resolve(p) });
 
 export const fetchEnProceso: typeof fetch = async (entrada, init) => {
   const req = new Request(entrada, init);
+  // Igual que un fetch real: si la señal se aborta (timeout), la llamada se rechaza aunque el servidor siga trabajando.
+  const senal = init?.signal;
+  if (!senal) return despachar(req);
+  if (senal.aborted) throw senal.reason;
+  return Promise.race([
+    despachar(req),
+    new Promise<never>((_, rechazar) => senal.addEventListener("abort", () => rechazar(senal.reason), { once: true })),
+  ]);
+};
+
+async function despachar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   if (url.host !== "app.test") throw new TypeError(`fetch a host no permitido en pruebas: ${url.host}`);
   const ruta = url.pathname;
@@ -24,4 +35,4 @@ export const fetchEnProceso: typeof fetch = async (entrada, init) => {
   if (ruta === "/api/ats/v1/postulaciones") return req.method === "GET" ? postulaciones.GET(req) : postulaciones.POST(req);
   if (ruta === "/api/ats/v1/procesos") return procesos.GET(req);
   return new Response("No encontrado", { status: 404 });
-};
+}

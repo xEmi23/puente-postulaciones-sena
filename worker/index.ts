@@ -10,6 +10,11 @@ import { config } from "@/lib/config";
 // Todo el estado vive en PostgreSQL; si el proceso muere, al volver retoma lo pendiente.
 
 const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 1000);
+// Ajustables para demos y pruebas E2E; por defecto 8 intentos y backoff desde 2 s.
+const opcionesPuente = {
+  maxIntentos: Number(process.env.PUENTE_MAX_INTENTOS ?? 8),
+  baseBackoffMs: Number(process.env.PUENTE_BACKOFF_BASE_MS ?? 2000),
+};
 let detener = false;
 
 async function ciclo(nombre: string, tarea: () => Promise<number>) {
@@ -35,7 +40,7 @@ async function main() {
   process.on("SIGINT", () => terminar("SIGINT"));
   process.on("SIGTERM", () => terminar("SIGTERM"));
 
-  await Promise.all([ciclo("origen", () => despacharPendientes()), ciclo("puente", () => procesarPendientes())]);
+  await Promise.all([ciclo("origen", () => despacharPendientes()), ciclo("puente", () => procesarPendientes(opcionesPuente))]);
   await prisma.$disconnect();
   console.log("[worker] detenido");
 }

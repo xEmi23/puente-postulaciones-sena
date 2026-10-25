@@ -88,3 +88,21 @@
 - **Decisión:** los controles de fallos (`SIMULADOR_MODO_PRUEBA`) y la autenticación de demostración solo se activan si la variable está en `true` **y** `APP_BASE_URL` es `localhost`, `127.0.0.1`, `::1` o un dominio `.test`.
 - **Alternativa descartada:** condicionar a `NODE_ENV !== "production"`. `next start` siempre corre en producción, así que la demo local no los tendría.
 - **Motivo:** un despliegue real nunca se sirve desde localhost, así que no pueden quedar activos por accidente.
+
+## D-13 · Alcance de la autenticación de demostración
+
+- **Fecha:** 2026-10-25
+- **Decisión:** una sola sesión de demo (usuario y contraseña de `.env`, cookie `tb_sesion` HttpOnly, SameSite=Lax, firmada con HMAC-SHA256 y válida 8 h) protege el **panel del puente** (`/puente/*`) y la **interfaz del ATS simulado** (`/ats/*`, incluida la descarga de CV). El portal de origen es público (es el portal de empleo). El webhook se protege con firma, la API del ATS con `ATS_API_KEY` y la URL del CV con Bearer. El `proxy` hace la comprobación optimista y la verificación definitiva se repite en layouts, descarga y cada server action.
+- **Alternativa descartada:** dejar el ATS abierto (expone datos de candidatos, aunque sean ficticios) o un inicio de sesión por módulo (más pasos en la demo).
+- **Motivo:** proteger lo interno sin complicar la demostración. Si falta configuración o el host no es local, el panel queda **cerrado** (falla segura).
+
+## D-14 · Política de reintentos del puente
+
+- **Fecha:** 2026-10-25
+- **Decisión:** hasta 8 intentos por trabajo, con backoff exponencial desde 2 s (tope 5 min) y jitter (entre 50 % y 150 % del valor). Se clasifican los fallos:
+  - **rechazar** (no se reintenta nunca): CV inválido, demasiado grande o expirado, vacante sin correspondencia, validación del ATS.
+  - **reintentar**: red, 5xx o 429 del ATS u origen, transferencia incompleta.
+  - **detener** (sin reintento automático; el panel ofrece «Reintentar»): credenciales rechazadas por el ATS o el origen.
+  - Si se agotan los intentos con una escritura de resultado desconocido (`ATS_SIN_RESPUESTA`) → **REQUIERE_VERIFICACION** (el panel ofrece «Reconciliar»). En otro caso → FALLIDO_REINTENTABLE detenido.
+- **Ajuste por entorno:** `PUENTE_MAX_INTENTOS` y `PUENTE_BACKOFF_BASE_MS` (los E2E usan 3 y 300 ms).
+- **Motivo:** no insistir con errores definitivos, no repetir a ciegas una escritura incierta y no perder el progreso por paso.

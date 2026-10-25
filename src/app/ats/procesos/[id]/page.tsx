@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { fecha } from "@/lib/fechas";
 import { ActualizarCada } from "@/components/actualizar-cada";
+import { exigirSesionAccion } from "@/lib/sesion-servidor";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function TableroProceso({ params }: { params: Promise<{ id:
 
   async function marcarVistas() {
     "use server";
+    await exigirSesionAccion();
     await prisma.postulacionAts.updateMany({ where: { procesoId, vista: false }, data: { vista: true } });
     revalidatePath(`/ats/procesos/${procesoId}`);
   }

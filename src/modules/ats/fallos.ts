@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { modoPrueba } from "@/lib/config";
 import type { RespuestaAts } from "./servicio";
 
-// Controles de fallos del simulador. Inertes salvo con SIMULADOR_MODO_PRUEBA=true y NODE_ENV distinto de production:
+// Controles de fallos del simulador. Inertes salvo con SIMULADOR_MODO_PRUEBA=true en un entorno local (D-12):
 // el recorrido normal nunca pasa por aquí con un fallo activo.
 
 export const RUTAS_FALLO = ["candidatos", "documentos", "postulaciones", "consulta"] as const;
@@ -10,15 +10,16 @@ export type RutaFallo = (typeof RUTAS_FALLO)[number];
 export const MODOS_FALLO = ["NO_DISPONIBLE", "PERDER_RESPUESTA", "LENTO", "CREDENCIALES"] as const;
 export type ModoFallo = (typeof MODOS_FALLO)[number];
 
-const DEMORA_LENTO_MS = 12_000;
+const demoraLentoMs = () => Number(process.env.SIMULADOR_DEMORA_LENTO_MS ?? 12_000);
 
+/** Consume una unidad del fallo de forma atómica (restantes = -1 significa indefinido). */
 async function consumir(ruta: RutaFallo): Promise<ModoFallo | null> {
-  const fallo = await prisma.falloSimulado.findUnique({ where: { ruta } });
-  if (!fallo || fallo.restantes === 0) return null;
-  if (fallo.restantes > 0) {
-    await prisma.falloSimulado.update({ where: { ruta }, data: { restantes: { decrement: 1 } } });
-  }
-  return fallo.modo as ModoFallo;
+  const filas = await prisma.$queryRaw<{ modo: string }[]>`
+    UPDATE ats."FalloSimulado"
+    SET restantes = CASE WHEN restantes > 0 THEN restantes - 1 ELSE restantes END
+    WHERE ruta = ${ruta} AND restantes <> 0
+    RETURNING modo`;
+  return (filas[0]?.modo as ModoFallo | undefined) ?? null;
 }
 
 export async function falloSimulado(ruta: RutaFallo, operacion: () => Promise<RespuestaAts>): Promise<RespuestaAts> {
@@ -35,7 +36,7 @@ export async function falloSimulado(ruta: RutaFallo, operacion: () => Promise<Re
     }
     case "LENTO": {
       const r = await operacion();
-      await new Promise((ok) => setTimeout(ok, DEMORA_LENTO_MS));
+      await new Promise((ok) => setTimeout(ok, demoraLentoMs()));
       return r;
     }
     default:

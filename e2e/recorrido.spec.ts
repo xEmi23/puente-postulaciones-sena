@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { CV, correoUnico, postular, sha256Archivo, sufijoUnico } from "./utilidades";
+import { CV, correoUnico, iniciarSesionDemo, postular, sha256Archivo, sufijoUnico } from "./utilidades";
 
 test.describe("Recorrido principal", () => {
   test("postular con PDF → aparece en Postulantes del proceso 9001 → el CV descargado tiene el mismo hash", async ({ page }) => {
@@ -17,6 +17,7 @@ test.describe("Recorrido principal", () => {
     await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
 
     // ATS: el tablero del proceso correcto muestra la tarjeta en la columna Postulantes.
+    await iniciarSesionDemo(page);
     await page.goto("/ats/procesos/9001");
     const columna = page.locator('[data-etapa="Postulantes"]');
     const tarjeta = columna.getByTestId("tarjeta-postulante").filter({ hasText: apellido });

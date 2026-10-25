@@ -21,7 +21,7 @@ export class ErrorAts extends Error {
   }
 }
 
-const TIMEOUT_MS = 10_000;
+const timeoutMs = () => Number(process.env.ATS_TIMEOUT_MS ?? 10_000);
 
 export interface OpcionesCliente {
   fetchImpl?: typeof fetch;
@@ -44,7 +44,7 @@ async function llamar<T>(
       method: metodo,
       headers,
       body: opciones.cuerpo === undefined ? undefined : JSON.stringify(opciones.cuerpo),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs()),
       redirect: "manual",
     });
   } catch (e) {
@@ -118,4 +118,9 @@ export async function buscarPostulacionPorReferencia(referenciaExterna: string, 
     o,
   );
   return r.datos.resultados[0] ?? null;
+}
+
+export async function listarProcesos(o: OpcionesCliente = {}) {
+  const r = await llamar<{ resultados: { id: number; nombre: string; estado: string; etapas: string[] }[] }>("GET", "/procesos", o);
+  return r.datos.resultados;
 }

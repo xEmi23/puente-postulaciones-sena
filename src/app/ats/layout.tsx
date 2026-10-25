@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { exigirSesion } from "@/lib/sesion-servidor";
 import "./ats.css";
 
 export const metadata: Metadata = { title: { default: "Selecta ATS", template: "%s · Selecta ATS" } };
 
-export default function LayoutAts({ children }: { children: React.ReactNode }) {
+export default async function LayoutAts({ children }: { children: React.ReactNode }) {
+  await exigirSesion("/ats");
   return (
     <div className="m-ats">
       <aside className="a-lateral">
