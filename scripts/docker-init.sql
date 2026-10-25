@@ -1,0 +1,2 @@
+CREATE DATABASE tb_test;
+CREATE DATABASE tb_e2e;

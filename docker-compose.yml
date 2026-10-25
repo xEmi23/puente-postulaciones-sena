@@ -1,0 +1,16 @@
+# Alternativa con Docker (equivalente al clúster local de scripts/pg-local.mjs).
+# Requiere exportar PG_PASSWORD con la misma contraseña de DATABASE_URL en .env.
+services:
+  postgres:
+    image: postgres:16.10
+    environment:
+      POSTGRES_USER: talentbridge
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?Define PG_PASSWORD}
+      POSTGRES_DB: tb_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/docker-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+volumes:
+  pgdata:
