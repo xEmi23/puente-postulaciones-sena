@@ -12,7 +12,10 @@ test("el tablero muestra las etapas de la referencia con su tipo y permite desca
   await expect(columnas).toHaveCount(9);
   await expect(columnas.first()).toHaveAttribute("data-etapa", "Postulantes");
   await expect(columnas.last()).toHaveAttribute("data-etapa", "Contratados");
-  await expect(page.locator('[data-etapa="Sagrilaft"] [data-tipo-etapa]')).toHaveText("Validaciones");
+  await expect(page.locator('[data-etapa="Postulantes"] [data-tipo-etapa]')).toHaveText("Entrada");
+  await expect(page.locator('[data-etapa="Referidos"] [data-tipo-etapa]')).toHaveText("Validaciones");
+  await expect(page.locator('[data-etapa="Prueba técnica"] [data-tipo-etapa]')).toHaveText("Filtro");
+  await expect(page.locator('[data-etapa="Valoración psicológica"] [data-tipo-etapa]')).toHaveText("Entrevistas");
   await expect(page.locator('[data-etapa="Contratados"] [data-tipo-etapa]')).toHaveText("Etapa final");
 
   const postulantes = page.locator('[data-etapa="Postulantes"]');

@@ -70,3 +70,5 @@ Suites agregadas en P5: `tests/p5.test.ts` (cierre y reapertura de vacantes, CV 
 | 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm test` | 11 archivos, **78/78** (nuevo `tests/etapas.test.ts`) |
 | 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm run test:e2e` | **24/24** (nuevo `e2e/etapas.spec.ts`: 9 columnas, tipos, Descartar/Restaurar) |
 | 2026-10-25 | `d45cbe7` (P5) + ajuste de etapas | `npm run build` | exit 0 |
+| 2026-10-25 | `0569a40` + tipos confirmados | `npm run demo:reset` · `typecheck` · `lint` | 0 · 0 · 0 |
+| 2026-10-25 | `0569a40` + tipos confirmados | `npm test` · `npm run test:e2e` · `npm run build` | **78/78** · **24/24** · 0 |

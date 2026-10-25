@@ -4,7 +4,7 @@ import { prisma, reiniciarBd } from "./utilidades";
 
 beforeEach(reiniciarBd);
 
-// Orden observado en el ATS de la empresa (15/10/2026) + «Contratados» verificado en el centro de ayuda de BUK.
+// Orden y tipos observados en el ATS de la empresa (15/10/2026) + «Contratados» verificado en el centro de ayuda de BUK.
 const ORDEN = ["Postulantes", "Por contactar", "Referidos", "Sagrilaft", "Prueba técnica", "Entrevista técnica", "Valoración psicológica", "Suspendido", "Contratados"];
 
 it("los procesos sembrados y los nuevos tienen las etapas de la referencia, en orden y con su tipo", async () => {
@@ -12,8 +12,8 @@ it("los procesos sembrados y los nuevos tienen las etapas de la referencia, en o
   for (const id of [9001, 9002, 9003]) {
     const etapas = await prisma.etapa.findMany({ where: { procesoId: id }, orderBy: { orden: "asc" } });
     expect(etapas.map((e) => e.nombre)).toEqual(ORDEN);
-    expect(etapas.slice(0, -1).every((e) => ["Filtro", "Validaciones", "Entrevistas"].includes(e.tipo ?? ""))).toBe(true);
-    expect(etapas.at(-1)!.tipo).toBeNull(); // etapa final sin tipo
+    // Tipos según la tabla de docs/referencia-ats.md; entrada y etapa final sin tipo.
+    expect(etapas.map((e) => e.tipo)).toEqual([null, "Filtro", "Validaciones", "Validaciones", "Filtro", "Entrevistas", "Entrevistas", "Filtro", null]);
   }
 });
 

@@ -203,3 +203,11 @@ Comandos y resultado real: `npm run typecheck` 0 · `npm run lint` 0 (0 adverten
 - `docs/referencia-ats.md` y `CLAUDE_equipo.md` no estaban en la carpeta al hacer este ajuste. Agregarlos para:
   - confirmar el tipo de cada etapa;
   - completar la fusión de CLAUDE.md y borrar `CLAUDE_equipo.md` después.
+
+## Cierre del ajuste de etapas (2026-10-25)
+
+- **CLAUDE.md** fusionado con `CLAUDE_equipo.md`: contexto y reglas del equipo, comandos reales y arquitectura implementada con sus diferencias respecto del plan. `CLAUDE_equipo.md` se borró.
+- **Tipos de etapa** según la tabla de `docs/referencia-ats.md` (observación directa, 15/10/2026): Postulantes = Entrada · Por contactar = Filtro · Referidos = Validaciones · Sagrilaft = Validaciones · Prueba técnica = Filtro · Entrevista técnica = Entrevistas · Valoración psicológica = Entrevistas · Suspendido = Filtro · Contratados = Etapa final (centro de ayuda de BUK).
+- `docs/referencia-ats-supuesta.md` quedó marcado como reemplazado por `docs/referencia-ats.md`.
+- Comandos y resultado real: `npm run demo:reset` 0 · `npm run typecheck` 0 · `npm run lint` 0 · `npm test` **78/78** · `npm run test:e2e` **24/24** · `npm run build` 0.
+- **PENDIENTE (equipo), D-19:** texto de la fuente («Portal simulado (tipo LinkedIn)» según `referencia-ats.md`, frente a «LinkedIn Easy Apply (simulado)» actual) y campos del proceso observados (prioridad, vigencia, estado «Iniciado»).

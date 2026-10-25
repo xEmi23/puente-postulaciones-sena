@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { fecha } from "@/lib/fechas";
 import { ActualizarCada } from "@/components/actualizar-cada";
 import { exigirSesionAccion } from "@/lib/sesion-servidor";
+import { etiquetaTipo } from "@/modules/ats/etapas";
 
 export const dynamic = "force-dynamic";
 
@@ -87,8 +88,8 @@ export default async function TableroProceso({ params, searchParams }: { params:
               <h2>
                 <span>
                   {etapa.nombre}
-                  <span className="a-tipo-etapa" data-tipo-etapa={etapa.tipo ?? "Final"}>
-                    {etapa.tipo ?? "Etapa final"}
+                  <span className="a-tipo-etapa" data-tipo-etapa={etiquetaTipo(etapa.tipo, etapa.orden)}>
+                    {etiquetaTipo(etapa.tipo, etapa.orden)}
                   </span>
                 </span>
                 <span className="a-contador" aria-label={`${activas.length} postulantes`}>

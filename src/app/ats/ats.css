@@ -292,7 +292,8 @@
 .a-tipo-etapa[data-tipo-etapa="Entrevistas"] {
   color: #166534;
 }
-.a-tipo-etapa[data-tipo-etapa="Final"] {
+.a-tipo-etapa[data-tipo-etapa="Entrada"],
+.a-tipo-etapa[data-tipo-etapa="Etapa final"] {
   color: #374151;
 }
 .a-columna-vacia {

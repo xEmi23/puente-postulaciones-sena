@@ -144,3 +144,19 @@
 - **Fecha:** 2026-10-25 (P5)
 - **Decisión:** el modo de prueba `media → INTERRUMPIR` envía los encabezados y la mitad del PDF y luego corta la conexión. El puente lo detecta (bytes ≠ `Content-Length` o error de lectura), lo marca `CV_TRANSFERENCIA_INCOMPLETA`, no avanza de paso y reintenta. Las pruebas de contrato (`tests/contratos/`) validan el origen contra un validador escrito a mano desde F1/F2 y contra el **ejemplo oficial** de LinkedIn, sin usar el esquema Zod del puente; el ATS se prueba con HTTP crudo contra docs/contratos.md §3.
 - **Motivo:** que un error compartido entre origen y puente no pase como correcto (requisito de P5).
+
+### Actualizado por Claude Code (2026-10-25): tipos de etapa confirmados
+
+- **Fuente de los tipos:** **observación directa del ATS de la empresa (15/10/2026)**, tabla de `docs/referencia-ats.md`. Deja de ser «Supuesto pendiente» y reemplaza la asignación provisional de la sección anterior.
+- **Tipos:** Postulantes = entrada (sin tipo) · Por contactar = Filtro · Referidos = Validaciones · Sagrilaft = Validaciones · Prueba técnica = Filtro · Entrevista técnica = Entrevistas · Valoración psicológica = Entrevistas · Suspendido = Filtro.
+- **Contratados:** sin tipo, se muestra como «Etapa final». Sigue siendo **Verificado** en el centro de ayuda de BUK (F6), no en la foto.
+- `docs/referencia-ats-supuesta.md` queda reemplazado por `docs/referencia-ats.md`.
+
+## D-19 · Diferencias con el plan del equipo y con docs/referencia-ats.md (pendientes de decidir)
+
+- **Fecha:** 2026-10-25
+- **Estructura (Decisión interna, ya aplicada):** rutas `/origen`, `/ats` y `/puente` en lugar de grupos `(…)`; módulos planos en lugar de `domain/application/infrastructure`; CV en `bytea` por esquema en lugar de `storage/<módulo>`. Motivos en la tabla de `CLAUDE.md`.
+- **Pendientes de decidir con el equipo (no se cambiaron):**
+  - **Texto de la fuente:** `docs/referencia-ats.md` pide «Portal simulado (tipo LinkedIn)»; hoy se muestra «LinkedIn Easy Apply (simulado)», porque F1 pide marcar la fuente como «LinkedIn Easy Apply». La regla del equipo («nunca afirmar conexión con LinkedIn») favorece el texto del equipo. Cambiarlo es una línea (`FUENTE_ATS` en `src/modules/puente/procesador.ts`) más pruebas y documentos.
+  - **Campos del proceso** observados que no tiene el simulador: prioridad, fecha de inicio, vigencia y estado «Iniciado» (hoy «Abierto»).
+  - **Tarjeta:** casilla de selección e ícono de IA no están (la calificación con IA está fuera de alcance, según el mismo documento).
