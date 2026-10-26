@@ -29,7 +29,7 @@
 | Respuesta | **Verificado** (F1, F2) | Responder **200** al recibir. Con otro código LinkedIn reintenta **6 veces** (F1). F2 dice que cualquier 2xx cuenta como éxito. |
 | Errores | **Verificado** (F1) | Cuerpo `{"errors":[{"errorCode", "additionalErrorDetails"}]}` con `MISSING_REQUIRED_RESPONSE`, `INPUT_VALIDATION_FAILED`, `DUPLICATE_APPLICATION_RECEIVED`, `JOB_POSTING_CLOSED`, `TOO_MANY_REQUESTS`, `SIGNATURE_MISMATCH`, `TRANSIENT_ERROR`, `OTHER`. `SIGNATURE_MISMATCH` es fatal (sin reintento); `TOO_MANY_REQUESTS`, `TRANSIENT_ERROR` y `OTHER` se reintentan. Para los demás la tabla describe el correo al postulante, no reintentos. |
 | Duplicados | **Verificado** (F2) | Las notificaciones pueden llegar más de una vez; el receptor debe deduplicar. Con `DUPLICATE_APPLICATION_RECEIVED` el postulante recibe correo de entrega *exitosa* (F1). |
-| Fuente en el ATS | **Verificado** (F1) | Marcar la fuente como «LinkedIn Easy Apply». En el simulador: «LinkedIn Easy Apply (simulado)». |
+| Fuente en el ATS | **Verificado** (F1) | F1 pide marcar la fuente como «LinkedIn Easy Apply». **Decisión interna (D-19):** el simulador muestra «Portal simulado (tipo LinkedIn)», para no afirmar conexión con LinkedIn en ningún texto visible. |
 | Requisito comercial | **Verificado** (F3) | Apply Connect es para socios ATS con licencia LinkedIn Recruiter Corporate o Professional Services y requiere certificación. No es accesible para el equipo. |
 | Fallo de la primera entrega | **Verificado** (F1) | Si la primera entrega falla, LinkedIn convierte la vacante a postulación externa (`companyApplyUrl`). El simulador no reproduce esto (**Decisión interna**). |
 | HTTPS | **Verificado** (F2) | LinkedIn exige webhooks HTTPS y no admite ngrok. El simulador usa `http://localhost` (**Decisión interna**, solo local). |
@@ -85,9 +85,9 @@ Base: `ATS_BASE_URL` (por defecto `http://localhost:3100/api/ats/v1`). Autentica
 |---|---|---|
 | `POST /candidatos` | `{nombre, apellido, correo, telefono?, ciudad?, referenciaExterna?}` | `201 {id, existente:false}`; `200 {id, existente:true}` si el correo ya existe (un candidato por persona) |
 | `POST /candidatos/{id}/documentos` | `{nombreArchivo, tipo:"CV", contenidoBase64, sha256}` | `201 {id, sha256}`; `422 HASH_NO_COINCIDE` si el SHA-256 calculado difiere; `415 ARCHIVO_NO_PDF`; `413`; `404 CANDIDATO_NO_EXISTE` |
-| `POST /postulaciones` | `{procesoId, candidatoId, documentoId?, fuente, referenciaExterna}` | `201` crea en la **primera etapa** («Postulantes»), calificación `SIN_CALIFICAR`; `200` si ya existe esa `referenciaExterna`; `409 POSTULACION_EXISTENTE {postulacionId}` si la persona ya está en el proceso; `422 PROCESO_CERRADO`; `404 PROCESO_NO_EXISTE` |
+| `POST /postulaciones` | `{procesoId, candidatoId, documentoId?, fuente, referenciaExterna}` | `201` crea en la **primera etapa** («Postulantes»), calificación `SIN_CALIFICAR`; `200` si ya existe esa `referenciaExterna`; `409 POSTULACION_EXISTENTE {postulacionId}` si la persona ya está en el proceso; `422 PROCESO_CERRADO` (estado distinto de «Iniciado»); `404 PROCESO_NO_EXISTE` |
 | `GET /postulaciones?referenciaExterna=` | — | `200 {resultados:[…]}`: consulta para reconciliar (**capacidad del simulador**) |
-| `GET /procesos` | — | `200 {resultados:[{id, nombre, estado, etapas}]}` |
+| `GET /procesos` | — | `200 {resultados:[{id, nombre, estado, etapas}]}`; `estado` es `INICIADO` o `CERRADO`, como en el ATS de referencia |
 
 - **Idempotency-Key** (capacidad del simulador): en las escrituras, la misma clave con el mismo cuerpo devuelve la respuesta guardada sin volver a escribir; con otro cuerpo responde `422 CLAVE_REUTILIZADA`. El puente usa `{recepcionId}:candidato|documento|postulacion`.
 - **Supuesto pendiente:** si el ATS real tiene una API, sus rutas, autenticación, idempotencia y forma de buscar por referencia externa habrá que confirmarlas con la empresa (ver `docs/decisiones.md` D-01).

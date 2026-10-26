@@ -267,7 +267,9 @@ model Proceso {
   nombre        String
   area          String
   ciudad        String
-  estado        String           @default("ABIERTO")
+  estado        String           @default("INICIADO") // INICIADO | CERRADO (como en el ATS de la empresa)
+  prioridad     String           @default("Media") // Alta | Media | Baja
+  fechaInicio   DateTime         @default(now()) @db.Timestamptz(3)
   creadoEn      DateTime         @default(now()) @db.Timestamptz(3)
   demo          Boolean          @default(true)
   etapas        Etapa[]

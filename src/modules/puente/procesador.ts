@@ -12,7 +12,9 @@ import * as ats from "./ats-cliente";
 // Cada paso se guarda en cuanto termina, así un reinicio retoma desde el último paso confirmado.
 // Las escrituras en el ATS llevan Idempotency-Key derivada de la recepción.
 
-export const FUENTE_ATS = "LinkedIn Easy Apply (simulado)";
+// Texto visible de la fuente en el ATS. El contrato técnico sigue el de LinkedIn (F1 pide marcar «LinkedIn Easy Apply»),
+// pero ningún texto visible lo dice: el prototipo no está conectado a LinkedIn (CLAUDE.md, D-19).
+export const FUENTE_ATS = "Portal simulado (tipo LinkedIn)";
 
 /** Cómo debe terminar un intento fallido. */
 type Modo = "rechazar" | "reintentar" | "detener";

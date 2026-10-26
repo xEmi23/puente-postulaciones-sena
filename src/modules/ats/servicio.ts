@@ -4,6 +4,7 @@ import { config } from "@/lib/config";
 import { igualesSeguro } from "@/lib/firma";
 import { pareceUnPdf, sha256Hex, nombreArchivoSeguro } from "@/lib/archivos";
 import { ETAPAS_REFERENCIA, etapasParaCrear } from "./etapas";
+import { ESTADO_INICIADO, PRIORIDADES } from "./procesos";
 
 // ATS simulado. Su API es el "contrato del simulador" (docs/contratos.md §ATS): no reproduce rutas
 // oficiales de BUK. Capacidades propias del simulador: Idempotency-Key y consulta por referencia externa.
@@ -152,7 +153,7 @@ export async function crearPostulacion(crudo: string): Promise<RespuestaAts> {
 
   const proceso = await prisma.proceso.findUnique({ where: { id: d.procesoId }, include: { etapas: { orderBy: { orden: "asc" }, take: 1 } } });
   if (!proceso) return error(404, "PROCESO_NO_EXISTE", "El proceso no existe en el ATS.");
-  if (proceso.estado !== "ABIERTO") return error(422, "PROCESO_CERRADO", "El proceso está cerrado y no recibe postulaciones.");
+  if (proceso.estado !== ESTADO_INICIADO) return error(422, "PROCESO_CERRADO", "El proceso está cerrado y no recibe postulaciones.");
   const primera = proceso.etapas[0];
   if (!primera) return error(422, "PROCESO_SIN_ETAPAS", "El proceso no tiene etapas configuradas.");
 
@@ -211,6 +212,12 @@ const esquemaProceso = z.object({
   nombre: z.string().trim().min(5, "El nombre debe tener al menos 5 caracteres.").max(120),
   area: z.string().trim().min(2, "Indica el área.").max(60),
   ciudad: z.string().trim().min(2, "Indica la ciudad.").max(60),
+  prioridad: z.enum(PRIORIDADES, { error: "Elige una prioridad." }).default("Media"),
+  fechaInicio: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Indica la fecha de inicio.")
+    .optional()
+    .transform((v) => (v ? new Date(`${v}T12:00:00-05:00`) : new Date())),
 });
 
 /** Crea un proceso con la plantilla de etapas (la primera siempre es «Postulantes»). Uso desde la interfaz del ATS. */

@@ -328,3 +328,68 @@
   opacity: 0.85;
   background: #f9fafb;
 }
+.a-id-proceso {
+  color: #4b5563;
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+.a-meta-proceso {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0.6rem 0 0;
+}
+.a-meta-proceso div {
+  display: flex;
+  flex-direction: column;
+}
+.a-meta-proceso dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4b5563;
+}
+.a-meta-proceso dd {
+  margin: 0;
+  font-weight: 600;
+  color: #1e1b4b;
+}
+.a-prioridad {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.a-prioridad-Alta {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.a-prioridad-Media {
+  background: #fef3c7;
+  color: #92400e;
+}
+.a-prioridad-Baja {
+  background: #e0f2fe;
+  color: #075985;
+}
+.a-estado-proceso {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0 0.45rem;
+  font-size: 0.8rem;
+  background: #dcfce7;
+  color: #166534;
+}
+.a-tarjeta-cabeza {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+.a-casilla {
+  margin-top: 0.2rem;
+  width: 16px;
+  height: 16px;
+  accent-color: #6d28d9;
+  flex-shrink: 0;
+}

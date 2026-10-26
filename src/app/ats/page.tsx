@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { fecha } from "@/lib/fechas";
+import { etiquetaEstadoProceso, textoVigencia, vigenciaDias } from "@/modules/ats/procesos";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Procesos" };
@@ -30,8 +32,9 @@ export default async function Procesos() {
               <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Proceso</th>
-                <th scope="col">Área</th>
-                <th scope="col">Ciudad</th>
+                <th scope="col">Prioridad</th>
+                <th scope="col">Inicio</th>
+                <th scope="col">Vigencia</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Postulantes</th>
               </tr>
@@ -45,9 +48,12 @@ export default async function Procesos() {
                       {p.nombre}
                     </Link>
                   </td>
-                  <td>{p.area}</td>
-                  <td>{p.ciudad}</td>
-                  <td>{p.estado === "ABIERTO" ? "Abierto" : "Cerrado"}</td>
+                  <td>
+                    <span className={`a-prioridad a-prioridad-${p.prioridad}`}>{p.prioridad}</span>
+                  </td>
+                  <td>{fecha(p.fechaInicio)}</td>
+                  <td>{textoVigencia(vigenciaDias(p.fechaInicio))}</td>
+                  <td>{etiquetaEstadoProceso(p.estado)}</td>
                   <td>
                     {p._count.postulaciones}
                     {p.postulaciones.length > 0 && (

@@ -211,3 +211,11 @@ Comandos y resultado real: `npm run typecheck` 0 · `npm run lint` 0 (0 adverten
 - `docs/referencia-ats-supuesta.md` quedó marcado como reemplazado por `docs/referencia-ats.md`.
 - Comandos y resultado real: `npm run demo:reset` 0 · `npm run typecheck` 0 · `npm run lint` 0 · `npm test` **78/78** · `npm run test:e2e` **24/24** · `npm run build` 0.
 - **PENDIENTE (equipo), D-19:** texto de la fuente («Portal simulado (tipo LinkedIn)» según `referencia-ats.md`, frente a «LinkedIn Easy Apply (simulado)» actual) y campos del proceso observados (prioridad, vigencia, estado «Iniciado»).
+
+## D-19 resuelta (2026-10-25)
+
+- **Fuente visible:** «Portal simulado (tipo LinkedIn)». Ningún texto visible dice «LinkedIn Easy Apply» (prueba E2E que recorre las pantallas principales). El contrato técnico interno conserva los nombres de LinkedIn.
+- **Proceso:** prioridad (Alta/Media/Baja), fecha de inicio, vigencia en días y estado «Iniciado» en el encabezado y en la lista. Migración `proceso_prioridad_inicio` (convierte `ABIERTO` → `INICIADO`). Seed: 9001 Alta, hace 10 días; 9002 Media, hace 3 días.
+- **Tarjeta:** casilla de selección solo visual; sin ícono de IA; «Sin calificar».
+- Comandos y resultado real: `npm run demo:reset` 0 · `npm run typecheck` 0 · `npm run lint` 0 · `npm test` **82/82** (12 archivos) · `npm run test:e2e` **26/26** · `npm run build` 0.
+- El pendiente D-19 de la sección anterior queda **cerrado**.

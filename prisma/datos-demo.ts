@@ -7,12 +7,16 @@ export const PROCESOS = [
   {
     id: 9001,
     nombre: "Desarrollador/a Backend Java",
+    prioridad: "Alta",
+    diasDesdeInicio: 10,
     area: "Ingeniería",
     ciudad: "Medellín",
   },
   {
     id: 9002,
     nombre: "Analista de Calidad de Software (QA)",
+    prioridad: "Media",
+    diasDesdeInicio: 3,
     area: "Calidad",
     ciudad: "Medellín (híbrido)",
   },
@@ -75,6 +79,8 @@ export async function sembrarDemo(prisma: PrismaClient) {
         nombre: p.nombre,
         area: p.area,
         ciudad: p.ciudad,
+        prioridad: p.prioridad,
+        fechaInicio: new Date(Date.now() - p.diasDesdeInicio * 86_400_000),
         etapas: { create: etapasParaCrear() },
       },
     });

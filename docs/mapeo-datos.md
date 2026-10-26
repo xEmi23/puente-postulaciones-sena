@@ -19,7 +19,7 @@
 | `resumeQuestionResponses.resumeQuestionAnswer.mediaUrl` | `mediaUrl` | — | Solo si está bajo `ORIGEN_BASE_URL/api/origen/media/`; si no → `INPUT_VALIDATION_FAILED`. Obligatorio (`resume`). |
 | `…resumeQuestionAnswer.mediaUrn` | `mediaUrn` | — | Informativo. |
 | (cuerpo crudo completo) | `payloadSha256` | — | Evidencia de lo recibido sin guardar el JSON (D-09). |
-| — (fijo) | — | `Postulacion.fuente` = «LinkedIn Easy Apply (simulado)» | F1 pide marcar la fuente como «LinkedIn Easy Apply». |
+| — (fijo) | — | `Postulacion.fuente` = «Portal simulado (tipo LinkedIn)» | F1 pide marcar la fuente como «LinkedIn Easy Apply», pero ningún texto visible lo dice: el prototipo no está conectado a LinkedIn (D-19). |
 | — (fijo) | — | `Postulacion.etapa` = primera etapa («Postulantes») | El ATS la elige por `orden` mínimo. |
 | — (fijo) | — | `Postulacion.calificacion` = `SIN_CALIFICAR` | Se muestra «Sin calificar». |
 

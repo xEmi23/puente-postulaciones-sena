@@ -39,7 +39,7 @@ describe("recorrido vertical origen → puente → ATS (PostgreSQL real, route h
     expect(post.etapa.nombre).toBe("Postulantes");
     expect(post.etapa.orden).toBe(1);
     expect(post.calificacion).toBe("SIN_CALIFICAR");
-    expect(post.fuente).toContain("LinkedIn");
+    expect(post.fuente).toBe("Portal simulado (tipo LinkedIn)"); // nunca «LinkedIn Easy Apply» en texto visible (D-19)
     expect(post.vista).toBe(false);
     expect(post.candidato.correo).toBe("camila.ejemplo@demo.test");
     expect(post.candidato.telefono).toBe("+573000000001");

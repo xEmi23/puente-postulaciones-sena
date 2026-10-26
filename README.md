@@ -60,7 +60,7 @@ Guion completo con tiempos: [docs/guion-demo.md](docs/guion-demo.md).
 1. **Restablecer:** `npm run demo:reset`.
 2. **Postular:** abre `/origen`, entra a «Desarrollador/a Backend Java», completa el formulario con datos ficticios y adjunta `fixtures/cv/cv-camila-ejemplo.pdf`.
 3. **Ver la transferencia:** la confirmación cambia sola a «Entregada a la empresa». En `/puente`, la operación pasa a **Completado** con sus cuatro pasos.
-4. **Ver en el ATS:** en `/ats/procesos/9001` aparece la tarjeta en **Postulantes**, «Sin calificar», fuente «LinkedIn Easy Apply (simulado)», con el aviso «1 postulante nuevo fue agregado al proceso».
+4. **Ver en el ATS:** en `/ats/procesos/9001` aparece la tarjeta en **Postulantes**, «Sin calificar», fuente «Portal simulado (tipo LinkedIn)», con el aviso «1 postulante nuevo fue agregado al proceso».
 5. **Descargar el CV:** en el detalle del candidato, el SHA-256 mostrado coincide con el del archivo original (`certutil -hashfile fixtures\cv\cv-camila-ejemplo.pdf SHA256` en Windows, `sha256sum` en Linux/macOS).
 6. **Fiabilidad:** en `/origen/admin` pulsa «Reenviar evento»: responde `HTTP 200 · DUPLICADO` y el ATS sigue con una sola tarjeta. La consola (`/origen/admin/consola`) muestra los rechazos controlados.
 

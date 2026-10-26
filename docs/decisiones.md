@@ -152,7 +152,7 @@
 - **Contratados:** sin tipo, se muestra como «Etapa final». Sigue siendo **Verificado** en el centro de ayuda de BUK (F6), no en la foto.
 - `docs/referencia-ats-supuesta.md` queda reemplazado por `docs/referencia-ats.md`.
 
-## D-19 · Diferencias con el plan del equipo y con docs/referencia-ats.md (pendientes de decidir)
+## D-19 · Diferencias con el plan del equipo y con docs/referencia-ats.md (**RESUELTA**, ver abajo)
 
 - **Fecha:** 2026-10-25
 - **Estructura (Decisión interna, ya aplicada):** rutas `/origen`, `/ats` y `/puente` en lugar de grupos `(…)`; módulos planos en lugar de `domain/application/infrastructure`; CV en `bytea` por esquema en lugar de `storage/<módulo>`. Motivos en la tabla de `CLAUDE.md`.
@@ -160,3 +160,10 @@
   - **Texto de la fuente:** `docs/referencia-ats.md` pide «Portal simulado (tipo LinkedIn)»; hoy se muestra «LinkedIn Easy Apply (simulado)», porque F1 pide marcar la fuente como «LinkedIn Easy Apply». La regla del equipo («nunca afirmar conexión con LinkedIn») favorece el texto del equipo. Cambiarlo es una línea (`FUENTE_ATS` en `src/modules/puente/procesador.ts`) más pruebas y documentos.
   - **Campos del proceso** observados que no tiene el simulador: prioridad, fecha de inicio, vigencia y estado «Iniciado» (hoy «Abierto»).
   - **Tarjeta:** casilla de selección e ícono de IA no están (la calificación con IA está fuera de alcance, según el mismo documento).
+
+### D-19 resuelta (2026-10-25, decisión del equipo)
+
+- **Fuente:** el texto visible es **«Portal simulado (tipo LinkedIn)»** (`FUENTE_ATS`). El contrato técnico interno conserva los nombres de la documentación de LinkedIn (`EXPORT_JOB_APPLICATION`, `jobApplicationId`, etc.), pero **ningún texto visible dice «LinkedIn Easy Apply»**. Lo comprueba `e2e/proceso-encabezado.spec.ts` recorriendo las pantallas principales.
+- **Proceso:** se agregaron **prioridad** (Alta/Media/Baja), **fecha de inicio**, **vigencia** (días completos desde el inicio, calculada al mostrarla) y **estado «Iniciado»** en lugar de «Abierto» (migración `proceso_prioridad_inicio`, que convierte los `ABIERTO` existentes). Se muestran en el encabezado del proceso y en la lista, como en `docs/referencia-ats.md`. Seed ficticio: 9001 Alta, iniciado hace 10 días; 9002 Media, hace 3 días. «Nuevo proceso» pide prioridad y fecha de inicio. Solo un proceso «Iniciado» recibe postulaciones (`PROCESO_CERRADO` en otro caso).
+- **Tarjeta:** casilla de selección **solo visual** (sin acciones masivas). **Sin ícono de IA**: la calificación está fuera de alcance y la tarjeta muestra «Sin calificar».
+- **Estructura** (rutas, módulos, `bytea`): se mantiene como se describe en `CLAUDE.md`.

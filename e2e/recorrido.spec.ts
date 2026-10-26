@@ -23,7 +23,7 @@ test.describe("Recorrido principal", () => {
     const tarjeta = columna.getByTestId("tarjeta-postulante").filter({ hasText: apellido });
     await expect(tarjeta).toBeVisible({ timeout: 30_000 });
     await expect(tarjeta).toContainText("Sin calificar");
-    await expect(tarjeta).toContainText("LinkedIn Easy Apply (simulado)");
+    await expect(tarjeta).toContainText("Portal simulado (tipo LinkedIn)");
     await expect(page.getByTestId("aviso-nuevos")).toContainText(/postulantes? nuevos? fue(ron)? agregados? al proceso/);
 
     // No aparece en el otro proceso.

@@ -122,7 +122,7 @@ describe("ATS simulado frente a docs/contratos.md §3 (HTTP crudo)", () => {
 
   it("POST /postulaciones: 201 en la primera etapa, 200 por misma referencia, 409 misma persona, 404 proceso; GET por referencia", async () => {
     const { body: cand } = await llamar("POST", "/candidatos", { nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" });
-    const post = { procesoId: 9001, candidatoId: cand.id, fuente: "LinkedIn Easy Apply (simulado)", referenciaExterna: "urn:li:jobApplication:1" };
+    const post = { procesoId: 9001, candidatoId: cand.id, fuente: "Portal simulado (tipo LinkedIn)", referenciaExterna: "urn:li:jobApplication:1" };
     const a = await llamar("POST", "/postulaciones", post);
     expect(a.status).toBe(201);
     expect(a.body.etapa).toBe("Postulantes");

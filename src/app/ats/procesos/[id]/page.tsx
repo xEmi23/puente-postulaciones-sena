@@ -6,6 +6,7 @@ import { fecha } from "@/lib/fechas";
 import { ActualizarCada } from "@/components/actualizar-cada";
 import { exigirSesionAccion } from "@/lib/sesion-servidor";
 import { etiquetaTipo } from "@/modules/ats/etapas";
+import { etiquetaEstadoProceso, textoVigencia, vigenciaDias } from "@/modules/ats/procesos";
 
 export const dynamic = "force-dynamic";
 
@@ -57,11 +58,34 @@ export default async function TableroProceso({ params, searchParams }: { params:
       </nav>
       <div className="a-encabezado">
         <div>
-          <h1>{proceso.nombre}</h1>
+          <h1>
+            <span className="mono a-id-proceso">{proceso.id}</span> {proceso.nombre}
+          </h1>
           <p className="a-sub">
-            Proceso <span className="mono">{proceso.id}</span> · {proceso.area} · {proceso.ciudad} ·{" "}
-            {proceso.estado === "ABIERTO" ? "Abierto" : "Cerrado"}
+            {proceso.area} · {proceso.ciudad}
           </p>
+          <dl className="a-meta-proceso" data-testid="meta-proceso">
+            <div>
+              <dt>Prioridad</dt>
+              <dd>
+                <span className={`a-prioridad a-prioridad-${proceso.prioridad}`}>{proceso.prioridad}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Fecha de inicio</dt>
+              <dd>{fecha(proceso.fechaInicio)}</dd>
+            </div>
+            <div>
+              <dt>Vigencia</dt>
+              <dd data-testid="vigencia">{textoVigencia(vigenciaDias(proceso.fechaInicio))}</dd>
+            </div>
+            <div>
+              <dt>Estado</dt>
+              <dd>
+                <span className="a-estado-proceso">{etiquetaEstadoProceso(proceso.estado)}</span>
+              </dd>
+            </div>
+          </dl>
         </div>
       </div>
       <div role="status" aria-live="polite">
@@ -102,9 +126,13 @@ export default async function TableroProceso({ params, searchParams }: { params:
                 <ul className="a-tarjetas">
                   {activas.map((p) => (
                     <li key={p.id} className={`a-tarjeta${p.vista ? "" : " a-tarjeta-nueva"}`} data-testid="tarjeta-postulante">
-                      <Link href={`/ats/candidatos/${p.candidatoId}`}>
-                        {p.candidato.nombre} {p.candidato.apellido}
-                      </Link>
+                      <div className="a-tarjeta-cabeza">
+                        {/* Casilla solo visual, como en el ATS de referencia: no hay acciones masivas. */}
+                        <input type="checkbox" className="a-casilla" aria-label={`Seleccionar a ${p.candidato.nombre} ${p.candidato.apellido}`} />
+                        <Link href={`/ats/candidatos/${p.candidatoId}`}>
+                          {p.candidato.nombre} {p.candidato.apellido}
+                        </Link>
+                      </div>
                       <div style={{ marginTop: "0.35rem" }}>
                         <span className="a-insignia">{CALIFICACION[p.calificacion] ?? p.calificacion}</span>
                         <span className="a-insignia a-insignia-fuente">{p.fuente}</span>

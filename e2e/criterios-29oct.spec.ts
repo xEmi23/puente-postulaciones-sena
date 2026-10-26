@@ -72,7 +72,7 @@ test("C4 · la postulación aparece en la columna Postulantes del proceso correc
   const tarjeta = page.locator('[data-etapa="Postulantes"]').getByTestId("tarjeta-postulante").filter({ hasText: apellido });
   await expect(tarjeta).toBeVisible();
   await expect(tarjeta).toContainText("Sin calificar");
-  await expect(tarjeta).toContainText("LinkedIn Easy Apply (simulado)");
+  await expect(tarjeta).toContainText("Portal simulado (tipo LinkedIn)");
   await expect(page.getByTestId("aviso-nuevos")).toHaveText(/1 postulante nuevo fue agregado al proceso/);
   for (const otro of ["9001", "9002"]) {
     await page.goto(`/ats/procesos/${otro}`);
