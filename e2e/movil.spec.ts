@@ -17,7 +17,7 @@ test("@movil postulación, tablero del ATS y panel usables sin desbordes horizon
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
 
   await iniciarSesionDemo(page);
-  await page.goto(`${TAL}/procesos/9001`);
+  await page.goto(`${TAL}/seleccion/procesos/9001`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido })).toBeVisible({ timeout: 30_000 });
   await sinDesborde(); // el tablero se desplaza dentro de su propio contenedor
   await page.goto(`${PUE}/`);

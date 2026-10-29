@@ -1,18 +1,40 @@
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE_SESION, tokenValido } from "./sesion";
+import { auth, type Rol } from "./auth";
 
-/** Comprobación real (no optimista) de la sesión de demo en el servidor. */
-export async function haySesion(): Promise<boolean> {
-  return tokenValido((await cookies()).get(COOKIE_SESION)?.value);
+export interface Usuario {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: Rol;
 }
 
-/** Para layouts y páginas: redirige a /ingresar si no hay sesión. */
-export async function exigirSesion(siguiente: string) {
-  if (!(await haySesion())) redirect(`/ingresar?siguiente=${encodeURIComponent(siguiente)}`);
+/** Comprobación real de la sesión en el servidor (no optimista). */
+export async function usuarioActual(): Promise<Usuario | null> {
+  const s = await auth.api.getSession({ headers: await headers() });
+  if (!s) return null;
+  const rol = (s.user as { rol?: string }).rol === "ADMIN" ? "ADMIN" : "RECLUTADOR";
+  return { id: s.user.id, nombre: s.user.name, correo: s.user.email, rol };
 }
 
-/** Para server actions: lanza si no hay sesión. */
-export async function exigirSesionAccion() {
-  if (!(await haySesion())) throw new Error("Sesión de demostración requerida.");
+/** Para layouts y páginas: redirige a /ingresar sin sesión, o a / si el rol no alcanza. */
+export async function exigirUsuario(siguiente: string, rol?: Rol): Promise<Usuario> {
+  const u = await usuarioActual();
+  if (!u) redirect(`/ingresar?siguiente=${encodeURIComponent(siguiente)}`);
+  if (rol && u.rol !== rol) redirect("/seleccion/procesos?error=permiso");
+  return u;
+}
+
+/** Para server actions y descargas: lanza si no hay sesión o si el rol no alcanza. */
+export async function exigirUsuarioAccion(rol?: Rol): Promise<Usuario> {
+  const u = await usuarioActual();
+  if (!u) throw new Error("Inicia sesión para continuar.");
+  if (rol && u.rol !== rol) throw new Error("Tu rol no permite esta acción.");
+  return u;
+}
+
+/** Solo rutas internas relativas (evita redirecciones abiertas). */
+export function destinoSeguro(siguiente: string | null | undefined): string {
+  if (!siguiente || !siguiente.startsWith("/") || siguiente.startsWith("//") || siguiente.startsWith("/\\")) return "/";
+  return siguiente;
 }

@@ -11,7 +11,7 @@ export function prepararEntornoPruebas() {
     DATABASE_URL: urlPruebas,
     APP_BASE_URL: "http://puente.test",
     ORIGEN_BASE_URL: "http://vinculo.test",
-    ATS_BASE_URL: "http://talentia.test/api/ats/v1",
+    ATS_BASE_URL: "http://talentia.test",
     SIM_CLIENT_SECRET: "secreto-cliente-de-pruebas-0123456789",
     ORIGEN_MEDIA_ACCESS_TOKEN: "token-media-de-pruebas-0123456789",
     ATS_API_KEY: "clave-api-de-pruebas-0123456789",

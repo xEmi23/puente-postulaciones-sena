@@ -1,63 +1,69 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE_SESION, DURACION_SESION_S, crearTokenSesion, credencialesValidas, destinoSeguro, estadoAuthDemo } from "@/lib/sesion";
+import { auth } from "@/lib/auth";
+import { destinoSeguro, usuarioActual } from "@/lib/sesion-servidor";
+import { CLAVE_DEMO, USUARIOS_DEMO } from "@/modules/demo";
+import "../talentia.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Ingresar" };
 
-const MOTIVOS = {
-  desactivada: "La autenticación de demostración está desactivada (DEMO_AUTH_ENABLED distinto de true).",
-  incompleta: "Faltan DEMO_ADMIN_USER, DEMO_ADMIN_PASSWORD (mín. 12 caracteres) o SESSION_SECRET (mín. 32) en el entorno.",
-  no_local: "La autenticación de demostración solo funciona cuando la aplicación se sirve desde localhost.",
-} as const;
-
 async function ingresar(formData: FormData) {
   "use server";
   const siguiente = destinoSeguro(String(formData.get("siguiente") ?? ""));
-  const usuario = String(formData.get("usuario") ?? "");
-  const clave = String(formData.get("clave") ?? "");
-  if (!(await credencialesValidas(usuario, clave))) {
+  try {
+    await auth.api.signInEmail({
+      body: { email: String(formData.get("correo") ?? "").trim().toLowerCase(), password: String(formData.get("clave") ?? "") },
+      headers: await headers(),
+    });
+  } catch {
     redirect(`/ingresar?error=1&siguiente=${encodeURIComponent(siguiente)}`);
   }
-  (await cookies()).set(COOKIE_SESION, await crearTokenSesion(usuario), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: (process.env.APP_BASE_URL ?? "").startsWith("https://"),
-    path: "/",
-    maxAge: DURACION_SESION_S,
-  });
   redirect(siguiente);
 }
 
 export default async function Ingresar({ searchParams }: { searchParams: Promise<{ siguiente?: string; error?: string }> }) {
   const { siguiente, error } = await searchParams;
-  const estado = estadoAuthDemo();
+  if (await usuarioActual()) redirect(destinoSeguro(siguiente));
   return (
-    <main id="contenido">
+    <main id="contenido" className="t-ingreso">
       <section className="ingreso" aria-labelledby="t-ingreso">
-        <h1 id="t-ingreso">Ingresar a Talentia</h1>
-        <p className="nota">Acceso de demostración al ATS simulado.</p>
-        {!estado.disponible ? (
-          <div className="alerta alerta-error" role="alert">
-            {MOTIVOS[estado.motivo]} El acceso permanece cerrado.
-          </div>
-        ) : (
-          <form action={ingresar}>
-            {error && (
-              <div className="alerta alerta-error" role="alert">
-                Usuario o contraseña incorrectos.
-              </div>
-            )}
-            <input type="hidden" name="siguiente" value={destinoSeguro(siguiente)} />
-            <label htmlFor="usuario">Usuario</label>
-            <input id="usuario" name="usuario" autoComplete="username" required />
-            <label htmlFor="clave">Contraseña</label>
-            <input id="clave" name="clave" type="password" autoComplete="current-password" required />
-            <button type="submit">Ingresar</button>
-            <p className="nota">Las credenciales están en el archivo .env de esta app (DEMO_ADMIN_USER y DEMO_ADMIN_PASSWORD).</p>
-          </form>
-        )}
+        <p className="t-ingreso-marca">
+          <span className="a-marca-logo" aria-hidden="true">
+            T
+          </span>{" "}
+          Talentia
+        </p>
+        <h1 id="t-ingreso">Ingresar</h1>
+        <p className="nota">ATS de Andina Software S.A.S. (empresa ficticia).</p>
+        <form action={ingresar}>
+          {error && (
+            <div className="alerta alerta-error" role="alert">
+              Correo o contraseña incorrectos.
+            </div>
+          )}
+          <input type="hidden" name="siguiente" value={destinoSeguro(siguiente)} />
+          <label htmlFor="correo">Correo</label>
+          <input id="correo" name="correo" type="email" autoComplete="username" required />
+          <label htmlFor="clave">Contraseña</label>
+          <input id="clave" name="clave" type="password" autoComplete="current-password" required />
+          <button type="submit">Ingresar</button>
+        </form>
+        <aside className="t-demo" aria-labelledby="t-demo" data-testid="cuentas-demo">
+          <h2 id="t-demo">Cuentas de demostración</h2>
+          <p>Entorno de simulación con datos ficticios: estas cuentas se muestran a propósito.</p>
+          <ul>
+            {USUARIOS_DEMO.map((u) => (
+              <li key={u.correo}>
+                <strong>{u.cargo}:</strong> <code>{u.correo}</code>
+              </li>
+            ))}
+          </ul>
+          <p>
+            Contraseña: <code>{CLAVE_DEMO}</code>
+          </p>
+        </aside>
       </section>
     </main>
   );

@@ -53,14 +53,20 @@ interface Postulacion {
   etapa: string;
 }
 
-/** Talentia: la API v1 del simulador (candidatos, documentos, postulaciones, procesos), con Idempotency-Key. */
+const errorTal = (status: number, codigo: string, mensaje: string, detalle?: Record<string, unknown>) =>
+  json(status, { error: detalle ? { codigo, mensaje, detalle } : { codigo, mensaje } });
+
+/**
+ * Talentia: la API v1 del simulador (postulantes, documentos multipart, postulaciones, procesos), con la API Key en
+ * `auth_token`, errores { error: { codigo, mensaje, detalle } } e Idempotency-Key.
+ */
 export class TalentiaDoble {
-  candidatos = new Map<string, { id: string; correo: string; nombre: string; apellido: string; telefono?: string | null }>();
+  candidatos = new Map<string, { id: string; correo: string; nombre: string; apellido: string; telefono?: string | null; ciudad?: string | null }>();
   documentos: { id: string; candidatoId: string; sha256: string; bytes: Uint8Array }[] = [];
   postulaciones: Postulacion[] = [];
   procesos = [
-    { id: 9001, nombre: "Desarrollador/a Backend Java", estado: "INICIADO" },
-    { id: 9002, nombre: "Analista de Calidad de Software (QA)", estado: "INICIADO" },
+    { id: 9001, titulo: "Desarrollador/a Backend Java", estado: "INICIADO" },
+    { id: 9002, titulo: "Analista de Calidad de Software (QA)", estado: "INICIADO" },
   ];
   private claves = new Map<string, { hash: string; status: number; body: unknown }>();
 
@@ -77,7 +83,7 @@ export class TalentiaDoble {
     return { candidatos: this.candidatos.size, documentos: this.documentos.length, postulaciones: this.postulaciones.length };
   }
 
-  /** Crea un candidato por fuera del puente (p. ej., llegó por otra vacante). */
+  /** Crea un postulante por fuera del puente (p. ej., llegó por otra vacante). */
   crearCandidato(datos: { nombre: string; apellido: string; correo: string }) {
     const correo = datos.correo.toLowerCase();
     const existente = [...this.candidatos.values()].find((c) => c.correo === correo);
@@ -87,67 +93,98 @@ export class TalentiaDoble {
     return c;
   }
 
+  private vistaPostulacion = (p: Postulacion) => ({
+    id: p.id,
+    proceso_id: p.procesoId,
+    postulante_id: p.candidatoId,
+    documento_id: p.documentoId ?? null,
+    etapa: { id: "00000000-0000-4000-8000-000000000001", nombre: p.etapa, orden: 1 },
+    fuente: p.fuente,
+    referencia_externa: p.referenciaExterna,
+  });
+
   async atender(req: Request): Promise<Response> {
-    if (req.headers.get("authorization") !== `Bearer ${this.apiKey()}`) return json(401, { codigo: "NO_AUTORIZADO", mensaje: "Credenciales inválidas." });
+    if (req.headers.get("auth_token") !== this.apiKey()) return errorTal(401, "NO_AUTORIZADO", "La API Key no es válida.");
     const url = new URL(req.url);
-    const ruta = url.pathname.replace(/^\/api\/ats\/v1/, "");
-    if (req.method === "GET" && ruta === "/procesos") return json(200, { resultados: this.procesos.map((p) => ({ ...p, etapas: ["Postulantes"] })) });
-    if (req.method === "GET" && ruta === "/postulaciones") {
-      const ref = url.searchParams.get("referenciaExterna");
-      return json(200, { resultados: this.postulaciones.filter((p) => p.referenciaExterna === ref) });
+    const ruta = url.pathname.replace(/^\/api\/v1\/seleccion/, "");
+    if (req.method === "GET") {
+      if (ruta === "/procesos") return json(200, { data: this.procesos.map((p) => ({ ...p, etapas: [{ nombre: "Postulantes" }] })) });
+      if (ruta === "/postulantes") {
+        const email = url.searchParams.get("email")?.toLowerCase();
+        return json(200, { data: [...this.candidatos.values()].filter((c) => c.correo === email), paginacion: { pagina: 1, por_pagina: 25, total: 0 } });
+      }
+      if (ruta === "/postulaciones") {
+        const ref = url.searchParams.get("referencia_externa");
+        return json(200, { data: this.postulaciones.filter((p) => p.referenciaExterna === ref).map(this.vistaPostulacion) });
+      }
+      return errorTal(404, "NO_ENCONTRADO", "Ruta inexistente.");
     }
-    if (req.method !== "POST") return json(404, { codigo: "NO_EXISTE", mensaje: "Ruta inexistente." });
-    const crudo = await req.text();
+    const multipart = /\/documentos$/.test(ruta);
+    const form = multipart ? await req.formData() : null;
+    const crudo = multipart ? `${form!.get("sha256")}` : await req.text();
     const clave = req.headers.get("idempotency-key");
-    const hash = sha(new TextEncoder().encode(`${ruta}\n${crudo}`));
+    const hash = sha(new TextEncoder().encode(`${req.method} ${ruta}\n${crudo}`));
     if (clave) {
       const previa = this.claves.get(clave);
-      if (previa) return previa.hash === hash ? json(previa.status, previa.body) : json(422, { codigo: "CLAVE_REUTILIZADA", mensaje: "Clave reutilizada." });
+      if (previa) return previa.hash === hash ? json(previa.status, previa.body) : errorTal(422, "CLAVE_REUTILIZADA", "Clave reutilizada.");
     }
-    const { status, body } = this.escribir(ruta, JSON.parse(crudo));
+    const { status, body } = await this.escribir(req.method, ruta, multipart ? form! : JSON.parse(crudo));
     if (clave && status < 500) this.claves.set(clave, { hash, status, body });
     return json(status, body);
   }
 
-  private escribir(ruta: string, d: Record<string, unknown>): { status: number; body: unknown } {
-    if (ruta === "/candidatos") {
-      const correo = String(d.correo).toLowerCase();
+  private async escribir(metodo: string, ruta: string, d: Record<string, unknown> | FormData): Promise<{ status: number; body: unknown }> {
+    const error = (status: number, codigo: string, mensaje: string, detalle?: Record<string, unknown>) => ({ status, body: { error: detalle ? { codigo, mensaje, detalle } : { codigo, mensaje } } });
+    if (metodo === "POST" && ruta === "/postulantes") {
+      const datos = d as Record<string, unknown>;
+      const correo = String(datos.correo).toLowerCase();
       const existente = [...this.candidatos.values()].find((c) => c.correo === correo);
-      if (existente) return { status: 200, body: { id: existente.id, existente: true } };
-      const c = { id: randomUUID(), correo, nombre: String(d.nombre), apellido: String(d.apellido), telefono: (d.telefono as string) ?? null };
+      if (existente) return error(409, "POSTULANTE_EXISTENTE", "Ya existe.", { postulante_id: existente.id });
+      const c = { id: randomUUID(), correo, nombre: String(datos.nombre), apellido: String(datos.apellido), telefono: (datos.telefono as string) ?? null, ciudad: (datos.ciudad as string) ?? null };
       this.candidatos.set(c.id, c);
-      return { status: 201, body: { id: c.id, existente: false } };
+      return { status: 201, body: { data: c } };
     }
-    const m = ruta.match(/^\/candidatos\/([^/]+)\/documentos$/);
-    if (m) {
-      if (!this.candidatos.has(m[1])) return { status: 404, body: { codigo: "CANDIDATO_NO_EXISTE", mensaje: "No existe." } };
-      const bytes = new Uint8Array(Buffer.from(String(d.contenidoBase64), "base64"));
-      if (sha(bytes) !== d.sha256) return { status: 422, body: { codigo: "HASH_NO_COINCIDE", mensaje: "El SHA-256 no coincide." } };
-      const doc = { id: randomUUID(), candidatoId: m[1], sha256: String(d.sha256), bytes };
+    const mp = ruta.match(/^\/postulantes\/([^/]+)$/);
+    if (metodo === "PATCH" && mp) {
+      const c = this.candidatos.get(mp[1]);
+      if (!c) return error(404, "NO_ENCONTRADO", "No existe.");
+      Object.assign(c, d);
+      return { status: 200, body: { data: c } };
+    }
+    const md = ruta.match(/^\/postulantes\/([^/]+)\/documentos$/);
+    if (metodo === "POST" && md) {
+      const form = d as FormData;
+      if (!this.candidatos.has(md[1])) return error(404, "NO_ENCONTRADO", "No existe.");
+      const archivo = form.get("archivo");
+      const bytes = archivo instanceof Blob ? new Uint8Array(await archivo.arrayBuffer()) : new Uint8Array();
+      if (sha(bytes) !== form.get("sha256")) return error(422, "HASH_NO_COINCIDE", "El SHA-256 no coincide.");
+      const doc = { id: randomUUID(), candidatoId: md[1], sha256: String(form.get("sha256")), bytes };
       this.documentos.push(doc);
-      return { status: 201, body: { id: doc.id, sha256: doc.sha256 } };
+      return { status: 201, body: { data: { id: doc.id, sha256: doc.sha256 } } };
     }
-    if (ruta === "/postulaciones") {
-      const ref = String(d.referenciaExterna);
+    if (metodo === "POST" && ruta === "/postulaciones") {
+      const datos = d as Record<string, unknown>;
+      const ref = String(datos.referencia_externa);
       const porRef = this.postulaciones.find((p) => p.referenciaExterna === ref);
-      if (porRef) return { status: 200, body: porRef };
-      const proceso = this.procesos.find((p) => p.id === d.procesoId);
-      if (!proceso) return { status: 404, body: { codigo: "PROCESO_NO_EXISTE", mensaje: "No existe." } };
-      if (proceso.estado !== "INICIADO") return { status: 422, body: { codigo: "PROCESO_CERRADO", mensaje: "Cerrado." } };
-      const misma = this.postulaciones.find((p) => p.procesoId === proceso.id && p.candidatoId === d.candidatoId);
-      if (misma) return { status: 409, body: { codigo: "POSTULACION_EXISTENTE", mensaje: "Ya existe.", postulacionId: misma.id } };
+      if (porRef) return { status: 200, body: { data: this.vistaPostulacion(porRef) } };
+      const proceso = this.procesos.find((p) => p.id === datos.proceso_id);
+      if (!proceso) return error(404, "PROCESO_NO_EXISTE", "No existe.");
+      if (proceso.estado !== "INICIADO") return error(422, "PROCESO_CERRADO", "Cerrado.");
+      const misma = this.postulaciones.find((p) => p.procesoId === proceso.id && p.candidatoId === datos.postulante_id);
+      if (misma) return error(409, "POSTULACION_EXISTENTE", "Ya existe.", { postulacion_id: misma.id });
       const p: Postulacion = {
         id: randomUUID(),
         procesoId: proceso.id,
-        candidatoId: String(d.candidatoId),
-        documentoId: (d.documentoId as string) ?? null,
-        fuente: String(d.fuente),
+        candidatoId: String(datos.postulante_id),
+        documentoId: (datos.documento_id as string) ?? null,
+        fuente: String(datos.fuente),
         referenciaExterna: ref,
         etapa: "Postulantes",
       };
       this.postulaciones.push(p);
-      return { status: 201, body: p };
+      return { status: 201, body: { data: this.vistaPostulacion(p) } };
     }
-    return { status: 404, body: { codigo: "NO_EXISTE", mensaje: "Ruta inexistente." } };
+    return error(404, "NO_ENCONTRADO", "Ruta inexistente.");
   }
+
 }

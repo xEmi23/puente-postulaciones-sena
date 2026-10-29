@@ -125,7 +125,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
     if (rec.paso === "cv_descargado") {
       const candidato = await ats.crearOBuscarCandidato(
         { nombre: rec.nombre, apellido: rec.apellido, correo: rec.correo, telefono: rec.telefono, ciudad: rec.ciudad, referenciaExterna: rec.jobApplicant },
-        `${rec.id}:candidato`,
+        `${rec.jobApplicationId}:postulante`,
         o,
       );
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "candidato_creado", atsCandidatoId: candidato.id } });
@@ -137,8 +137,8 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
       if (!rec.cvContenido || !rec.cvSha256) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "Se perdió la copia temporal del CV.", "detener");
       const doc = await ats.subirDocumento(
         rec.atsCandidatoId!,
-        { nombreArchivo: rec.cvNombreArchivo ?? "cv.pdf", tipo: "CV", contenidoBase64: Buffer.from(rec.cvContenido).toString("base64"), sha256: rec.cvSha256 },
-        `${rec.id}:documento`,
+        { nombreArchivo: rec.cvNombreArchivo ?? "cv.pdf", tipo: "CV", bytes: new Uint8Array(rec.cvContenido), sha256: rec.cvSha256 },
+        `${rec.jobApplicationId}:documento`,
         o,
       );
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: doc.id } });
@@ -161,12 +161,12 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
       try {
         const post = await ats.crearPostulacion(
           { procesoId: rec.procesoAtsId!, candidatoId: rec.atsCandidatoId!, documentoId: rec.atsDocumentoId!, fuente: FUENTE_ATS, referenciaExterna: rec.jobApplicationId },
-          `${rec.id}:postulacion`,
+          `${rec.jobApplicationId}:postulacion`,
           o,
         );
         postulacionId = post.id;
       } catch (e) {
-        const existente = e instanceof ats.ErrorAts && e.tipo === "conflicto" ? (e.cuerpo as { postulacionId?: string } | null)?.postulacionId : undefined;
+        const existente = e instanceof ats.ErrorAts && e.tipo === "conflicto" ? (e.detalle?.postulacion_id as string | undefined) : undefined;
         if (!existente) throw e;
         postulacionId = existente;
         detalle = "La persona ya tenía una postulación en este proceso; se vinculó la existente sin duplicar.";
@@ -201,14 +201,14 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
 function clasificar(e: unknown, rec: Recepcion): ErrorProcesamiento {
   if (e instanceof ErrorProcesamiento) return e;
   if (e instanceof ats.ErrorAts) {
-    const codigoAts = (e.cuerpo as { codigo?: string } | null)?.codigo;
+    const codigoAts = e.codigo;
     if (e.tipo === "autenticacion") return new ErrorProcesamiento("ATS_AUTENTICACION", e.message, "detener");
     if (e.resultadoIncierto) {
       const escritura = rec.paso === "documento_subido";
       return new ErrorProcesamiento(escritura ? "ATS_SIN_RESPUESTA" : "ATS_NO_DISPONIBLE", e.message, "reintentar");
     }
     if (codigoAts === "HASH_NO_COINCIDE") return new ErrorProcesamiento("CV_TRANSFERENCIA_INCOMPLETA", "El ATS recibió un archivo distinto al enviado.", "reintentar");
-    const mensaje = (e.cuerpo as { mensaje?: string } | null)?.mensaje ?? e.message;
+    const mensaje = e.message;
     return new ErrorProcesamiento(codigoAts ? `ATS_${codigoAts}` : "ATS_VALIDACION", mensaje, "rechazar");
   }
   const mensaje = e instanceof Error ? e.message : String(e);

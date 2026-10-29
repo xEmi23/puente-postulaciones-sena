@@ -34,9 +34,9 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
     [`${PUE}/correspondencias`, "correspondencias"],
     [`${PUE}/rechazos`, "rechazos"],
     [`${PUE}/pruebas`, "controles de prueba"],
-    [`${TAL}/`, "procesos ATS"],
-    [`${TAL}/procesos/9001`, "tablero ATS"],
-    [`${TAL}/procesos/nuevo`, "nuevo proceso"],
+    [`${TAL}/seleccion/procesos`, "procesos ATS"],
+    [`${TAL}/seleccion/procesos/9001`, "tablero ATS"],
+    [`${TAL}/seleccion/procesos/nuevo`, "nuevo proceso"],
     [`${VIN}/admin`, "admin origen"],
     [`${VIN}/admin/vacantes/nueva`, "publicar vacante"],
     [`${VIN}/admin/consola`, "consola"],
@@ -47,7 +47,7 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
   await page.goto(`${PUE}/`);
   await page.getByTestId("fila-operacion").first().getByRole("link").click();
   await auditar(page, "detalle de operación");
-  await page.goto(`${TAL}/procesos/9001`);
+  await page.goto(`${TAL}/seleccion/procesos/9001`);
   await page.getByTestId("tarjeta-postulante").first().getByRole("link").click();
   await auditar(page, "detalle de candidato");
 });

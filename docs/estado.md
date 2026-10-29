@@ -253,3 +253,36 @@ Comandos y resultado real: `npm run typecheck` 0 · `npm run lint` 0 (0 adverten
 
 - Transitorio (D-25): contratos y secretos de la v1 hasta F1–F3.
 - `docker-compose.yml` actualizado al 5435 pero sin probar (no hay Docker en la máquina).
+
+## F1 · Talentia completo (2026-10-28)
+
+### Qué se hizo
+
+- **Autenticación con roles** (Better Auth, D-27): administradora `admin@andina.demo.test` y reclutador `reclutador@andina.demo.test`, contraseña `Demo2026!`, visibles en `/ingresar`. Cookie `tal_sesion`. El menú de Administración y sus páginas solo existen para el rol ADMIN (verificado en el servidor).
+- **Pantallas:** menú Desarrollo organizacional → Selección → Procesos, Postulantes, Plantillas («Próximamente»), Configuraciones; lista de procesos; nuevo proceso; tablero del proceso con encabezado, pestañas (Información general y Proceso activas, el resto deshabilitadas), **Vista columna** con las 9 etapas, tipo, contador y «Descartados (n)», **Vista tabla**, mover tarjetas con un selector, aviso de nuevos; base de postulantes con búsqueda y paginación; ficha con datos, procesos, CV con SHA-256 e **historial** de movimientos; `/admin/api-keys`; `/admin/actividad-api`; `/apidocs` (Swagger UI local).
+- **API v1** (D-29) con permisos, límite, errores uniformes, Idempotency-Key y OpenAPI 3.1 generado desde Zod.
+- **Encabezado:** `auth_token`, Supuesto pendiente (D-26).
+- **Datos de demo:** 6 procesos (9001–9006) y 15 postulantes repartidos en etapas.
+- **Puente:** conector actualizado a la nueva API (D-30).
+
+### Comandos ejecutados y resultado real (2026-10-28)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | exit 0, 0 advertencias |
+| `npm run typecheck` | exit 0 |
+| `npm test` | exit 0: Vínculo **20/20**, Talentia **30/30** (6 archivos: api, contrato-openapi, procesos, etapas, demo, sesión), Puente **57/57** |
+| `npm run build` | exit 0 (3 apps) |
+| `npx playwright test` (escritorio + móvil) | **30/30** (2,3 min) |
+
+Problemas encontrados y corregidos: las etiquetas ocultas de los selectores del tablero (posición absoluta) ensanchaban la página; `/apidocs.js` quedaba detrás del control de sesión; el reclutador sin permiso volvía a `/` y perdía el aviso; la utilidad E2E navegaba a `/ingresar` con sesión vigente.
+
+### Criterios
+
+- **2 · Cumple.** `apps/talentia/tests/api.test.ts` (llave una vez con hash; 201 con Modificación; 403 con solo Lectura; 401 revocada) y `e2e/talentia.spec.ts` (lo mismo desde la interfaz y con HTTP real).
+- **3 · Cumple para Talentia.** `apps/talentia/tests/contrato-openapi.test.ts` (ejemplos válidos contra su esquema, ejemplos ejecutados contra la API y respuestas validadas con Ajv contra el documento) y `e2e/talentia.spec.ts` (`/apidocs` carga sin sesión). `/developers/docs` de Vínculo queda para F2.
+
+### Pendientes y riesgos
+
+- **PENDIENTE (empresa):** confirmar el nombre del encabezado de la API Key de BUK (D-26).
+- Transitorio (D-25/D-30): la llave del puente llega por `.env` hasta F3.

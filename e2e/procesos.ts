@@ -36,7 +36,7 @@ function envApp(app: App): NodeJS.ProcessEnv {
     talentia: {},
     puente: {
       ORIGEN_BASE_URL: VIN,
-      ATS_BASE_URL: `${TAL}/api/ats/v1`,
+      ATS_BASE_URL: TAL,
       PUENTE_MODO_PRUEBAS: "1",
       PUENTE_MAX_INTENTOS: "3",
       PUENTE_BACKOFF_BASE_MS: "300",

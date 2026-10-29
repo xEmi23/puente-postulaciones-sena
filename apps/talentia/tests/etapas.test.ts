@@ -1,5 +1,5 @@
 import { beforeEach, expect, it } from "vitest";
-import { crearProceso } from "@/modules/servicio";
+import { crearProceso } from "@/modules/seleccion";
 import { prisma, reiniciarBd } from "./utilidades";
 
 beforeEach(reiniciarBd);
@@ -8,8 +8,8 @@ beforeEach(reiniciarBd);
 const ORDEN = ["Postulantes", "Por contactar", "Referidos", "Sagrilaft", "Prueba técnica", "Entrevista técnica", "Valoración psicológica", "Suspendido", "Contratados"];
 
 it("los procesos sembrados y los nuevos tienen las etapas de la referencia, en orden y con su tipo", async () => {
-  await crearProceso({ nombre: "Proceso de prueba", area: "Ingeniería", ciudad: "Medellín" });
-  for (const id of [9001, 9002, 9003]) {
+  await crearProceso({ titulo: "Proceso de prueba", area: "Ingeniería", ciudad: "Medellín" });
+  for (const id of [9001, 9002, 9006, 9007]) {
     const etapas = await prisma.etapa.findMany({ where: { procesoId: id }, orderBy: { orden: "asc" } });
     expect(etapas.map((e) => e.nombre)).toEqual(ORDEN);
     // Tipos según la tabla de docs/referencia-ats.md; entrada y etapa final sin tipo.

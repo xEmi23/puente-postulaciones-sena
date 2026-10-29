@@ -78,13 +78,23 @@ function plantilla(app, r) {
     };
   }
   if (app === "talentia") {
-    return { ...comun, APP_BASE_URL: "http://localhost:3002", ATS_API_KEY: r.ATS_API_KEY };
+    const { DATABASE_URL, DATABASE_URL_TEST, DATABASE_URL_E2E, CV_MAX_BYTES } = comun;
+    return {
+      DATABASE_URL,
+      DATABASE_URL_TEST,
+      DATABASE_URL_E2E,
+      CV_MAX_BYTES,
+      APP_BASE_URL: "http://localhost:3002",
+      BETTER_AUTH_SECRET: secreto(32),
+      // Transitorio (D-25): la siembra registra como API Key la llave que el puente tiene en su .env.
+      TALENTIA_LLAVE_PUENTE: r.ATS_API_KEY,
+    };
   }
   return {
     ...comun,
     APP_BASE_URL: "http://localhost:3003",
     ORIGEN_BASE_URL: "http://localhost:3001",
-    ATS_BASE_URL: "http://localhost:3002/api/ats/v1",
+    ATS_BASE_URL: "http://localhost:3002",
     SIM_CLIENT_SECRET: r.SIM_CLIENT_SECRET,
     ORIGEN_MEDIA_ACCESS_TOKEN: r.ORIGEN_MEDIA_ACCESS_TOKEN,
     ATS_API_KEY: r.ATS_API_KEY,

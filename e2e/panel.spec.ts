@@ -20,7 +20,7 @@ test.describe("Panel del puente", () => {
   test("sin sesión no se entra al panel ni al ATS; con credenciales erróneas se informa", async ({ page }) => {
     await page.goto(`${PUE}/`);
     await expect(page).toHaveURL(new RegExp(`^${PUE}/ingresar\\?siguiente=%2F`));
-    await page.goto(`${TAL}/procesos/9001`);
+    await page.goto(`${TAL}/seleccion/procesos/9001`);
     await expect(page).toHaveURL(/\/ingresar/);
     const r = await page.request.get(`${TAL}/documentos/00000000-0000-4000-8000-000000000000/descargar`, { maxRedirects: 0 });
     expect([307, 308, 401]).toContain(r.status());

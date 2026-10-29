@@ -4,13 +4,8 @@ import { z } from "zod";
 // puedan ajustar process.env sin reiniciar módulos.
 const esquema = z.object({
   DATABASE_URL: z.url(),
-  APP_BASE_URL: z.url(),
-  ATS_API_KEY: z.string().min(16),
+  BETTER_AUTH_SECRET: z.string().min(32),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
-  DEMO_AUTH_ENABLED: z.enum(["true", "false"]).default("false"),
-  DEMO_ADMIN_USER: z.string().optional(),
-  DEMO_ADMIN_PASSWORD: z.string().optional(),
-  SESSION_SECRET: z.string().optional(),
   NODE_ENV: z.string().default("development"),
 });
 
@@ -23,4 +18,9 @@ export function config(): Config {
     throw new Error(`Configuración inválida o incompleta en .env: ${campos}`);
   }
   return r.data;
+}
+
+/** URL pública de esta app: APP_BASE_URL local o RENDER_EXTERNAL_URL en Render. */
+export function urlPublica(): string {
+  return (process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3002").replace(/\/$/, "");
 }

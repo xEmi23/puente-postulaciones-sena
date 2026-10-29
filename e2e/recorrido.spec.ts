@@ -19,7 +19,7 @@ test.describe("Recorrido principal", () => {
 
     // ATS: el tablero del proceso correcto muestra la tarjeta en la columna Postulantes.
     await iniciarSesionDemo(page);
-    await page.goto(`${TAL}/procesos/9001`);
+    await page.goto(`${TAL}/seleccion/procesos/9001`);
     const columna = page.locator('[data-etapa="Postulantes"]');
     const tarjeta = columna.getByTestId("tarjeta-postulante").filter({ hasText: apellido });
     await expect(tarjeta).toBeVisible({ timeout: 30_000 });
@@ -28,11 +28,11 @@ test.describe("Recorrido principal", () => {
     await expect(page.getByTestId("aviso-nuevos")).toContainText(/postulantes? nuevos? fue(ron)? agregados? al proceso/);
 
     // No aparece en el otro proceso.
-    await page.goto(`${TAL}/procesos/9002`);
+    await page.goto(`${TAL}/seleccion/procesos/9002`);
     await expect(page.getByText(apellido)).toHaveCount(0);
 
     // Detalle del candidato y descarga del CV: el hash coincide con el archivo original.
-    await page.goto(`${TAL}/procesos/9001`);
+    await page.goto(`${TAL}/seleccion/procesos/9001`);
     await page.getByRole("link", { name: new RegExp(apellido) }).click();
     await expect(page.getByRole("heading", { name: new RegExp(apellido) })).toBeVisible();
     const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByTestId("descargar-cv").click()]);

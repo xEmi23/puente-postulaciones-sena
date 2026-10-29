@@ -31,8 +31,8 @@ test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ pa
   await expect(aviso).toContainText(/Vacante RT-\d{4}-\d{3} publicada/);
   codigoVacante = (await aviso.textContent())!.match(/RT-\d{4}-\d{3}/)![0];
 
-  await page.goto(`${TAL}/procesos/nuevo`);
-  await page.getByLabel("Nombre del proceso").fill("Desarrollador/a Frontend");
+  await page.goto(`${TAL}/seleccion/procesos/nuevo`);
+  await page.getByLabel("Título del proceso").fill("Desarrollador/a Frontend");
   await page.getByLabel("Área").fill("Ingeniería");
   await page.getByLabel("Ciudad").fill("Remoto");
   await page.getByRole("button", { name: "Crear proceso" }).click();
@@ -69,21 +69,21 @@ test("C3 · ver la transferencia sin copiar nada manualmente", async ({ page }) 
 
 test("C4 · la postulación aparece en la columna Postulantes del proceso correcto", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto(`${TAL}/procesos/${procesoId}`);
+  await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   const tarjeta = page.locator('[data-etapa="Postulantes"]').getByTestId("tarjeta-postulante").filter({ hasText: apellido });
   await expect(tarjeta).toBeVisible();
   await expect(tarjeta).toContainText("Sin calificar");
   await expect(tarjeta).toContainText("Portal simulado (tipo LinkedIn)");
   await expect(page.getByTestId("aviso-nuevos")).toHaveText(/1 postulante nuevo fue agregado al proceso/);
   for (const otro of ["9001", "9002"]) {
-    await page.goto(`${TAL}/procesos/${otro}`);
+    await page.goto(`${TAL}/seleccion/procesos/${otro}`);
     await expect(page.getByText(apellido)).toHaveCount(0);
   }
 });
 
 test("C5 · descargar el CV y comprobar que el hash coincide con el original", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto(`${TAL}/procesos/${procesoId}`);
+  await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   await page.getByRole("link", { name: new RegExp(apellido) }).click();
   const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByTestId("descargar-cv").click()]);
   expect(sha256Archivo((await descarga.path())!)).toBe(sha256Archivo(CV));
@@ -95,7 +95,7 @@ test("C6 · reenviar el evento sin duplicar", async ({ page }) => {
   await page.locator(`[data-testid="fila-entrega"][data-job-application-id="${jobApplicationId}"]`).getByRole("button", { name: "Reenviar evento" }).click();
   await expect(page.locator(".alerta-exito")).toContainText("HTTP 200 · DUPLICADO");
 
-  await page.goto(`${TAL}/procesos/${procesoId}`);
+  await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido })).toHaveCount(1);
   await page.goto(`${PUE}/`);
   await page.locator(`[data-testid="fila-operacion"][data-job-application-id="${jobApplicationId}"]`).getByRole("link").click();
@@ -157,7 +157,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await iniciarWorker();
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
   await iniciarSesionDemo(page);
-  await page.goto(`${TAL}/procesos/${procesoId}`);
+  await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido8 })).toBeVisible({ timeout: 30_000 });
 
   // d) Caída a mitad de una llamada al ATS: el ATS ya guardó el documento pero tarda en responder,
@@ -184,7 +184,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await iniciarSesionDemo(page);
   await page.goto(`${PUE}/`);
   await expect(page.locator(`[data-testid="fila-operacion"][data-job-application-id="${ref9}"]`)).toContainText("Completado", { timeout: 60_000 });
-  await page.goto(`${TAL}/procesos/${procesoId}`);
+  await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido9 })).toHaveCount(1);
   await page.getByRole("link", { name: new RegExp(apellido9) }).click();
   await expect(page.getByTestId("descargar-cv")).toHaveCount(1); // un solo documento

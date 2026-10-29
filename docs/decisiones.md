@@ -214,3 +214,35 @@
 - **Fecha:** 2026-10-28 (F0)
 - **Decisión:** en F0 los sistemas siguen hablando con los contratos de la v1 (webhook del puente en `/api/puente/webhook`, CV en `/api/origen/media/{id}`, API del ATS en `/api/ats/v1/...`) y con secretos compartidos por variables de entorno que `npm run setup` genera una vez en el `.env` de la raíz y copia al `.env` de cada app. Cada app tiene su propio inicio de sesión de demostración con cookie propia (`vin_sesion`, `tal_sesion`, `pue_sesion`). F1–F3 reemplazan esto por las APIs de la especificación, API Keys y credenciales configuradas en `/conexiones`.
 - **Motivo:** la puerta de F0 exige que las pruebas y el recorrido de la v1 sigan pasando antes de cambiar los contratos.
+
+## D-26 · Encabezado de la API Key de Talentia: `auth_token` (Supuesto pendiente)
+
+- **Fecha:** 2026-10-28 (F1)
+- **Investigación:** el artículo público de BUK «Integración del módulo de Selección por API» (https://supportcenter.buk.co/hc/es-419/articles/49474572553755, actualizado el 28/10/2026, consultado el 28/10/2026) **verifica**: la API Key se crea en Administración con permisos de Selección «Lectura» y «Modificación»; recursos Postulantes (GET, POST, PATCH), Postulación (GET, POST, PATCH) y Procesos de Selección (GET, POST); documentación en `<empresa>.buk.cl/apidocs`. **No** dice el nombre del encabezado; una búsqueda web tampoco lo encontró en fuentes de BUK.
+- **Decisión:** Talentia recibe la llave en el encabezado `auth_token`, marcado **Supuesto pendiente** en el código, en `/apidocs` y en docs/contratos.md.
+- **Alternativa descartada:** `Authorization: Bearer` (estándar, pero la especificación pide `auth_token` si no se verifica).
+- **Pendiente (empresa):** confirmar el encabezado real en el `/apidocs` de su cuenta de BUK.
+
+## D-27 · Autenticación con Better Auth en cada app
+
+- **Fecha:** 2026-10-28 (F1; Vínculo y puente en F2 y F3)
+- **Decisión:** Better Auth 1.7.10 (librería mantenida, ESPECIFICACION §2.1) con su adaptador de Prisma, correo y contraseña (hash scrypt), sesiones en la base del sistema y cookie propia (`tal_sesion` en Talentia). Roles como campo adicional `rol` del usuario. Talentia no permite registro público (las cuentas son de la empresa); la siembra crea la administradora y el reclutador con contraseña común de demostración, visible en la pantalla de ingreso a propósito (§3.1). Versión fijada con más de dos semanas de publicada.
+- **Alternativa descartada:** Auth.js (v5 sigue en beta y desaconseja credenciales con contraseña) y mantener la sesión propia de la v1 (la especificación pide una librería mantenida).
+- **Motivo:** cumplir §2.1/§3.1 con algo auditado; cada app conserva su propia instancia, tablas y secreto (`BETTER_AUTH_SECRET`).
+
+## D-28 · Migración inicial consolidada mientras no haya despliegue
+
+- **Fecha:** 2026-10-28 (F1)
+- **Decisión:** mientras la v2 no se haya desplegado, cada cambio de modelo regenera la migración inicial de la app (`prisma migrate diff --from-empty`) y el esquema local se recrea (`DROP SCHEMA` en el clúster del proyecto, que solo tiene datos de demostración). Desde el primer despliegue (F7) los cambios irán en migraciones nuevas.
+- **Alternativa descartada:** acumular migraciones de transición (renombres Candidato → Postulante, etc.) que nadie va a aplicar en una base real.
+
+## D-29 · Diseño de la API v1 de Talentia (contrato del simulador)
+
+- **Fecha:** 2026-10-28 (F1)
+- **Decisión:** rutas `/api/v1/seleccion/{procesos,postulantes,postulantes/{id}/documentos,postulaciones}` y `/api/v1/api-key`; JSON en snake_case con envoltura `{ data }` (y `paginacion` en postulantes); errores `{ error: { codigo, mensaje, detalle? } }`. GET exige Lectura y POST/PATCH Modificación (403 `PERMISO_INSUFICIENTE`); sin llave, inválida o revocada → 401 `NO_AUTORIZADO`. Límite de 120 por minuto por llave en ventana fija de un minuto guardada en PostgreSQL (vale con varias instancias) → 429 con `Retry-After`. Idempotency-Key por llave (la misma clave con otra llave es independiente). La llave se guarda como SHA-256 con prefijo visible (`tal_xxxxxxxx`) y se muestra una vez, en el resultado de la acción (nunca en la URL). El registro de actividad guarda la ruta como plantilla (`/postulantes/{id}`), sin cuerpos. `POST /postulaciones` con la misma `referencia_externa` devuelve 200 con la existente; la misma persona en el proceso con otra referencia, 409 con `detalle.postulacion_id`. `POST /postulantes` con un correo existente, 409 con `detalle.postulante_id`. OpenAPI 3.1 generado desde los esquemas Zod (`z.toJSONSchema`), servido en `/api/openapi.json` y renderizado con Swagger UI local en `/apidocs` (sin CDN).
+- **Motivo:** recursos y permisos como lo verificado de BUK (D-26); forma propia y documentada para todo lo demás.
+
+## D-30 · El conector del puente sigue a Talentia en la misma fase
+
+- **Fecha:** 2026-10-28 (F1)
+- **Decisión:** al cambiar la API de Talentia se actualizó en la misma fase `apps/puente/src/modules/ats-cliente.ts` (busca postulante por correo y lo actualiza o crea; documento multipart; `auth_token`) y su doble de pruebas, para que el recorrido completo siga en verde. Las Idempotency-Key del puente pasan a derivarse de (`jobApplicationId`, paso) como pide §4.3. Transitorio hasta F3: la siembra de Talentia registra como API Key la llave que el puente tiene en su `.env` (`TALENTIA_LLAVE_PUENTE`).

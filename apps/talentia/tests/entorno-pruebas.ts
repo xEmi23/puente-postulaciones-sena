@@ -10,7 +10,8 @@ export function prepararEntornoPruebas() {
   Object.assign(process.env, {
     DATABASE_URL: urlPruebas,
     APP_BASE_URL: "http://talentia.test",
-    ATS_API_KEY: "clave-api-de-pruebas-0123456789",
+    BETTER_AUTH_SECRET: "secreto-de-sesion-de-pruebas-0123456789abcdef",
+    TALENTIA_LLAVE_PUENTE: "",
     CV_MAX_BYTES: "1048576",
   });
 }

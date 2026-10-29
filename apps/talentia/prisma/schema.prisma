@@ -1,5 +1,6 @@
 // Talentia: ATS simulado (tipo BUK). Esquema "talentia" (DB_SCHEMA).
-// Su API es contrato del simulador (docs/contratos.md); no son rutas oficiales de BUK.
+// Recursos y permisos modelados sobre lo verificado del módulo de Selección de BUK; rutas y campos de la API son
+// contrato del simulador (docs/contratos.md), no rutas oficiales de BUK.
 // `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
 
 generator client {
@@ -11,11 +12,75 @@ datasource db {
   provider = "postgresql"
 }
 
+// ───────────── Autenticación (Better Auth; nombres de modelo que espera la librería) ─────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  rol           String    @default("RECLUTADOR") // ADMIN | RECLUTADOR
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  demo          Boolean   @default(true)
+  sessions      Session[]
+  accounts      Account[]
+  apiKeys       ApiKey[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(3)
+  token     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+}
+
+// ───────────── Selección ─────────────
+
 model Proceso {
   id            Int           @id // 9001, 9002 …
-  nombre        String
+  titulo        String
   area          String
   ciudad        String
+  descripcion   String        @default("")
   estado        String        @default("INICIADO") // INICIADO | CERRADO (como en el ATS de la empresa)
   prioridad     String        @default("Media") // Alta | Media | Baja
   fechaInicio   DateTime      @default(now()) @db.Timestamptz(3)
@@ -37,7 +102,7 @@ model Etapa {
   @@unique([procesoId, orden])
 }
 
-model Candidato {
+model Postulante {
   id                String        @id @default(uuid()) @db.Uuid
   nombre            String
   apellido          String
@@ -46,6 +111,7 @@ model Candidato {
   ciudad            String?
   referenciaExterna String?
   creadoEn          DateTime      @default(now()) @db.Timestamptz(3)
+  actualizadoEn     DateTime      @updatedAt @db.Timestamptz(3)
   demo              Boolean       @default(true)
   documentos        Documento[]
   postulaciones     Postulacion[]
@@ -53,8 +119,8 @@ model Candidato {
 
 model Documento {
   id            String        @id @default(uuid()) @db.Uuid
-  candidatoId   String        @db.Uuid
-  candidato     Candidato     @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  postulanteId  String        @db.Uuid
+  postulante    Postulante    @relation(fields: [postulanteId], references: [id], onDelete: Cascade)
   tipo          String        @default("CV")
   nombreArchivo String
   mime          String
@@ -64,34 +130,97 @@ model Documento {
   creadoEn      DateTime      @default(now()) @db.Timestamptz(3)
   postulaciones Postulacion[]
 
-  @@index([candidatoId])
+  @@index([postulanteId])
 }
 
 model Postulacion {
-  id                String     @id @default(uuid()) @db.Uuid
+  id                String            @id @default(uuid()) @db.Uuid
   procesoId         Int
-  proceso           Proceso    @relation(fields: [procesoId], references: [id], onDelete: Cascade)
-  candidatoId       String     @db.Uuid
-  candidato         Candidato  @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
-  etapaId           String     @db.Uuid
-  etapa             Etapa      @relation(fields: [etapaId], references: [id])
-  documentoId       String?    @db.Uuid
-  documento         Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull)
-  calificacion      String     @default("SIN_CALIFICAR")
+  proceso           Proceso           @relation(fields: [procesoId], references: [id], onDelete: Cascade)
+  postulanteId      String            @db.Uuid
+  postulante        Postulante        @relation(fields: [postulanteId], references: [id], onDelete: Cascade)
+  etapaId           String            @db.Uuid
+  etapa             Etapa             @relation(fields: [etapaId], references: [id])
+  documentoId       String?           @db.Uuid
+  documento         Documento?        @relation(fields: [documentoId], references: [id], onDelete: SetNull)
+  calificacion      String            @default("SIN_CALIFICAR")
   fuente            String
-  referenciaExterna String     @unique // jobApplicationId de Vínculo
-  vista             Boolean    @default(false)
-  descartadaEn      DateTime?  @db.Timestamptz(3) // descartada dentro de su etapa (sección «Descartados»)
-  creadaEn          DateTime   @default(now()) @db.Timestamptz(3)
+  referenciaExterna String?           @unique // jobApplicationId de Vínculo; null si se creó a mano
+  vista             Boolean           @default(false)
+  descartadaEn      DateTime?         @db.Timestamptz(3) // descartada dentro de su etapa (sección «Descartados»)
+  creadaEn          DateTime          @default(now()) @db.Timestamptz(3)
+  actualizadaEn     DateTime          @updatedAt @db.Timestamptz(3)
+  historial         MovimientoEtapa[]
 
-  @@unique([procesoId, candidatoId])
+  @@unique([procesoId, postulanteId])
+  @@index([procesoId])
+}
+
+// Historial visible en la ficha del postulante.
+model MovimientoEtapa {
+  id            String      @id @default(uuid()) @db.Uuid
+  postulacionId String      @db.Uuid
+  postulacion   Postulacion @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
+  tipo          String // CREADA | MOVIDA | DESCARTADA | RESTAURADA
+  deEtapa       String?
+  aEtapa        String?
+  autor         String // nombre del usuario o «API · <prefijo>»
+  creadoEn      DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([postulacionId, creadoEn])
+}
+
+// ───────────── API ─────────────
+
+model ApiKey {
+  id                  String              @id @default(uuid()) @db.Uuid
+  nombre              String
+  prefijo             String              @unique // parte visible, p. ej. tal_7f3a9c2b
+  hash                String              @unique @db.Char(64) // SHA-256 de la llave completa; la llave no se guarda
+  permisoLectura      Boolean             @default(true)
+  permisoModificacion Boolean             @default(false)
+  creadaPorId         String?
+  creadaPor           User?               @relation(fields: [creadaPorId], references: [id], onDelete: SetNull)
+  creadaEn            DateTime            @default(now()) @db.Timestamptz(3)
+  ultimoUsoEn         DateTime?           @db.Timestamptz(3)
+  revocadaEn          DateTime?           @db.Timestamptz(3)
+  demo                Boolean             @default(true)
+  actividad           ActividadApi[]
+  claves              ClaveIdempotencia[]
+}
+
+model ActividadApi {
+  id         String   @id @default(uuid()) @db.Uuid
+  apiKeyId   String?  @db.Uuid
+  apiKey     ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  prefijo    String? // prefijo presentado (aunque la llave no exista)
+  metodo     String
+  ruta       String
+  estado     Int
+  duracionMs Int
+  creadaEn   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([creadaEn])
 }
 
 model ClaveIdempotencia {
-  clave         String   @id
+  apiKeyId      String   @db.Uuid
+  apiKey        ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  clave         String
   ruta          String
   hashSolicitud String   @db.Char(64)
   estadoHttp    Int
   respuesta     String
   creadaEn      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([apiKeyId, clave])
+}
+
+// Ventana fija de un minuto por llave (120 solicitudes por minuto).
+model LimiteTasa {
+  apiKeyId String   @db.Uuid
+  ventana  DateTime @db.Timestamptz(3)
+  conteo   Int      @default(0)
+
+  @@id([apiKeyId, ventana])
 }

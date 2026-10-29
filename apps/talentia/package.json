@@ -4,10 +4,9 @@
   "private": true,
   "description": "Talentia: ATS simulado (tipo BUK), con procesos de selección por etapas y API con API Key.",
   "scripts": {
-    "dev": "next dev -p 3002",
-    "build": "prisma generate && next build",
+    "dev": "node scripts/copiar-vendor.mjs && next dev -p 3002",
+    "build": "node scripts/copiar-vendor.mjs && prisma generate && next build",
     "start": "next start -p 3002",
-    
     "typecheck": "prisma generate && tsc --noEmit",
     "test": "vitest run",
     "db:generate": "prisma generate",
@@ -18,11 +17,13 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "better-auth": "1.7.10",
     "dotenv": "18.0.9",
     "next": "16.4.3",
     "pg": "8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "swagger-ui-dist": "5.32.4",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -30,6 +31,8 @@
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "ajv": "8.18.0",
+    "ajv-formats": "3.0.1",
     "prisma": "7.10.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

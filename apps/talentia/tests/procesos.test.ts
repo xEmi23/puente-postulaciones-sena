@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { crearProceso, crearPostulacion } from "@/modules/servicio";
+import { cambiarPostulacion, crearPostulacion, crearPostulante, crearProceso } from "@/modules/seleccion";
 import { etiquetaEstadoProceso, textoVigencia, vigenciaDias } from "@/modules/procesos";
 import { prisma, reiniciarBd } from "./utilidades";
 
@@ -17,30 +17,58 @@ describe("atributos del proceso (como en el ATS de referencia)", () => {
     expect(etiquetaEstadoProceso("INICIADO")).toBe("Iniciado");
   });
 
-  it("los procesos sembrados tienen prioridad, fecha de inicio y estado Iniciado", async () => {
+  it("los 6 procesos sembrados (9001–9006) tienen prioridad, fecha de inicio y estado Iniciado", async () => {
     const procesos = await prisma.proceso.findMany({ orderBy: { id: "asc" } });
-    expect(procesos.map((p) => [p.id, p.prioridad, p.estado, vigenciaDias(p.fechaInicio)])).toEqual([
-      [9001, "Alta", "INICIADO", 10],
-      [9002, "Media", "INICIADO", 3],
+    expect(procesos.map((p) => p.id)).toEqual([9001, 9002, 9003, 9004, 9005, 9006]);
+    expect(procesos.slice(0, 2).map((p) => [p.prioridad, p.estado, vigenciaDias(p.fechaInicio)])).toEqual([
+      ["Alta", "INICIADO", 10],
+      ["Media", "INICIADO", 3],
     ]);
+    expect(await prisma.postulante.count()).toBe(15);
   });
 
   it("«Nuevo proceso» guarda prioridad y fecha de inicio, y valida la prioridad", async () => {
-    const r = await crearProceso({ nombre: "Proceso de prueba", area: "Datos", ciudad: "Medellín", prioridad: "Baja", fechaInicio: "2026-10-20" });
-    expect(r.ok).toBe(true);
-    const p = await prisma.proceso.findUniqueOrThrow({ where: { id: 9003 } });
+    const r = await crearProceso({ titulo: "Proceso de prueba", area: "Datos", ciudad: "Medellín", prioridad: "Baja", fecha_inicio: "2026-10-20" });
+    expect(r.ok && r.datos.id).toBe(9007);
+    const p = await prisma.proceso.findUniqueOrThrow({ where: { id: 9007 } });
     expect(p.prioridad).toBe("Baja");
     expect(p.estado).toBe("INICIADO");
     expect(p.fechaInicio.toISOString().slice(0, 10)).toBe("2026-10-20");
-    const mal = await crearProceso({ nombre: "Proceso de prueba", area: "Datos", ciudad: "Medellín", prioridad: "Urgente" });
-    expect(mal.ok).toBe(false);
+    expect((await crearProceso({ titulo: "Proceso de prueba", area: "Datos", ciudad: "Medellín", prioridad: "Urgente" })).ok).toBe(false);
   });
 
   it("un proceso que no está Iniciado no recibe postulaciones (PROCESO_CERRADO)", async () => {
     await prisma.proceso.update({ where: { id: 9001 }, data: { estado: "CERRADO" } });
-    const cand = await prisma.candidato.create({ data: { nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" } });
-    const r = await crearPostulacion(JSON.stringify({ procesoId: 9001, candidatoId: cand.id, fuente: "Portal simulado (tipo LinkedIn)", referenciaExterna: "x" }));
-    expect(r.status).toBe(422);
-    expect((r.body as { codigo: string }).codigo).toBe("PROCESO_CERRADO");
+    const p = await crearPostulante({ nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" });
+    if (!p.ok) throw new Error("no se creó");
+    const r = await crearPostulacion({ proceso_id: 9001, postulante_id: p.datos.id, fuente: "Portal simulado (tipo LinkedIn)", referencia_externa: "x" }, "prueba");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect([r.status, r.codigo]).toEqual([422, "PROCESO_CERRADO"]);
+  });
+});
+
+describe("mover tarjetas y descartar (con historial)", () => {
+  it("mueve entre etapas del mismo proceso, rechaza etapas ajenas y registra cada movimiento", async () => {
+    const p = await crearPostulante({ nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" });
+    if (!p.ok) throw new Error("no se creó");
+    const post = await crearPostulacion({ proceso_id: 9002, postulante_id: p.datos.id, fuente: "Portal simulado (tipo LinkedIn)", referencia_externa: "ref-1" }, "API · tal_x");
+    if (!post.ok) throw new Error("no se creó");
+    expect(post.datos.etapa.nombre).toBe("Postulantes");
+
+    const r = await cambiarPostulacion(post.datos.id, { etapa: "Entrevista técnica" }, "Julián Herrera");
+    expect(r.ok && r.datos.etapa.nombre).toBe("Entrevista técnica");
+    const ajena = await prisma.etapa.findFirstOrThrow({ where: { procesoId: 9001, orden: 2 } });
+    const mala = await cambiarPostulacion(post.datos.id, { etapa_id: ajena.id }, "Julián Herrera");
+    expect(!mala.ok && mala.codigo).toBe("ETAPA_INVALIDA");
+    await cambiarPostulacion(post.datos.id, { descartada: true }, "Julián Herrera");
+    await cambiarPostulacion(post.datos.id, { descartada: false }, "Julián Herrera");
+
+    const h = await prisma.movimientoEtapa.findMany({ where: { postulacionId: post.datos.id }, orderBy: { creadoEn: "asc" } });
+    expect(h.map((m) => [m.tipo, m.deEtapa, m.aEtapa, m.autor])).toEqual([
+      ["CREADA", null, "Postulantes", "API · tal_x"],
+      ["MOVIDA", "Postulantes", "Entrevista técnica", "Julián Herrera"],
+      ["DESCARTADA", "Entrevista técnica", null, "Julián Herrera"],
+      ["RESTAURADA", "Entrevista técnica", null, "Julián Herrera"],
+    ]);
   });
 });

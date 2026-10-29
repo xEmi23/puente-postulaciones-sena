@@ -12,8 +12,23 @@ export const sha256Archivo = (ruta: string) => createHash("sha256").update(readF
 /** Correo único por ejecución para no chocar con datos de pruebas anteriores. */
 export const correoUnico = (prefijo: string) => `${prefijo}.${Date.now()}.${Math.floor(Math.random() * 1e4)}@demo.test`;
 
+/** Cuentas de demostración de Talentia (se muestran en su pantalla de ingreso). */
+export const TALENTIA = { admin: "admin@andina.demo.test", reclutador: "reclutador@andina.demo.test", clave: "Demo2026!" };
+
+/** Inicia sesión en Talentia con una cuenta de demostración (Better Auth, cookie tal_sesion). */
+export async function iniciarSesionTalentia(page: Page, cuenta: "admin" | "reclutador" = "admin") {
+  // Con sesión vigente no hace falta volver a ingresar (la pantalla de ingreso redirigiría).
+  if ((await page.context().cookies(TAL)).some((c) => c.name === "tal_sesion")) return;
+  await page.goto(`${TAL}/ingresar`);
+  await page.getByLabel("Correo").fill(TALENTIA[cuenta]);
+  await page.getByLabel("Contraseña").fill(TALENTIA.clave);
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await expect(page).not.toHaveURL(/ingresar/);
+}
+
 /** Inicia sesión de demostración en un sistema (cada uno tiene su propio inicio de sesión y su cookie). */
 export async function iniciarSesionEn(page: Page, base: string) {
+  if (base === TAL) return iniciarSesionTalentia(page);
   await page.goto(`${base}/ingresar`);
   await page.getByLabel("Usuario").fill(DEMO_USUARIO);
   await page.getByLabel("Contraseña").fill(DEMO_CLAVE);
