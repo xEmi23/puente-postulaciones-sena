@@ -7,31 +7,48 @@ import { createHash, randomUUID } from "node:crypto";
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-/** Vínculo: solo la URL privada del CV (mediaUrl con Bearer y expiración). */
+/** Vínculo: token por client credentials y URL privada del CV (mediaUrl con Bearer y expiración). */
 export class VinculoDoble {
   archivos = new Map<string, { bytes: Uint8Array; nombre: string; expiraEn: number }>();
   descargas = 0;
+  tokensEmitidos = 0;
+  private tokens = new Set<string>();
 
   constructor(
     private base: string,
-    private token: () => string,
+    private credenciales: () => { clientId: string; clientSecret: string },
   ) {}
 
   reiniciar() {
     this.archivos.clear();
     this.descargas = 0;
+    this.tokensEmitidos = 0;
+    this.tokens.clear();
   }
 
   agregarCv(bytes: Uint8Array, nombre = "cv.pdf", expiraEn = Date.now() + 30 * 86_400_000) {
     const id = randomUUID();
     this.archivos.set(id, { bytes, nombre, expiraEn });
-    return { mediaUrl: `${this.base}/api/origen/media/${id}`, mediaUrn: `urn:li:media:${id}` };
+    return { mediaUrl: `${this.base}/api/v1/media/${id}`, mediaUrn: `urn:li:media:${id}` };
   }
 
   async atender(req: Request): Promise<Response> {
-    const m = new URL(req.url).pathname.match(/^\/api\/origen\/media\/([^/]+)$/);
+    const ruta = new URL(req.url).pathname;
+    if (ruta === "/oauth/v2/accessToken" && req.method === "POST") {
+      const f = new URLSearchParams(await req.text());
+      const c = this.credenciales();
+      if (f.get("grant_type") !== "client_credentials" || f.get("client_id") !== c.clientId || f.get("client_secret") !== c.clientSecret) {
+        return json(401, { error: "invalid_client", error_description: "Credenciales incorrectas." });
+      }
+      const token = `token-${randomUUID()}`;
+      this.tokens.add(token);
+      this.tokensEmitidos++;
+      return json(200, { access_token: token, expires_in: 3600, token_type: "Bearer" });
+    }
+    const m = ruta.match(/^\/api\/v1\/media\/([^/]+)$/);
     if (!m) return json(404, { mensaje: "No existe." });
-    if (req.headers.get("authorization") !== `Bearer ${this.token()}`) return json(401, { mensaje: "Token inválido." });
+    const presentado = req.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+    if (!this.tokens.has(presentado)) return json(401, { status: 401, code: "INVALID_ACCESS_TOKEN", message: "Token inválido." });
     const a = this.archivos.get(m[1]);
     if (!a) return json(404, { mensaje: "No existe." });
     if (a.expiraEn < Date.now()) return json(410, { mensaje: "Expiró." });

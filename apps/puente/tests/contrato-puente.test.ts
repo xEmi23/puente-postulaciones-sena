@@ -25,7 +25,7 @@ function ejemploOficial() {
   delete p._fuente;
   // Únicos ajustes: la vacante existe en el simulador y el CV vive en el origen autorizado.
   p.externalJobId = "RT-2026-101";
-  p.questionResponses.resumeQuestionResponses.resumeQuestionAnswer.mediaUrl = `http://vinculo.test/api/origen/media/${randomUUID()}`;
+  p.questionResponses.resumeQuestionResponses.resumeQuestionAnswer.mediaUrl = `http://vinculo.test/api/v1/media/${randomUUID()}`;
   return p;
 }
 

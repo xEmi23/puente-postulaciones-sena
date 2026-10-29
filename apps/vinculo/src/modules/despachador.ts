@@ -1,30 +1,34 @@
 import { prisma } from "@/lib/db";
-import { config } from "@/lib/config";
 import { firmarCuerpo } from "@/lib/firma";
-import { CODIGOS_SIN_REINTENTO, TIPO_ESTADO_VACANTE, TIPO_EVENTO } from "@/modules/contrato-apply-connect";
+import { motivoUrlNoPermitida } from "@/lib/red";
+import { fetchSaliente } from "@/lib/salida";
+import { CODIGOS_SIN_REINTENTO } from "@/modules/contrato-apply-connect";
+import { secretoDe } from "./aplicaciones";
 
-// Despachador del origen: simula a LinkedIn entregando cada postulación al webhook del puente.
-// Reintenta solo ante respuestas distintas de 2xx (o fallos de red), con backoff exponencial y jitter,
-// hasta 6 intentos en total, y registra cada intento. Los códigos que LinkedIn no reintenta se respetan.
+// Despachador de Vínculo: entrega cada postulación al webhook de la aplicación (como LinkedIn con Apply Connect),
+// firmada con el Client Secret de esa aplicación (X-LI-Signature, D-04). Outbox con FOR UPDATE SKIP LOCKED.
+// Reintentos: máximo 6 intentos en total (F1) con espera exponencial desde 30 s → ventana de unos 15 minutos,
+// suficiente para que un servicio gratuito de Render se despierte (ESPECIFICACION §2.3 y §6).
 
 export const MAX_INTENTOS_ENTREGA = 6;
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = () => Number(process.env.VINCULO_TIMEOUT_ENTREGA_MS ?? 75_000);
+export const BASE_BACKOFF_MS = () => Number(process.env.VINCULO_BACKOFF_BASE_MS ?? 30_000);
 
 export interface OpcionesDespacho {
   fetchImpl?: typeof fetch;
   limite?: number;
-  /** Base del backoff en ms (1 s por defecto; las pruebas lo reducen). */
   baseBackoffMs?: number;
 }
 
+/** Espera antes del intento n+1: base·2^(n−1) con 20 % de variación aleatoria. */
 export function esperaBackoff(intento: number, baseMs: number): number {
   const exponencial = baseMs * 2 ** (intento - 1);
-  return Math.round(exponencial + Math.random() * exponencial * 0.3);
+  return Math.round(exponencial * (0.9 + Math.random() * 0.2));
 }
 
 async function reclamar(limite: number): Promise<string[]> {
   const filas = await prisma.$queryRaw<{ id: string }[]>`
-    UPDATE "Outbox" SET "bloqueadoHasta" = now() + interval '30 seconds'
+    UPDATE "Outbox" SET "bloqueadoHasta" = now() + interval '120 seconds'
     WHERE id IN (
       SELECT id FROM "Outbox"
       WHERE estado = 'PENDIENTE' AND "proximoIntentoEn" <= now()
@@ -39,8 +43,7 @@ async function reclamar(limite: number): Promise<string[]> {
 
 function leerCodigoError(cuerpo: string): string | undefined {
   try {
-    const json = JSON.parse(cuerpo) as { errors?: { errorCode?: string }[] };
-    return json.errors?.[0]?.errorCode;
+    return (JSON.parse(cuerpo) as { errors?: { errorCode?: string }[] }).errors?.[0]?.errorCode;
   } catch {
     return undefined;
   }
@@ -55,33 +58,20 @@ export interface ResultadoEnvio {
   codigoError?: string;
 }
 
-/** Destino según el tipo de evento: postulaciones al webhook; cambios de estado de vacante a su endpoint. */
-export function urlDestino(tipo: string): string {
-  const webhook = config().PUENTE_WEBHOOK_URL;
-  return tipo === TIPO_ESTADO_VACANTE ? new URL("/api/puente/vacantes/estado", webhook).toString() : webhook;
-}
-
-/** POST firmado al webhook del puente. `firma` permite a la consola de pruebas enviar una firma alterada. */
-export async function enviarAlWebhook(
-  cuerpo: string,
-  fetchImpl: typeof fetch = fetch,
-  firma?: string,
-  url: string = urlDestino(TIPO_EVENTO),
-): Promise<ResultadoEnvio> {
-  const cfg = config();
+/** POST firmado al webhook. `firma` permite a la consola de pruebas enviar una firma alterada a propósito. */
+export async function enviarAlWebhook(url: string, cuerpo: string, secreto: string, opciones: { fetchImpl?: typeof fetch; firma?: string } = {}): Promise<ResultadoEnvio> {
   const inicio = Date.now();
+  const motivo = await motivoUrlNoPermitida(url);
+  if (motivo) return { respuesta: "", error: `URL no permitida: ${motivo}`, duracionMs: 0, exito: false };
   let httpStatus: number | undefined;
   let respuesta = "";
   let error: string | undefined;
   try {
-    const r = await fetchImpl(url, {
+    const r = await (opciones.fetchImpl ?? fetchSaliente())(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-LI-Signature": firma ?? firmarCuerpo(cuerpo, cfg.SIM_CLIENT_SECRET),
-      },
+      headers: { "Content-Type": "application/json", "X-LI-Signature": opciones.firma ?? firmarCuerpo(cuerpo, secreto) },
       body: cuerpo,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(TIMEOUT_MS()),
       redirect: "manual",
     });
     httpStatus = r.status;
@@ -93,69 +83,49 @@ export async function enviarAlWebhook(
   return { httpStatus, respuesta, error, duracionMs: Date.now() - inicio, exito, codigoError: exito ? undefined : leerCodigoError(respuesta) };
 }
 
-/**
- * Reenvía manualmente el mismo evento (mismo cuerpo, misma firma), como haría LinkedIn al reintentar.
- * Registra el intento sin cambiar el estado de una entrega ya enviada.
- */
-export async function reenviarEvento(outboxId: string, fetchImpl?: typeof fetch): Promise<ResultadoEnvio> {
-  const fila = await prisma.outbox.findUniqueOrThrow({ where: { id: outboxId } });
-  const r = await enviarAlWebhook(fila.payload, fetchImpl, undefined, urlDestino(fila.tipo));
-  await prisma.$transaction([
-    prisma.intentoEntrega.create({
-      data: {
-        outboxId,
-        numero: fila.intentos + 1,
-        httpStatus: r.httpStatus ?? null,
-        codigoError: r.codigoError ?? null,
-        respuesta: r.respuesta,
-        duracionMs: r.duracionMs,
-        error: r.error ? `Reenvío manual: ${r.error}` : "Reenvío manual",
-      },
-    }),
-    prisma.outbox.update({ where: { id: outboxId }, data: { intentos: { increment: 1 } } }),
-  ]);
-  return r;
-}
-
 export async function entregarUno(outboxId: string, opciones: OpcionesDespacho = {}): Promise<void> {
-  const fila = await prisma.outbox.findUniqueOrThrow({ where: { id: outboxId } });
+  const fila = await prisma.outbox.findUniqueOrThrow({ where: { id: outboxId }, include: { aplicacion: true } });
   if (fila.estado !== "PENDIENTE") return;
-
   const numero = fila.intentos + 1;
-  const { httpStatus, respuesta, error, duracionMs, exito, codigoError } = await enviarAlWebhook(
-    fila.payload,
-    opciones.fetchImpl,
-    undefined,
-    urlDestino(fila.tipo),
-  );
-  const sinReintento = codigoError !== undefined && CODIGOS_SIN_REINTENTO.has(codigoError);
+  const r = fila.aplicacion.revocadaEn
+    ? { respuesta: "", error: "La aplicación fue revocada.", duracionMs: 0, exito: false, httpStatus: undefined, codigoError: undefined }
+    : await enviarAlWebhook(fila.url, fila.payload, secretoDe(fila.aplicacion), { fetchImpl: opciones.fetchImpl });
+  const sinReintento = (r.codigoError !== undefined && CODIGOS_SIN_REINTENTO.has(r.codigoError)) || !!fila.aplicacion.revocadaEn;
   const agotado = numero >= MAX_INTENTOS_ENTREGA;
 
   await prisma.$transaction([
     prisma.intentoEntrega.create({
-      data: {
-        outboxId,
-        numero,
-        httpStatus: httpStatus ?? null,
-        codigoError: codigoError ?? null,
-        respuesta,
-        duracionMs,
-        error: error ?? null,
-      },
+      data: { outboxId, numero, httpStatus: r.httpStatus ?? null, codigoError: r.codigoError ?? null, respuesta: r.respuesta, duracionMs: r.duracionMs, error: r.error ?? null },
     }),
     prisma.outbox.update({
       where: { id: outboxId },
-      data: exito
+      data: r.exito
         ? { estado: "ENVIADO", intentos: numero, enviadoEn: new Date(), bloqueadoHasta: null, ultimoError: null }
         : {
             estado: sinReintento || agotado ? "FALLIDO" : "PENDIENTE",
             intentos: numero,
             bloqueadoHasta: null,
-            ultimoError: codigoError ?? error ?? `HTTP ${httpStatus}`,
-            proximoIntentoEn: new Date(Date.now() + esperaBackoff(numero, opciones.baseBackoffMs ?? 1000)),
+            ultimoError: r.codigoError ?? r.error ?? `HTTP ${r.httpStatus}`,
+            proximoIntentoEn: new Date(Date.now() + esperaBackoff(numero, opciones.baseBackoffMs ?? BASE_BACKOFF_MS())),
           },
     }),
   ]);
+}
+
+/**
+ * Reenvía el mismo evento (mismo cuerpo y misma firma) desde el portal de desarrolladores, como un «redeliver».
+ * Queda registrado como intento manual sin cambiar el estado de una entrega ya enviada.
+ */
+export async function reenviarEvento(outboxId: string, fetchImpl?: typeof fetch): Promise<ResultadoEnvio> {
+  const fila = await prisma.outbox.findUniqueOrThrow({ where: { id: outboxId }, include: { aplicacion: true } });
+  const r = await enviarAlWebhook(fila.url, fila.payload, secretoDe(fila.aplicacion), { fetchImpl });
+  await prisma.$transaction([
+    prisma.intentoEntrega.create({
+      data: { outboxId, numero: fila.intentos + 1, httpStatus: r.httpStatus ?? null, codigoError: r.codigoError ?? null, respuesta: r.respuesta, duracionMs: r.duracionMs, error: r.error ?? null, manual: true },
+    }),
+    prisma.outbox.update({ where: { id: outboxId }, data: { intentos: { increment: 1 }, ...(r.exito && fila.estado !== "ENVIADO" ? { estado: "ENVIADO", enviadoEn: new Date() } : {}) } }),
+  ]);
+  return r;
 }
 
 /** Un ciclo del despachador. Devuelve cuántas entregas intentó. */

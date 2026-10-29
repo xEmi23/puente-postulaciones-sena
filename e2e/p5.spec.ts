@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PUE, VIN } from "./procesos";
-import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
+import { correoUnico, iniciarSesionDemo, iniciarSesionVinculo, postular, sufijoUnico } from "./utilidades";
 
 async function fallo(page: Page, ruta: string, modo: string, n: string) {
   await page.goto(`${PUE}/pruebas`);
@@ -20,48 +20,43 @@ async function abrirOperacionDeConfirmacion(page: Page) {
 }
 
 test.describe("P5 · vacantes y casos de fallo", () => {
-  test("editar y cerrar una vacante: desaparece del portal, el puente la marca cerrada y al reabrir vuelve", async ({ page }) => {
-    await iniciarSesionDemo(page);
-    // Crea una vacante propia y la vincula para no afectar a las demás pruebas.
-    await page.goto(`${VIN}/admin/vacantes/nueva`);
+  test("editar, cerrar y reabrir una vacante en Vínculo: deja de recibir solicitudes y vuelve a aparecer", async ({ page }) => {
+    await iniciarSesionVinculo(page, "reclutadora");
+    await page.goto(`${VIN}/reclutador/vacantes/nueva`);
     const titulo = `Analista de Datos ${sufijoUnico()}`;
     await page.getByLabel("Título del cargo").fill(titulo);
-    await page.getByLabel("Área").fill("Datos");
-    await page.getByLabel("Ciudad").fill("Medellín");
     await page.getByLabel("Descripción").fill("Analizarás datos de operación y construirás tableros para el equipo. Vacante ficticia de la demostración.");
+    await page.getByLabel("Ciudad").fill("Medellín");
     await page.getByRole("button", { name: "Publicar vacante" }).click();
-    const codigo = (await page.locator(".alerta-exito").textContent())!.match(/RT-\d{4}-\d{3}/)![0];
-    await page.goto(`${PUE}/correspondencias`);
-    await page.getByLabel("Código de la vacante en el origen").fill(codigo);
-    await page.getByLabel("Proceso del ATS").selectOption("9002");
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText(codigo);
+    await expect(page.locator(".alerta-exito")).toContainText(/Vacante VIN-\d{4}-\d{4} publicada/);
 
     // Editar.
-    await page.goto(`${VIN}/admin/vacantes/${codigo}`);
+    await page.getByTestId("fila-vacante").getByRole("link", { name: titulo }).click();
     await page.getByLabel("Título del cargo").fill(`${titulo} (editada)`);
     await page.getByRole("button", { name: "Guardar cambios" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${codigo} actualizada.`);
-    await page.goto(`${VIN}/vacantes/${codigo}`);
+    await expect(page.locator(".alerta-exito")).toContainText("Cambios guardados.");
+    const urlReclutador = page.url().split("?")[0];
+    await page.getByRole("link", { name: "Ver como candidato" }).click();
+    await page.waitForURL(/\/empleos\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${titulo} (editada)`);
+    const urlVacante = page.url();
 
-    // Cerrar.
-    await page.goto(`${VIN}/admin`);
-    await page.locator(`[data-testid="fila-vacante"][data-codigo="${codigo}"]`).getByRole("button", { name: "Cerrar" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${codigo} cerrada.`);
-    await page.goto(`${VIN}/`);
+    // Cerrar: no aparece en el buscador y la vacante ya no recibe solicitudes.
+    await page.goto(urlReclutador);
+    await page.getByRole("button", { name: "Cerrar vacante" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("Vacante cerrada");
+    await page.goto(`${VIN}/empleos?q=${encodeURIComponent(titulo)}`);
     await expect(page.getByRole("link", { name: new RegExp(titulo) })).toHaveCount(0);
-    await page.goto(`${VIN}/vacantes/${codigo}`);
+    await page.goto(urlVacante);
     await expect(page.getByText("Esta vacante ya no recibe postulaciones.")).toBeVisible();
-    await page.goto(`${PUE}/correspondencias`);
-    const fila = page.getByTestId("fila-correspondencia").filter({ hasText: codigo });
-    await expect(fila).toContainText("Cerrada en el origen", { timeout: 20_000 }); // el evento viaja por la outbox
+    await expect(page.getByRole("link", { name: "Solicitud sencilla" })).toHaveCount(0);
 
     // Reabrir.
-    await page.goto(`${VIN}/admin`);
-    await page.locator(`[data-testid="fila-vacante"][data-codigo="${codigo}"]`).getByRole("button", { name: "Publicar" }).click();
-    await page.goto(`${PUE}/correspondencias`);
-    await expect(page.getByTestId("fila-correspondencia").filter({ hasText: codigo })).toContainText("Activa", { timeout: 20_000 });
+    await page.goto(urlReclutador);
+    await page.getByRole("button", { name: "Publicar vacante" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("Vacante publicada.");
+    await page.goto(`${VIN}/empleos?q=${encodeURIComponent(titulo)}`);
+    await expect(page.getByRole("link", { name: new RegExp(titulo) })).toHaveCount(1);
   });
 
   test("error de autenticación con el ATS: no reintenta, explica qué hacer y «Reintentar» lo completa", async ({ page }) => {

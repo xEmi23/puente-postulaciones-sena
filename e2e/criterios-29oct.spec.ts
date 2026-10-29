@@ -1,36 +1,40 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { PUE, TAL, VIN } from "./procesos";
-import { CV, correoUnico, iniciarSesionDemo, postular, sha256Archivo, sufijoUnico } from "./utilidades";
+import { CV, correoUnico, iniciarSesionDemo, iniciarSesionVinculo, postular, referencia, sha256Archivo, sufijoUnico } from "./utilidades";
 import { iniciarApp, iniciarWorker, matarApp, matarWorker } from "./procesos";
 
-// Criterios del control del 29/10, en el orden de la demostración. Cada criterio es un paso verificable.
+// Criterios del control del 29/10 (v1), en el orden de la demostración, sobre los tres sistemas de la v2.
 test.describe.configure({ mode: "serial" });
 
 let codigoVacante = "";
+let tituloVacante = "";
 let procesoId = "";
 let jobApplicationId = "";
 const apellido = `Criterios ${sufijoUnico()}`;
 
-async function referencia(page: Page) {
-  const ref = page.getByTestId("job-application-id");
-  await expect(ref).toBeVisible();
-  return (await ref.textContent())!.trim();
+/** Página de la aplicación del puente en el portal de desarrolladores de Vínculo (la reclutadora la registró en la siembra). */
+async function abrirAplicacionPuente(page: import("@playwright/test").Page) {
+  await iniciarSesionVinculo(page, "reclutadora");
+  await page.goto(`${VIN}/developers`);
+  await page.getByTestId("mi-aplicacion").getByRole("link", { name: /Puente de postulaciones/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Puente de postulaciones");
 }
 
-test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ page }) => {
-  await iniciarSesionDemo(page);
-
-  await page.goto(`${VIN}/admin/vacantes/nueva`);
-  await page.getByLabel("Título del cargo").fill(`Desarrollador/a Frontend ${sufijoUnico()}`);
-  await page.getByLabel("Área").fill("Ingeniería");
+test("C1 · preparar una vacante en Vínculo y un proceso en Talentia, y vincularlos", async ({ page }) => {
+  await iniciarSesionVinculo(page, "reclutadora");
+  tituloVacante = `Desarrollador/a Frontend ${sufijoUnico()}`;
+  await page.goto(`${VIN}/reclutador/vacantes/nueva`);
+  await page.getByLabel("Título del cargo").fill(tituloVacante);
+  await page.getByLabel("Descripción").fill("Construirás interfaces accesibles con React y Next.js junto a un equipo ágil. Vacante ficticia de la demostración.");
   await page.getByLabel("Ciudad").fill("Medellín");
-  await page.getByLabel("Modalidad").selectOption("Remoto");
-  await page.getByLabel("Descripción").fill("Construirás interfaces accesibles con React y Next.js junto a un equipo ágil. Vacante ficticia de la demo.");
+  await page.getByLabel("Modalidad").selectOption("REMOTO");
+  await page.getByLabel("Entregar las solicitudes a un ATS conectado").selectOption({ label: "Puente de postulaciones (desarrollo local)" });
   await page.getByRole("button", { name: "Publicar vacante" }).click();
   const aviso = page.locator(".alerta-exito");
-  await expect(aviso).toContainText(/Vacante RT-\d{4}-\d{3} publicada/);
-  codigoVacante = (await aviso.textContent())!.match(/RT-\d{4}-\d{3}/)![0];
+  await expect(aviso).toContainText(/Vacante VIN-\d{4}-\d{4} publicada\.$/); // sin aviso: el webhook del puente pasó el desafío
+  codigoVacante = (await aviso.textContent())!.match(/VIN-\d{4}-\d{4}/)![0];
 
+  await iniciarSesionDemo(page);
   await page.goto(`${TAL}/seleccion/procesos/nuevo`);
   await page.getByLabel("Título del proceso").fill("Desarrollador/a Frontend");
   await page.getByLabel("Área").fill("Ingeniería");
@@ -47,12 +51,11 @@ test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ pa
   await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${codigoVacante} vinculada al proceso ${procesoId}`);
 });
 
-test("C2 · postular una persona ficticia con un PDF", async ({ page }) => {
-  await page.goto(`${VIN}/`);
-  await page.getByRole("link", { name: /Desarrollador\/a Frontend/ }).first().click();
-  await expect(page).toHaveURL(new RegExp(codigoVacante));
-  await postular(page, { codigo: codigoVacante, apellido, correo: correoUnico("criterios"), telefono: "3000000009" });
-  await expect(page.getByRole("heading", { name: "¡Tu postulación fue enviada!" })).toBeVisible();
+test("C2 · una persona ficticia se postula con «Solicitud sencilla» y un PDF", async ({ page }) => {
+  await page.goto(`${VIN}/empleos`);
+  await expect(page.getByRole("link", { name: tituloVacante })).toBeVisible();
+  await postular(page, { codigo: tituloVacante, apellido, correo: correoUnico("criterios"), telefono: "3000000009" });
+  await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
   jobApplicationId = await referencia(page);
 });
 
@@ -90,11 +93,13 @@ test("C5 · descargar el CV y comprobar que el hash coincide con el original", a
 });
 
 test("C6 · reenviar el evento sin duplicar", async ({ page }) => {
-  await iniciarSesionDemo(page);
-  await page.goto(`${VIN}/admin`);
-  await page.locator(`[data-testid="fila-entrega"][data-job-application-id="${jobApplicationId}"]`).getByRole("button", { name: "Reenviar evento" }).click();
-  await expect(page.locator(".alerta-exito")).toContainText("HTTP 200 · DUPLICADO");
+  await abrirAplicacionPuente(page);
+  const fila = page.locator(`[data-testid="fila-entrega"][data-job-application-id="${jobApplicationId}"]`);
+  await fila.getByRole("button", { name: "Reenviar evento" }).click();
+  await expect(fila.getByTestId("resultado-reenvio")).toContainText("HTTP 200");
+  await expect(fila.getByTestId("resultado-reenvio")).toContainText("DUPLICADO");
 
+  await iniciarSesionDemo(page);
   await page.goto(`${TAL}/seleccion/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido })).toHaveCount(1);
   await page.goto(`${PUE}/`);
@@ -103,18 +108,12 @@ test("C6 · reenviar el evento sin duplicar", async ({ page }) => {
 });
 
 test("C7 · rechazo controlado de entradas inválidas", async ({ page }) => {
-  // Formulario del portal.
-  await page.goto(`${VIN}/vacantes/${codigoVacante}`);
-  await page.getByLabel("Nombre").fill("Ana");
-  await page.getByLabel("Apellido").fill("Prueba");
-  await page.getByLabel("Correo electrónico").fill("ana@demo.test");
-  await page.getByLabel("Ciudad").fill("Medellín");
-  await page.getByLabel("Hoja de vida (PDF)").setInputFiles("fixtures/cv/no-es-pdf.pdf");
-  await page.getByRole("button", { name: "Enviar postulación" }).click();
+  // Formulario de Vínculo: un archivo que no es PDF.
+  await postular(page, { codigo: tituloVacante, apellido: `Invalido ${sufijoUnico()}`, correo: correoUnico("invalido"), cv: "fixtures/cv/no-es-pdf.pdf" });
   await expect(page.getByText(/no es un PDF válido/)).toBeVisible();
 
-  // Webhook del puente (consola de pruebas, equivalente a Postman).
-  await iniciarSesionDemo(page);
+  // Webhook del puente con la consola de pruebas del portal de desarrolladores (equivale a Postman).
+  await abrirAplicacionPuente(page);
   const casos: [string, string, string][] = [
     ["firma_invalida", "HTTP 401", "SIGNATURE_MISMATCH"],
     ["falta_correo", "HTTP 400", "MISSING_REQUIRED_RESPONSE"],
@@ -124,12 +123,12 @@ test("C7 · rechazo controlado de entradas inválidas", async ({ page }) => {
     ["json_ilegible", "HTTP 400", "INPUT_VALIDATION_FAILED"],
   ];
   for (const [caso, status, codigo] of casos) {
-    await page.goto(`${VIN}/admin/consola`);
     await page.getByLabel("Caso").selectOption(caso);
     await page.getByRole("button", { name: "Enviar al webhook" }).click();
     await expect(page.getByTestId("consola-status")).toHaveText(status);
     await expect(page.getByTestId("consola-cuerpo")).toContainText(codigo);
   }
+  await iniciarSesionDemo(page);
   await page.goto(`${PUE}/rechazos`);
   await expect(page.getByTestId("fila-rechazo").first()).toBeVisible();
 });
@@ -141,7 +140,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   // a) Con el worker detenido, la postulación queda guardada en la outbox (pendiente).
   await matarWorker();
   const apellido8 = `Reinicio ${sufijoUnico()}`;
-  await postular(page, { codigo: codigoVacante, apellido: apellido8, correo: correoUnico("reinicio") });
+  await postular(page, { codigo: tituloVacante, apellido: apellido8, correo: correoUnico("reinicio") });
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Enviando a la empresa…");
   const ref = await referencia(page);
   const urlConfirmacion = page.url();
@@ -169,7 +168,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.getByText("Fallo configurado")).toBeVisible();
   const apellido9 = `Mitad ${sufijoUnico()}`;
-  await postular(page, { codigo: codigoVacante, apellido: apellido9, correo: correoUnico("mitad") });
+  await postular(page, { codigo: tituloVacante, apellido: apellido9, correo: correoUnico("mitad") });
   const ref9 = await referencia(page);
   await iniciarSesionDemo(page);
   await page.goto(`${PUE}/`);

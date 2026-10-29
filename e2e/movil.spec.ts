@@ -12,7 +12,7 @@ test("@movil postulación, tablero del ATS y panel usables sin desbordes horizon
   await sinDesborde();
   const apellido = `Movil ${sufijoUnico()}`;
   await postular(page, { apellido, correo: correoUnico("movil") });
-  await expect(page.getByRole("heading", { name: "¡Tu postulación fue enviada!" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
   await sinDesborde();
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
 

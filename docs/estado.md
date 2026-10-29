@@ -286,3 +286,39 @@ Problemas encontrados y corregidos: las etiquetas ocultas de los selectores del 
 
 - **PENDIENTE (empresa):** confirmar el nombre del encabezado de la API Key de BUK (D-26).
 - Transitorio (D-25/D-30): la llave del puente llega por `.env` hasta F3.
+
+## F2 · Vínculo completo (2026-10-28)
+
+### Qué se hizo
+
+- **Autenticación por rol** con Better Auth (D-27): registro público de candidatos (crea su perfil `/in/[slug]`), reclutadores de una empresa, cookie `vin_sesion`; cuentas de demostración visibles en `/ingresar` (D-39).
+- **Pantallas:** portada con buscador y vacantes recientes; `/empleos` (texto, ciudad, modalidad, nivel, empresa, paginado); detalle con «Solicitud sencilla» o «Postularse en el sitio de la empresa»; Solicitud sencilla en dos pasos (contacto y CV del perfil o nuevo, PDF ≤ 5 MB); confirmación; `/mis-postulaciones` con estados; `/in/[slug]`; `/mi-perfil` (datos, CV, experiencia, educación); `/empresas/[slug]`; panel del reclutador (vacantes, postulantes, **descarga manual del CV**, crear/editar/publicar/cerrar); `/reclutador/integraciones` (Conectar ATS por Client ID, estado del webhook, revocar, últimos envíos sin datos personales completos); `/developers` (aplicaciones, Client Secret una vez, regenerar, revocar, webhook con desafío, entregas con «Reenviar», consola de pruebas); `/developers/docs` (Swagger UI con ajustes de contraste).
+- **API** (D-32, D-33): token, jobPostings, close, autorizaciones, media, lifecycle, salud y OpenAPI.
+- **Entrega firmada** por outbox con el secreto de cada aplicación, 6 intentos en unos 15 minutos (D-36). SSRF (D-37). Secreto cifrado (D-31).
+- **Datos de demo** (D-39): 6 empresas, 18 vacantes (6 de Andina con Solicitud sencilla sin ATS y 12 solicitudes), 40 candidatos con perfil y CV PDF.
+- **Puente:** conector de Vínculo con token por client credentials cacheado y nueva ruta del CV.
+- **Transitorio (D-25):** si el `.env` trae las credenciales del puente, la siembra registra su aplicación, Andina la autoriza y publica RT-2026-101/102/103 hacia su webhook, para que el recorrido completo siga funcionando hasta F3.
+
+### Comandos ejecutados y resultado real (2026-10-28)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | exit 0 |
+| `npm run typecheck` | exit 0 |
+| `npm test` | exit 0: Vínculo **26/26** (integradores, entrega, seguridad, contrato OpenAPI), Talentia **30/30**, Puente **57/57** |
+| `npm run build` | exit 0 (3 apps) |
+| `npx playwright test` (escritorio + móvil) | **33/33** tras corregir 3 fallos (ver abajo) |
+
+Problemas encontrados y corregidos: el `aria-label` del logo no incluía su texto visible; Swagger UI tenía contraste insuficiente, enlaces dentro de botones y un selector sin nombre (hoja `swagger-accesible.css`, sin *deep linking*); en las E2E, una URL leída antes de terminar la navegación y un ingreso sin esperar.
+
+### Criterios
+
+- **4 · Cumple.** `apps/vinculo/tests/integradores.test.ts` (secreto cifrado y visible una vez, token con client credentials, 401 con secreto malo, regenerar y revocar invalidan) y `e2e/vinculo.spec.ts` (desde `/developers` y con HTTP real).
+- **3 · Cumple también para Vínculo.** `apps/vinculo/tests/contrato-openapi.test.ts` y `e2e/vinculo.spec.ts` (`/developers/docs`).
+- **Pruebas de contrato contra docs/contratos.md:** `apps/vinculo/tests/entrega.test.ts` valida la entrega con un validador escrito a mano desde F1 y la firma con la fórmula de F2.
+- **8 · Parcial:** el estado «CV descargado» ya se ve (descarga manual del reclutador y API de ciclo de vida probada); el aviso automático del puente llega en F3.
+
+### Pendientes y riesgos
+
+- **PENDIENTE (equipo):** revisar la lista de nombres generados (D-39).
+- La revalidación del webhook cada 2 h de LinkedIn no se simula (D-33).

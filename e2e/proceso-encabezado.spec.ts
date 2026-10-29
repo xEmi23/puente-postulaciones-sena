@@ -31,7 +31,7 @@ test("encabezado del proceso con prioridad, inicio, vigencia y estado; casilla v
 
 test("ningún texto visible dice «LinkedIn Easy Apply»", async ({ page }) => {
   await iniciarSesionDemo(page);
-  for (const ruta of [`${VIN}/`, `${VIN}/vacantes/RT-2026-101`, `${TAL}/seleccion/procesos`, `${TAL}/seleccion/procesos/9001`, `${TAL}/seleccion/procesos/9002`, `${PUE}/`, `${VIN}/admin`]) {
+  for (const ruta of [`${VIN}/`, `${VIN}/empleos`, `${TAL}/seleccion/procesos`, `${TAL}/seleccion/procesos/9001`, `${TAL}/seleccion/procesos/9002`, `${PUE}/`, `${VIN}/developers/docs`]) {
     await page.goto(ruta);
     await expect(page.locator("body")).not.toContainText("LinkedIn Easy Apply");
   }

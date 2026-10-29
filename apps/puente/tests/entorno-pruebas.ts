@@ -13,7 +13,7 @@ export function prepararEntornoPruebas() {
     ORIGEN_BASE_URL: "http://vinculo.test",
     ATS_BASE_URL: "http://talentia.test",
     SIM_CLIENT_SECRET: "secreto-cliente-de-pruebas-0123456789",
-    ORIGEN_MEDIA_ACCESS_TOKEN: "token-media-de-pruebas-0123456789",
+    VINCULO_CLIENT_ID: "vin_cliente_de_pruebas",
     ATS_API_KEY: "clave-api-de-pruebas-0123456789",
     PUENTE_MODO_PRUEBAS: "1",
     CV_MAX_BYTES: "1048576",

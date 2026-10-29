@@ -5,13 +5,14 @@ import { prisma } from "@/lib/db";
 import { firmarCuerpo } from "@/lib/firma";
 import { sembrarDemo } from "../prisma/datos-demo";
 import { procesarPendientes } from "@/modules/procesador";
+import { olvidarToken } from "@/modules/vinculo-cliente";
 import * as webhook from "@/app/api/puente/webhook/route";
 import * as estadoVacante from "@/app/api/puente/vacantes/estado/route";
 import { TalentiaDoble, VinculoDoble } from "./dobles";
 
 export { prisma };
 
-export const vinculo = new VinculoDoble("http://vinculo.test", () => process.env.ORIGEN_MEDIA_ACCESS_TOKEN!);
+export const vinculo = new VinculoDoble("http://vinculo.test", () => ({ clientId: process.env.VINCULO_CLIENT_ID!, clientSecret: process.env.SIM_CLIENT_SECRET! }));
 export const talentia = new TalentiaDoble(() => process.env.ATS_API_KEY!);
 
 /** Vacía el esquema del puente, siembra las correspondencias de demo y reinicia los dobles. */
@@ -19,6 +20,7 @@ export async function reiniciarBd() {
   await prisma.$executeRawUnsafe(`TRUNCATE "EventoRecepcion", "Trabajo", "Recepcion", "EntregaRechazada", "Correspondencia", "FalloSimulado" CASCADE`);
   await sembrarDemo(prisma);
   vinculo.reiniciar();
+  olvidarToken();
   talentia.reiniciar();
 }
 
@@ -131,7 +133,7 @@ export function payloadValido(sobrescribir: Record<string, unknown> = {}) {
       },
       resumeQuestionResponses: {
         resumeQuestionAnswer: {
-          mediaUrl: "http://vinculo.test/api/origen/media/00000000-0000-4000-8000-000000000000",
+          mediaUrl: "http://vinculo.test/api/v1/media/00000000-0000-4000-8000-000000000000",
           mediaUrn: "urn:li:media:00000000-0000-4000-8000-000000000000",
         },
       },

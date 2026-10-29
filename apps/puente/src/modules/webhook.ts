@@ -184,7 +184,7 @@ export function urlDeMediaPermitida(mediaUrl: string, origenBase: string): boole
   try {
     const u = new URL(mediaUrl);
     const base = new URL(origenBase);
-    return u.origin === base.origin && u.pathname.startsWith("/api/origen/media/") && !u.username && !u.password;
+    return u.origin === base.origin && u.pathname.startsWith("/api/v1/media/") && !u.username && !u.password;
   } catch {
     return false;
   }

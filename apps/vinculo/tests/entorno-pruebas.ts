@@ -10,7 +10,12 @@ export function prepararEntornoPruebas() {
   Object.assign(process.env, {
     DATABASE_URL: urlPruebas,
     APP_BASE_URL: "http://vinculo.test",
-    PUENTE_WEBHOOK_URL: "http://puente.test/api/puente/webhook",
+    BETTER_AUTH_SECRET: "secreto-de-sesion-de-pruebas-0123456789abcdef",
+    VINCULO_CLAVE_CIFRADO: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    VINCULO_JWT_SECRET: "secreto-jwt-de-pruebas-0123456789abcdef0123",
+    VINCULO_CLIENT_ID_PUENTE: "",
+    VINCULO_SECRETO_PUENTE: "",
+    PUENTE_WEBHOOK_URL: "",
     CV_MAX_BYTES: "1048576",
   });
 }

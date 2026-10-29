@@ -1,5 +1,6 @@
 import Script from "next/script";
 import "swagger-ui-dist/swagger-ui.css";
+import "./swagger-accesible.css";
 import "../talentia.css";
 
 export const metadata = { title: "Documentación de la API" };

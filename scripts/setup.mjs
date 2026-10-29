@@ -13,6 +13,7 @@ import { parse } from "dotenv";
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const secreto = (bytes = 24) => randomBytes(bytes).toString("hex");
 const APPS = ["vinculo", "talentia", "puente"];
+const CLIENT_ID_PUENTE = "vin_puentelocal0001";
 
 const libre = (puerto) =>
   new Promise((ok) => {
@@ -39,7 +40,6 @@ async function envRaiz() {
     PG_PASSWORD: secreto(),
     // Secretos compartidos entre sistemas mientras las conexiones se configuran por variables de entorno.
     SIM_CLIENT_SECRET: secreto(),
-    ORIGEN_MEDIA_ACCESS_TOKEN: secreto(),
     ATS_API_KEY: secreto(),
     DEMO_ADMIN_PASSWORD: secreto(8),
   };
@@ -67,14 +67,21 @@ function plantilla(app, r) {
     SESSION_SECRET: secreto(32),
   };
   if (app === "vinculo") {
+    const { DATABASE_URL, DATABASE_URL_TEST, DATABASE_URL_E2E, CV_MAX_BYTES } = comun;
     return {
-      ...comun,
+      DATABASE_URL,
+      DATABASE_URL_TEST,
+      DATABASE_URL_E2E,
+      CV_MAX_BYTES,
       APP_BASE_URL: "http://localhost:3001",
-      PUENTE_WEBHOOK_URL: "http://localhost:3003/api/puente/webhook",
-      SIM_CLIENT_SECRET: r.SIM_CLIENT_SECRET,
-      ORIGEN_MEDIA_ACCESS_TOKEN: r.ORIGEN_MEDIA_ACCESS_TOKEN,
-      MEDIA_TTL_DAYS: "30",
+      BETTER_AUTH_SECRET: secreto(32),
+      VINCULO_CLAVE_CIFRADO: randomBytes(32).toString("hex"),
+      VINCULO_JWT_SECRET: secreto(32),
       WORKER_EN_PROCESO: "1",
+      // Transitorio (D-25): la siembra registra la aplicación del puente con estas credenciales.
+      VINCULO_CLIENT_ID_PUENTE: CLIENT_ID_PUENTE,
+      VINCULO_SECRETO_PUENTE: r.SIM_CLIENT_SECRET,
+      PUENTE_WEBHOOK_URL: "http://localhost:3003/api/puente/webhook",
     };
   }
   if (app === "talentia") {
@@ -95,8 +102,8 @@ function plantilla(app, r) {
     APP_BASE_URL: "http://localhost:3003",
     ORIGEN_BASE_URL: "http://localhost:3001",
     ATS_BASE_URL: "http://localhost:3002",
+    VINCULO_CLIENT_ID: CLIENT_ID_PUENTE,
     SIM_CLIENT_SECRET: r.SIM_CLIENT_SECRET,
-    ORIGEN_MEDIA_ACCESS_TOKEN: r.ORIGEN_MEDIA_ACCESS_TOKEN,
     ATS_API_KEY: r.ATS_API_KEY,
     PUENTE_MODO_PRUEBAS: "0",
     WORKER_EN_PROCESO: "1",

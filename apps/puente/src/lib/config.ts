@@ -8,7 +8,7 @@ const esquema = z.object({
   ORIGEN_BASE_URL: z.url(),
   ATS_BASE_URL: z.url(),
   SIM_CLIENT_SECRET: z.string().min(16),
-  ORIGEN_MEDIA_ACCESS_TOKEN: z.string().min(16),
+  VINCULO_CLIENT_ID: z.string().min(4),
   ATS_API_KEY: z.string().min(16),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   PUENTE_MODO_PRUEBAS: z.enum(["0", "1"]).default("0"),

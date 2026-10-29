@@ -4,16 +4,13 @@ import { z } from "zod";
 // puedan ajustar process.env sin reiniciar módulos.
 const esquema = z.object({
   DATABASE_URL: z.url(),
-  APP_BASE_URL: z.url(),
-  PUENTE_WEBHOOK_URL: z.url(),
-  SIM_CLIENT_SECRET: z.string().min(16),
-  ORIGEN_MEDIA_ACCESS_TOKEN: z.string().min(16),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  // 32 bytes en hexadecimal: cifra los Client Secret de las aplicaciones (AES-256-GCM).
+  VINCULO_CLAVE_CIFRADO: z.string().regex(/^[0-9a-f]{64}$/, "Debe tener 64 caracteres hexadecimales (32 bytes)."),
+  // Firma los access tokens (JWT HS256) de las aplicaciones.
+  VINCULO_JWT_SECRET: z.string().min(32),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   MEDIA_TTL_DAYS: z.coerce.number().int().positive().default(30),
-  DEMO_AUTH_ENABLED: z.enum(["true", "false"]).default("false"),
-  DEMO_ADMIN_USER: z.string().optional(),
-  DEMO_ADMIN_PASSWORD: z.string().optional(),
-  SESSION_SECRET: z.string().optional(),
   NODE_ENV: z.string().default("development"),
 });
 
@@ -28,12 +25,13 @@ export function config(): Config {
   return r.data;
 }
 
-/**
- * ¿La aplicación se sirve desde una máquina local? (localhost, 127.0.0.1, ::1 o el TLD reservado .test).
- * `next start` siempre corre con NODE_ENV=production, así que NODE_ENV no distingue una demo local de un
- * despliegue real; el host público sí.
- */
+/** URL pública de Vínculo: APP_BASE_URL local o RENDER_EXTERNAL_URL en Render. */
+export function urlPublica(): string {
+  return (process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3001").replace(/\/$/, "");
+}
+
+/** ¿Se sirve desde una máquina local? (localhost, 127.0.0.1, ::1 o el TLD reservado .test). */
 export function esEntornoLocal(): boolean {
-  const host = new URL(config().APP_BASE_URL).hostname;
+  const host = new URL(urlPublica()).hostname;
   return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) || host.endsWith(".test");
 }

@@ -1,5 +1,5 @@
 // Vínculo: red profesional simulada (tipo LinkedIn). Esquema "vinculo" (DB_SCHEMA).
-// Ningún otro sistema lee estas tablas: el puente solo habla con Vínculo por HTTP.
+// Ningún otro sistema lee estas tablas: el puente solo habla con Vínculo por HTTP (API modelada sobre Apply Connect).
 // `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
 
 generator client {
@@ -11,32 +11,165 @@ datasource db {
   provider = "postgresql"
 }
 
+// ───────────── Autenticación (Better Auth; nombres de modelo que espera la librería) ─────────────
+
+model User {
+  id                String                @id
+  name              String
+  email             String                @unique
+  emailVerified     Boolean               @default(false)
+  image             String?
+  rol               String                @default("CANDIDATO") // CANDIDATO | RECLUTADOR
+  empresaId         String?               @db.Uuid // solo reclutadores
+  empresa           Empresa?              @relation(fields: [empresaId], references: [id], onDelete: SetNull)
+  createdAt         DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @db.Timestamptz(3)
+  demo              Boolean               @default(false)
+  sessions          Session[]
+  accounts          Account[]
+  perfil            Perfil?
+  postulaciones     Postulacion[]
+  aplicaciones      AplicacionDev[]
+  autorizaciones    AutorizacionEmpresa[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(3)
+  token     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+}
+
+// ───────────── Red profesional ─────────────
+
+model Perfil {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @unique
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug        String        @unique
+  titular     String        @default("")
+  ciudad      String        @default("")
+  telefono    String?
+  acercaDe    String        @default("")
+  habilidades String[]
+  cvId        String?       @unique @db.Uuid
+  cv          ArchivoCv?    @relation("CvPerfil", fields: [cvId], references: [id], onDelete: SetNull)
+  experiencia Experiencia[]
+  educacion   Educacion[]
+}
+
+model Experiencia {
+  id          String  @id @default(uuid()) @db.Uuid
+  perfilId    String  @db.Uuid
+  perfil      Perfil  @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  cargo       String
+  empresa     String
+  desde       String // AAAA-MM
+  hasta       String? // AAAA-MM; null = actual
+  descripcion String  @default("")
+  orden       Int     @default(0)
+}
+
+model Educacion {
+  id          String @id @default(uuid()) @db.Uuid
+  perfilId    String @db.Uuid
+  perfil      Perfil @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  institucion String
+  titulo      String
+  desde       String
+  hasta       String?
+  orden       Int    @default(0)
+}
+
+model Empresa {
+  id             String                @id @default(uuid()) @db.Uuid
+  slug           String                @unique
+  nombre         String
+  sector         String
+  ciudad         String
+  tamano         String
+  descripcion    String
+  sitioWeb       String
+  color          String // color del avatar de iniciales
+  demo           Boolean               @default(true)
+  vacantes       Vacante[]
+  reclutadores   User[]
+  autorizaciones AutorizacionEmpresa[]
+}
+
 enum EstadoVacante {
   BORRADOR
   PUBLICADA
   CERRADA
 }
 
-enum EstadoOutbox {
-  PENDIENTE
-  ENVIADO
-  FALLIDO
-}
-
 model Vacante {
-  id            String        @id @default(uuid()) @db.Uuid
-  codigo        String        @unique // externalJobId que viaja en el webhook
-  titulo        String
-  area          String
-  ciudad        String
-  modalidad     String
-  descripcion   String
-  estado        EstadoVacante @default(PUBLICADA)
-  publicadaEn   DateTime?     @db.Timestamptz(3)
-  creadaEn      DateTime      @default(now()) @db.Timestamptz(3)
-  actualizadaEn DateTime      @updatedAt @db.Timestamptz(3)
-  demo          Boolean       @default(true)
-  postulaciones Postulacion[]
+  id                String        @id @default(uuid()) @db.Uuid
+  empresaId         String        @db.Uuid
+  empresa           Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  // externalJobId: el id que da el ATS al publicar por API; en vacantes creadas en Vínculo, un código propio (VIN-AAAA-NNNN).
+  externalJobId     String
+  titulo            String
+  descripcion       String
+  ciudad            String
+  modalidad         String // PRESENCIAL | HIBRIDO | REMOTO
+  nivel             String // PRACTICANTE | JUNIOR | SEMI_SENIOR | SENIOR
+  tipoEmpleo        String        @default("TIEMPO_COMPLETO") // TIEMPO_COMPLETO | MEDIO_TIEMPO | CONTRATO | PRACTICA
+  estado            EstadoVacante @default(PUBLICADA)
+  // «Solicitud sencilla»: la postulación ocurre en Vínculo y se entrega por webhook a la aplicación del ATS.
+  solicitudSencilla Boolean       @default(false)
+  aplicacionId      String?       @db.Uuid
+  aplicacion        AplicacionDev? @relation(fields: [aplicacionId], references: [id], onDelete: SetNull)
+  webhookUrl        String?
+  urlEmpresa        String? // «Postularse en el sitio de la empresa»
+  motivoSinSolicitud String? // por qué no tiene Solicitud sencilla (p. ej., falló la validación del webhook)
+  publicadaEn       DateTime?     @db.Timestamptz(3)
+  cerradaEn         DateTime?     @db.Timestamptz(3)
+  creadaEn          DateTime      @default(now()) @db.Timestamptz(3)
+  actualizadaEn     DateTime      @updatedAt @db.Timestamptz(3)
+  demo              Boolean       @default(true)
+  postulaciones     Postulacion[]
+
+  @@unique([aplicacionId, externalJobId])
+  @@index([estado, publicadaEn])
+  @@index([empresaId])
 }
 
 model ArchivoCv {
@@ -46,39 +179,99 @@ model ArchivoCv {
   tamano        Int
   sha256        String       @db.Char(64)
   contenido     Bytes
-  mediaUrn      String       @unique
-  expiraEn      DateTime     @db.Timestamptz(3)
+  mediaUrn      String?      @unique // solo las copias entregadas con una postulación
+  expiraEn      DateTime?    @db.Timestamptz(3) // el enlace de la postulación dura 30 días
   creadoEn      DateTime     @default(now()) @db.Timestamptz(3)
   postulacion   Postulacion?
+  perfil        Perfil?      @relation("CvPerfil")
+}
+
+enum EstadoPostulacion {
+  ENVIADA
+  VISTA
+  CV_DESCARGADO
+  NO_SELECCIONADO
 }
 
 model Postulacion {
-  id               String    @id @default(uuid()) @db.Uuid
-  jobApplicationId String    @unique // urn:li:jobApplication:{id}
-  jobApplicant     String // urn:li:person:{id}, estable por correo
-  vacanteId        String    @db.Uuid
-  vacante          Vacante   @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+  id               String            @id @default(uuid()) @db.Uuid
+  jobApplicationId String            @unique // urn:li:jobApplication:{id}
+  vacanteId        String            @db.Uuid
+  vacante          Vacante           @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+  candidatoId      String
+  candidato        User              @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  // Copia de los datos de contacto confirmados al enviar (pueden diferir del perfil).
   nombre           String
   apellido         String
   correo           String
   telefono         String?
   ciudad           String
-  archivoCvId      String    @unique @db.Uuid
-  archivoCv        ArchivoCv @relation(fields: [archivoCvId], references: [id], onDelete: Cascade)
-  aplicadaEn       DateTime  @default(now()) @db.Timestamptz(3)
-  demo             Boolean   @default(true)
+  archivoCvId      String            @unique @db.Uuid
+  archivoCv        ArchivoCv         @relation(fields: [archivoCvId], references: [id], onDelete: Cascade)
+  estado           EstadoPostulacion @default(ENVIADA)
+  aplicadaEn       DateTime          @default(now()) @db.Timestamptz(3)
+  vistaEn          DateTime?         @db.Timestamptz(3)
+  cvDescargadoEn   DateTime?         @db.Timestamptz(3)
+  rechazadaEn      DateTime?         @db.Timestamptz(3)
+  demo             Boolean           @default(false)
   outbox           Outbox[]
 
-  @@index([vacanteId])
+  @@unique([vacanteId, candidatoId])
+  @@index([candidatoId])
+}
+
+// ───────────── Desarrolladores e integraciones ─────────────
+
+model AplicacionDev {
+  id                String                @id @default(uuid()) @db.Uuid
+  nombre            String
+  clientId          String                @unique
+  // El Client Secret se guarda CIFRADO (AES-256-GCM): Vínculo lo necesita para firmar las entregas y responder el desafío.
+  secretoCifrado    String
+  secretoVersion    Int                   @default(1) // al regenerar, los tokens anteriores dejan de valer
+  webhookUrl        String?
+  webhookEstado     String                @default("SIN_VALIDAR") // SIN_VALIDAR | VALIDADO | FALLIDO
+  webhookValidadoEn DateTime?             @db.Timestamptz(3)
+  webhookDetalle    String?
+  propietarioId     String
+  propietario       User                  @relation(fields: [propietarioId], references: [id], onDelete: Cascade)
+  creadaEn          DateTime              @default(now()) @db.Timestamptz(3)
+  revocadaEn        DateTime?             @db.Timestamptz(3)
+  demo              Boolean               @default(false)
+  autorizaciones    AutorizacionEmpresa[]
+  vacantes          Vacante[]
+  outbox            Outbox[]
+}
+
+// «Conectar ATS»: la empresa autoriza a una aplicación de integrador a publicar sus vacantes y recibir sus postulaciones.
+model AutorizacionEmpresa {
+  id              String        @id @default(uuid()) @db.Uuid
+  empresaId       String        @db.Uuid
+  empresa         Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  aplicacionId    String        @db.Uuid
+  aplicacion      AplicacionDev @relation(fields: [aplicacionId], references: [id], onDelete: Cascade)
+  autorizadaPorId String
+  autorizadaPor   User          @relation(fields: [autorizadaPorId], references: [id], onDelete: Cascade)
+  creadaEn        DateTime      @default(now()) @db.Timestamptz(3)
+  revocadaEn      DateTime?     @db.Timestamptz(3)
+
+  @@unique([empresaId, aplicacionId])
+}
+
+enum EstadoOutbox {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
 }
 
 model Outbox {
   id               String           @id @default(uuid()) @db.Uuid
+  aplicacionId     String           @db.Uuid
+  aplicacion       AplicacionDev    @relation(fields: [aplicacionId], references: [id], onDelete: Cascade)
   postulacionId    String?          @db.Uuid
   postulacion      Postulacion?     @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
-  // EXPORT_JOB_APPLICATION (postulación) | JOB_POSTING_STATUS (cierre o reapertura de vacante, contrato del simulador)
   tipo             String           @default("EXPORT_JOB_APPLICATION")
-  vacanteCodigo    String?
+  url              String // webhook de la vacante al momento de postular
   payload          String // cuerpo JSON exacto que se firma y se envía
   estado           EstadoOutbox     @default(PENDIENTE)
   intentos         Int              @default(0)
@@ -90,6 +283,7 @@ model Outbox {
   intentosEntrega  IntentoEntrega[]
 
   @@index([estado, proximoIntentoEn])
+  @@index([aplicacionId, creadoEn])
 }
 
 model IntentoEntrega {
@@ -103,6 +297,7 @@ model IntentoEntrega {
   respuesta   String?
   duracionMs  Int
   error       String?
+  manual      Boolean  @default(false) // reenvío pedido desde el portal de desarrolladores
 
   @@index([outboxId])
 }

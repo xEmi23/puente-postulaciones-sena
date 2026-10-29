@@ -40,8 +40,8 @@ const ERRORES: Record<string, Explicacion> = {
   },
   ORIGEN_NO_DISPONIBLE: { que: "El origen no respondió al descargar el CV.", hacer: "Se reintenta automáticamente con espera creciente." },
   ORIGEN_AUTENTICACION: {
-    que: "El origen rechazó el token de descarga del CV.",
-    hacer: "Revisa ORIGEN_MEDIA_ACCESS_TOKEN. No se reintenta solo; luego usa «Reintentar».",
+    que: "Vínculo rechazó las credenciales del puente al descargar el CV.",
+    hacer: "Revisa el Client ID y el Client Secret de Vínculo. No se reintenta solo; luego usa «Reintentar».",
   },
   ATS_NO_DISPONIBLE: { que: "El ATS no estaba disponible.", hacer: "Se reintenta automáticamente con espera creciente; el progreso por paso se conserva." },
   ATS_SIN_RESPUESTA: {

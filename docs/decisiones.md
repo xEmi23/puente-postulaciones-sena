@@ -246,3 +246,59 @@
 
 - **Fecha:** 2026-10-28 (F1)
 - **Decisión:** al cambiar la API de Talentia se actualizó en la misma fase `apps/puente/src/modules/ats-cliente.ts` (busca postulante por correo y lo actualiza o crea; documento multipart; `auth_token`) y su doble de pruebas, para que el recorrido completo siga en verde. Las Idempotency-Key del puente pasan a derivarse de (`jobApplicationId`, paso) como pide §4.3. Transitorio hasta F3: la siembra de Talentia registra como API Key la llave que el puente tiene en su `.env` (`TALENTIA_LLAVE_PUENTE`).
+
+## D-31 · Client Secret de Vínculo cifrado, no con hash
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** el Client Secret de cada aplicación se guarda cifrado con AES-256-GCM (`VINCULO_CLAVE_CIFRADO`, 32 bytes) y se muestra una sola vez, en el resultado de la acción (nunca en la URL). Regenerarlo o revocar la aplicación incrementa `secretoVersion`, lo que invalida los tokens ya emitidos.
+- **Alternativa descartada:** guardar solo un hash (como las API Keys de Talentia). Vínculo necesita el secreto en claro para firmar cada entrega (`X-LI-Signature`) y calcular el `challengeResponse`, igual que LinkedIn. SOLUCION §6 admite «hash o cifrado».
+
+## D-32 · Tokens de aplicación JWT HS256 de 60 minutos
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** `POST /oauth/v2/accessToken` con `grant_type=client_credentials` (formulario o JSON) devuelve un JWT HS256 (`VINCULO_JWT_SECRET`, librería `jose`) con la aplicación y la versión del secreto; dura 3600 s. Errores al estilo OAuth (`invalid_client`, 401).
+- **Motivo:** ESPECIFICACION §2.3; sin tabla de tokens, pero revocable por versión.
+
+## D-33 · API de Vínculo (contrato del simulador modelado sobre Apply Connect)
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** rutas `/api/v1/jobPostings` (crear o actualizar, idempotente por aplicación + `externalJobId`), `/api/v1/jobPostings/{externalJobId}/close`, `/api/v1/autorizaciones` (empresas que autorizaron la aplicación: así el integrador obtiene el `companyId` sin copiarlo a mano), `/api/v1/media/{id}` y `/api/v1/jobApplications/{id}/lifecycle`. Errores `{ status, code, message, details? }`. El cuerpo de la entrega, la firma, el desafío, los códigos de error y el mediaUrl con Bearer siguen lo **Verificado** (docs/contratos.md §1); lo demás es nuestro y así lo dice el OpenAPI (`/developers/docs`, con la sección `webhooks`). `jobPostings` acepta además `experienceLevel` y `companyApplyUrl`; la respuesta informa `applyMethod` (`ONSITE_APPLY` = Solicitud sencilla, `COMPANY_SITE`) y el motivo si no quedó con Solicitud sencilla.
+- **Desafío del webhook:** al registrar la URL en `/developers` y antes de publicar con `onsiteApply`. Si falla, la vacante se publica como «postulación en el sitio de la empresa» (como LinkedIn). **No** se revalida cada 2 h (F2 lo describe en LinkedIn): queda como posible mejora.
+
+## D-34 · «Solicitud sencilla» con o sin ATS conectado
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** una vacante puede recibir con Solicitud sencilla aunque no tenga un ATS conectado: las solicitudes quedan en Vínculo y el reclutador descarga cada CV a mano desde su panel. Así se muestra el problema actual de la ficha. Las 6 vacantes sembradas de Andina están así, con 12 solicitudes. Con un ATS conectado (aplicación autorizada con webhook validado), cada solicitud se entrega por el outbox. Lo que hace el reclutador en Vínculo también avanza el estado que ve el candidato (abrir/marcar → «Vista por la empresa», descargar → «CV descargado», «No seleccionar»), igual que la API de ciclo de vida.
+- **Alternativa descartada:** atar la Solicitud sencilla a la integración (no permitiría mostrar el antes y el después).
+
+## D-35 · Sin evento JOB_POSTING_STATUS en la v2
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** Vínculo ya no envía el evento de cierre del simulador v1 (D-17). Una vacante cerrada en Vínculo deja de aceptar solicitudes en el propio Vínculo; las vacantes que publica el puente se cierran por la API (`close`, F3), y el puente aplica la regla de D-17 (respeta lo postulado antes del cierre) con sus propios registros. El endpoint del puente `/api/puente/vacantes/estado` y sus pruebas siguen hasta que F3 lo reemplace.
+- **Motivo:** en Apply Connect el cierre lo decide el ATS; el evento era una invención necesaria solo cuando no había API de publicación.
+
+## D-36 · Reintentos de entrega con ventana de unos 15 minutos
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** máximo 6 intentos (F1), espera exponencial desde 30 s con ±10 % (30 s, 1, 2, 4 y 8 min: unos 15 min en total) y 75 s de espera por intento (`VINCULO_TIMEOUT_ENTREGA_MS`), para cubrir el arranque en frío de Render (§2.3, §6). Se respetan los códigos que LinkedIn no reintenta (D-07). Las pruebas bajan la base con `VINCULO_BACKOFF_BASE_MS`.
+
+## D-37 · Protección SSRF para los webhooks registrados
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** antes de llamar a un webhook, Vínculo exige http(s) sin credenciales en la URL; en un despliegue público además exige https y rechaza destinos que resuelvan a redes privadas, de loopback o de enlace local (incluido 169.254.169.254). En local (demo) se permiten `http://localhost`.
+
+## D-38 · Copia del CV por solicitud y mediaUrl solo para la aplicación dueña
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** cada solicitud guarda su propia copia del CV (lo enviado no cambia si la persona actualiza su perfil), con `mediaUrn` y vencimiento de 30 días. `GET /api/v1/media/{id}` exige el token de la aplicación dueña de la vacante (otra aplicación: 403; vencido: 410). El puente acepta solo mediaUrl con el host de Vínculo configurado y la ruta `/api/v1/media/`.
+
+## D-39 · Datos de demostración generados
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** generador determinista (`apps/vinculo/prisma/generador.ts`): nombres por combinación de listas de nombres y apellidos comunes en Colombia, con una lista de combinaciones descartadas por coincidir con figuras públicas; correos `@demo.test`; CV PDF de una página con pdf-lib (banda de color, perfil, experiencia, educación, habilidades y la leyenda «documento ficticio»). Empresas con nombres inventados y sitios `.test`. Cuentas de demostración: `valentina.rios@demo.test`, `santiago.mejia@demo.test` y `reclutadora@andina.demo.test`, contraseña `Demo2026!`, visibles en `/ingresar`.
+- **Pendiente (equipo):** revisar a ojo la lista de nombres generados.
+
+## D-40 · Punto único de salida HTTP en Vínculo
+
+- **Fecha:** 2026-10-28 (F2)
+- **Decisión:** las llamadas salientes de Vínculo (desafío y entregas) usan `fetchSaliente()` (`src/lib/salida.ts`), que las pruebas reemplazan por un fetch en proceso con webhooks dobles. En ejecución normal es el fetch global.

@@ -7,6 +7,7 @@ import { urlDeMediaPermitida } from "./webhook";
 import { admitePostulacion } from "./vacantes";
 import * as ats from "./ats-cliente";
 import { conFalloSimulado } from "./fallos";
+import * as vinculo from "./vinculo-cliente";
 
 // Procesador del puente (corre en el worker). Cada trabajo avanza por pasos confirmados:
 //   cv_descargado → candidato_creado → documento_subido → postulacion_creada
@@ -267,12 +268,19 @@ export async function descargarCv(rec: Pick<Recepcion, "mediaUrl">, fetchImpl: t
   if (!urlDeMediaPermitida(rec.mediaUrl, cfg.ORIGEN_BASE_URL)) {
     throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El enlace del CV no pertenece al origen autorizado.", "rechazar");
   }
+  let token: string;
+  try {
+    token = await vinculo.obtenerToken(fetchImpl);
+  } catch (e) {
+    if (e instanceof vinculo.ErrorVinculo && e.tipo === "credenciales") throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", e.message, "detener");
+    throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "Vínculo no está disponible.", "reintentar");
+  }
   let r: Response;
   try {
     const senal = AbortSignal.timeout(15_000);
     r = await conFalloSimulado("media", senal, () =>
       fetchImpl(rec.mediaUrl, {
-        headers: { Authorization: `Bearer ${cfg.ORIGEN_MEDIA_ACCESS_TOKEN}` },
+        headers: { Authorization: `Bearer ${token}` },
         redirect: "manual",
         signal: senal,
       }),
@@ -281,7 +289,10 @@ export async function descargarCv(rec: Pick<Recepcion, "mediaUrl">, fetchImpl: t
     throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
   }
   if (r.status >= 300 && r.status < 400) throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El origen intentó redirigir la descarga del CV.", "rechazar");
-  if (r.status === 401 || r.status === 403) throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "El origen rechazó el token de descarga del CV.", "detener");
+  if (r.status === 401 || r.status === 403) {
+    vinculo.olvidarToken(); // el próximo intento pide un token nuevo
+    throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "Vínculo rechazó el token del puente al descargar el CV.", "detener");
+  }
   if (r.status === 404 || r.status === 410) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "El enlace del CV expiró o no existe.", "rechazar");
   if (!r.ok) throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", `El origen respondió ${r.status} al descargar el CV.`, "reintentar");
 

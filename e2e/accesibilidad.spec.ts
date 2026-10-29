@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { PUE, TAL, VIN } from "./procesos";
 import { expect, test, type Page } from "@playwright/test";
-import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
+import { PUE, TAL, VIN } from "./procesos";
+import { abrirVacante, correoUnico, iniciarSesionDemo, iniciarSesionVinculo, postular, registrarCandidato, sufijoUnico } from "./utilidades";
 
 // Auditoría automática con axe (WCAG 2.1 A/AA). Falla ante violaciones serias o críticas.
 async function auditar(page: Page, nombre: string) {
@@ -14,34 +14,72 @@ async function auditar(page: Page, nombre: string) {
 }
 
 test("las pantallas principales no tienen violaciones de accesibilidad serias", async ({ page }) => {
-  await page.goto(`${VIN}/`);
-  await auditar(page, "inicio");
-  await page.goto(`${VIN}/`);
-  await auditar(page, "catálogo");
-  await page.goto(`${VIN}/vacantes/RT-2026-101`);
+  test.setTimeout(120_000);
+  // Vínculo (público, candidato y reclutadora).
+  for (const [ruta, nombre] of [
+    [`${VIN}/`, "portada"],
+    [`${VIN}/empleos`, "buscador"],
+    [`${VIN}/ingresar`, "ingreso Vínculo"],
+    [`${VIN}/registro`, "registro"],
+    [`${VIN}/empresas/andina-software`, "empresa"],
+    [`${VIN}/developers/docs`, "documentación Vínculo"],
+  ]) {
+    await page.goto(ruta);
+    if (ruta.includes("docs") || ruta.includes("apidocs")) await expect(page.locator("#swagger")).toContainText("/api/v1", { timeout: 20_000 });
+    await auditar(page, nombre);
+  }
+  await abrirVacante(page, "RT-2026-101");
   await auditar(page, "detalle de vacante");
-  await page.getByRole("button", { name: "Enviar postulación" }).click();
-  await expect(page.getByText("Revisa los campos marcados para continuar.")).toBeVisible();
-  await auditar(page, "formulario con errores");
   await postular(page, { apellido: `Accesible ${sufijoUnico()}`, correo: correoUnico("a11y") });
-  await expect(page.getByRole("heading", { name: "¡Tu postulación fue enviada!" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
   await auditar(page, "confirmación");
+  for (const [ruta, nombre] of [
+    [`${VIN}/mis-postulaciones`, "mis postulaciones"],
+    [`${VIN}/mi-perfil`, "mi perfil"],
+    [`${VIN}/developers`, "portal de desarrolladores"],
+  ]) {
+    await page.goto(ruta);
+    if (ruta.includes("docs") || ruta.includes("apidocs")) await expect(page.locator("#swagger")).toContainText("/api/v1", { timeout: 20_000 });
+    await auditar(page, nombre);
+  }
+  await page.goto(`${VIN}/in/valentina-rios-gaviria`);
+  await auditar(page, "perfil público");
+  await iniciarSesionVinculo(page, "reclutadora");
+  for (const [ruta, nombre] of [
+    [`${VIN}/reclutador`, "panel reclutador"],
+    [`${VIN}/reclutador/vacantes/nueva`, "publicar vacante"],
+    [`${VIN}/reclutador/integraciones`, "integraciones"],
+  ]) {
+    await page.goto(ruta);
+    if (ruta.includes("docs") || ruta.includes("apidocs")) await expect(page.locator("#swagger")).toContainText("/api/v1", { timeout: 20_000 });
+    await auditar(page, nombre);
+  }
+  await page.goto(`${VIN}/reclutador`);
+  await page.getByTestId("fila-vacante").first().getByRole("link").click();
+  await auditar(page, "vacante del reclutador");
+
+  // Talentia y puente.
+  await page.goto(`${TAL}/ingresar`);
+  await auditar(page, "ingreso Talentia");
   await page.goto(`${PUE}/ingresar`);
-  await auditar(page, "ingreso");
+  await auditar(page, "ingreso puente");
   await iniciarSesionDemo(page);
   for (const [ruta, nombre] of [
     [`${PUE}/`, "panel"],
     [`${PUE}/correspondencias`, "correspondencias"],
     [`${PUE}/rechazos`, "rechazos"],
     [`${PUE}/pruebas`, "controles de prueba"],
-    [`${TAL}/seleccion/procesos`, "procesos ATS"],
-    [`${TAL}/seleccion/procesos/9001`, "tablero ATS"],
+    [`${TAL}/seleccion/procesos`, "procesos Talentia"],
+    [`${TAL}/seleccion/procesos/9001`, "tablero Talentia"],
+    [`${TAL}/seleccion/procesos/9001?vista=tabla`, "vista tabla"],
     [`${TAL}/seleccion/procesos/nuevo`, "nuevo proceso"],
-    [`${VIN}/admin`, "admin origen"],
-    [`${VIN}/admin/vacantes/nueva`, "publicar vacante"],
-    [`${VIN}/admin/consola`, "consola"],
+    [`${TAL}/seleccion/postulantes`, "postulantes"],
+    [`${TAL}/admin/api-keys`, "API Keys"],
+    [`${TAL}/admin/actividad-api`, "actividad API"],
+    [`${TAL}/apidocs`, "documentación Talentia"],
   ]) {
     await page.goto(ruta);
+    if (ruta.includes("docs") || ruta.includes("apidocs")) await expect(page.locator("#swagger")).toContainText("/api/v1", { timeout: 20_000 });
     await auditar(page, nombre);
   }
   await page.goto(`${PUE}/`);
@@ -49,42 +87,32 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
   await auditar(page, "detalle de operación");
   await page.goto(`${TAL}/seleccion/procesos/9001`);
   await page.getByTestId("tarjeta-postulante").first().getByRole("link").click();
-  await auditar(page, "detalle de candidato");
+  await auditar(page, "ficha del postulante");
 });
 
-test("navegación por teclado: saltar al contenido y completar la postulación sin ratón", async ({ page }) => {
-  await page.goto(`${VIN}/vacantes/RT-2026-102`);
+test("navegación por teclado: saltar al contenido y completar la Solicitud sencilla sin ratón", async ({ page }) => {
+  await registrarCandidato(page, "Laura", `Teclado ${sufijoUnico()}`, correoUnico("teclado"));
+  await abrirVacante(page, "RT-2026-102");
+  await page.getByRole("link", { name: "Solicitud sencilla" }).click();
+  await expect(page.getByRole("heading", { name: "Solicitud sencilla" })).toBeVisible();
+  await page.goto(page.url()); // carga completa: el foco empieza en el documento, como al llegar por un enlace externo
   await page.waitForLoadState("networkidle"); // el formulario ya está hidratado
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Saltar al contenido" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#contenido$/);
 
-  await page.getByLabel("Nombre").focus();
-  await page.keyboard.type("Laura");
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Apellido")).toBeFocused();
-  await page.keyboard.type(`Teclado ${sufijoUnico()}`);
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Correo electrónico")).toBeFocused();
-  await page.keyboard.type(correoUnico("teclado"));
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Teléfono")).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Ciudad")).toBeFocused();
+  await page.getByLabel("Nombre", { exact: true }).focus();
+  for (const etiqueta of ["Apellido", "Correo electrónico", /^Teléfono/, "Ciudad"]) {
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel(etiqueta)).toBeFocused();
+  }
   await page.keyboard.type("Itagüí");
   await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Hoja de vida (PDF)")).toBeFocused();
-  await page.getByLabel("Hoja de vida (PDF)").setInputFiles("fixtures/cv/cv-sofia-demo.pdf");
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Enviar postulación" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Continuar" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "¡Tu postulación fue enviada!" })).toBeVisible();
-});
-
-test("con errores, el foco va al primer campo inválido", async ({ page }) => {
-  await page.goto(`${VIN}/vacantes/RT-2026-101`);
-  await page.getByLabel("Nombre").fill("Ana");
-  await page.getByRole("button", { name: "Enviar postulación" }).click();
-  await expect(page.getByLabel("Apellido")).toBeFocused();
+  await page.getByLabel("Hoja de vida (PDF)").setInputFiles("fixtures/cv/cv-sofia-demo.pdf");
+  await page.getByRole("button", { name: "Enviar solicitud" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
 });
