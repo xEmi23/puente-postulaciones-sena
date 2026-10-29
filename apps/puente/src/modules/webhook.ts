@@ -166,7 +166,8 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
       const otra = await prisma.recepcion.findUnique({ where: { jobApplicationId: p.jobApplicationId } });
       if (otra) return await responderDuplicado(otra.id, p.jobApplicationId);
     }
-    console.error("[puente] Error guardando la recepción", e);
+    // Solo la primera línea del mensaje: sin la consulta completa ni datos personales.
+    console.error("[puente] Error guardando la recepción:", e instanceof Error ? e.message.split("\n")[0] : "desconocido");
     return { status: 500, body: cuerpoError("TRANSIENT_ERROR") };
   }
 }

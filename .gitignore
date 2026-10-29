@@ -29,3 +29,6 @@ capturas/
 
 # La ficha del reto no se publica (contiene datos de contacto de la empresa)
 docs/ficha/
+
+# Copia temporal para probar la instalación limpia desde el README (F6)
+.instalacion-limpia/

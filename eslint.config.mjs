@@ -11,6 +11,7 @@ export default defineConfig([
     "apps/*/src/generated/**",
     "apps/*/public/vendor/**",
     ".pgdata/**",
+    ".instalacion-limpia/**",
     "playwright-report/**",
     "test-results/**",
     "**/next-env.d.ts",

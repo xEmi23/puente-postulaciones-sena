@@ -86,7 +86,8 @@ export async function procesarPendientes(opciones: OpcionesProcesador = {}): Pro
       await procesarTrabajo(t.id, opciones);
     } catch (e) {
       if (e instanceof CaidaSimulada) throw e;
-      console.error(`[puente] Error inesperado en el trabajo ${t.id}`, e);
+      // Solo la primera línea del mensaje: sin la consulta completa ni datos personales.
+      console.error(`[puente] Error inesperado en el trabajo ${t.id}:`, e instanceof Error ? e.message.split("\n")[0] : "desconocido");
     }
   }
   return trabajos.length;
