@@ -9,7 +9,8 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 function correr(raiz, app, args, env) {
-  const r = spawnSync("npx", ["tsx", ...args], { cwd: path.join(raiz, "apps", app), env, encoding: "utf8", shell: true });
+  // Una sola cadena con shell (necesario para npx en Windows): los argumentos son fijos de este archivo, sin datos externos.
+  const r = spawnSync(`npx tsx ${args.join(" ")}`, { cwd: path.join(raiz, "apps", app), env, encoding: "utf8", shell: true });
   if (r.status !== 0) throw new Error(`${app} (${args.join(" ")}) falló:\n${r.stderr}${r.stdout}`);
   return r.stdout;
 }

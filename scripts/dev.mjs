@@ -17,7 +17,7 @@ if (pg.status !== 0) process.exit(pg.status ?? 1);
 
 const hijos = APPS.map(({ nombre, color }) => {
   const prefijo = `\x1b[${color}m[${nombre}]\x1b[0m `;
-  const hijo = spawn("npm", ["run", modo, "-w", `apps/${nombre}`], { cwd: RAIZ, shell: true, env: process.env });
+  const hijo = spawn(`npm run ${modo} -w apps/${nombre}`, { cwd: RAIZ, shell: true, env: process.env });
   const reenviar = (flujo, destino) => {
     let resto = "";
     flujo.on("data", (d) => {

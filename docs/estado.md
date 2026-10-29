@@ -423,3 +423,51 @@ Problemas encontrados y corregidos: la redirección de `/` del puente ocurría e
 
 - **PENDIENTE (equipo):** la lista de revisión de `docs/uso-ia.md` (v2).
 - Siguiente paso: F6 (auditoría, doble ejecución e instalación limpia).
+
+## F6 · Auditoría, doble ejecución e instalación limpia (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+### Auditoría
+
+| Revisión | Resultado |
+|---|---|
+| Falsos «completado» | `COMPLETADO` se escribe en un solo lugar (`completar` en `apps/puente/src/modules/procesador.ts`), siempre con el id de la postulación que Talentia devolvió (creación o reconciliación). RECIBIDO ≠ COMPLETADO. Sin cambios. |
+| Duplicados | Restricción única por `jobApplicationId`, `Idempotency-Key` por paso y búsqueda por `referencia_externa` al reconciliar; cubierto por `fiabilidad.test.ts` (entregas simultáneas) y E2E C6. Sin cambios. |
+| Secretos y datos personales en registros | **Corregido:** dos `console.error` del puente imprimían el objeto de error completo (un error de Prisma puede incluir valores de la consulta, como un correo); ahora solo la primera línea del mensaje. El resto de registros solo cuenta elementos o muestra mensajes. |
+| Secretos en respuestas | La API Key y el Client Secret solo se muestran al crearlos; `/api/v1/api-key` devuelve el prefijo; «Conexiones» muestra `••••` + 4 caracteres; las pruebas de conexión muestran el prefijo de la llave. Sin cambios. |
+| Rutas sin autorización | Revisadas las 25 rutas `route.ts`: API v1 de Talentia con `conApi` (llave y permiso); API de Vínculo con `conAplicacion` o token (media: solo la aplicación dueña, 403/410); descargas de CV con sesión y alcance por empresa; salud y OpenAPI públicas a propósito y sin datos. Las acciones de servidor comprueban sesión y rol, y las de Vínculo además el dueño (aplicaciones) o la empresa (vacantes, postulaciones). Sin cambios. |
+| SSRF | Vínculo (webhooks) y el puente (URL de «Conexiones») usan `motivoUrlNoPermitida`: fuera de local, solo https y sin redes privadas, loopback ni enlace local; las descargas no siguen redirecciones. **Corregido en F5:** las URL de «Conexiones» aceptan solo http/https. Riesgo residual: *DNS rebinding* entre la validación y la llamada (aceptable para el prototipo). |
+| Cookies compartidas | Nombres distintos por app (`vin_sesion`, `tal_sesion`, `pue_sesion`); prueba E2E del criterio 1. Sin cambios. |
+| Nombre de la empresa retadora | `git grep -i` en los archivos versionados y `git log --all -G` (insensible a mayúsculas) en todo el historial: **0 coincidencias**. La única aparición en disco es el nombre del PDF en `docs/ficha/` (ignorada por git) y una secuencia casual dentro de un binario base64 del cliente Prisma generado (ignorado). |
+| Avisos de Node | `DEP0190` (argumentos con `shell: true`) en `demo:conectar`, `dev.mjs` y la preparación E2E: ahora se pasa una sola cadena de comando con argumentos fijos. |
+
+### Doble ejecución (detección de pruebas inestables)
+
+| Comando | Ronda 1 | Ronda 2 |
+|---|---|---|
+| `npm test` | 26/26 · 30/30 · 70/70 | 26/26 · 30/30 · 70/70 |
+| `npm run build` + `npx playwright test` | 37/37 (3,5 min) | 37/37 (3,1 min) |
+
+### Instalación limpia siguiendo solo el README
+
+En `.instalacion-limpia/` (clon de la rama `v2` en el commit `0946410`, dentro de esta carpeta e ignorada por git; borrada al terminar):
+
+| Paso del README | Resultado |
+|---|---|
+| `npm install` | exit 0, 0 vulnerabilidades |
+| `npm run setup` | exit 0; el 5435 estaba ocupado por el PostgreSQL de esta carpeta y eligió el **5436**, como dice el README; migró y sembró las tres apps |
+| `npm run dev` | las tres `/api/salud` en `ok`; portada, empleos, `/developers/docs`, `/apidocs` e ingresos responden 200 (el puente redirige `/` con 307) |
+| `npm run demo:conectar` | exit 0: llave, aplicación autorizada, conexiones probadas, 9001 y 9002 publicadas, webhook validado |
+| `npx playwright install chromium` + `npm run test:e2e` | **37/37** (2,9 min) |
+| `npm test` / `npm run lint` | 26/26 · 30/30 · 70/70 / 0 errores |
+
+Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no con Ctrl+C en la terminal), en Windows los `next` hijos pueden quedar vivos ocupando 3001–3003; con Ctrl+C se detienen todos.
+
+### Criterios
+
+- **15 (parte local) · Cumple:** instalación limpia desde el README con todas las pruebas en verde. La validación de `render.yaml` va en F7.
+
+### Pendientes
+
+- Siguiente paso: F7 (Render, verificación de `.gitignore`, repositorio privado y push).

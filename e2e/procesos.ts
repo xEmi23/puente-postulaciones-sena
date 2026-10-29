@@ -102,9 +102,9 @@ export const detenerTodo = () => control("/todo/stop").catch(() => undefined);
 export function prepararBase() {
   for (const app of Object.keys(PUERTOS) as App[]) {
     const opciones = { cwd: path.join(RAIZ, "apps", app), env: envApp(app), stdio: "pipe" as const, shell: true };
-    let r = spawnSync("npx", ["prisma", "migrate", "deploy"], opciones);
+    let r = spawnSync("npx prisma migrate deploy", opciones);
     if (r.status !== 0) throw new Error(`${app}: migrate deploy falló: ${r.stderr}`);
-    r = spawnSync("npx", ["tsx", "scripts/demo-reset.ts"], opciones);
+    r = spawnSync("npx tsx scripts/demo-reset.ts", opciones);
     if (r.status !== 0) throw new Error(`${app}: demo-reset falló: ${r.stderr}${r.stdout}`);
   }
 }
