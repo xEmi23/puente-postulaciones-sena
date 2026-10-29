@@ -2,6 +2,43 @@
 
 > Actualizado por Claude Code (2026-10-29). Repositorio privado `puente-postulaciones-sena`, rama `v2`. Blueprint: `render.yaml` (validado con `render blueprints validate`, ver docs/estado.md F7).
 
+## Despliegue actual (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+| Sistema | URL pública | Servicio en Render |
+|---|---|---|
+| **Vínculo** (simulado) | https://vinculo-simulado.onrender.com | `vinculo-simulado` (`srv-dbhinc7f3r2c73d102d0`), plan free |
+| **Talentia** (simulado) | https://talentia-simulado.onrender.com | `talentia-simulado` (`srv-dbhinc7f3r2c73d102bg`), plan free |
+| **Puente** | https://puente-postulaciones.onrender.com | `puente-postulaciones` (`srv-dbhinc7f3r2c73d102dg`), plan free |
+| Base | — | `puente-postulaciones-db` (`dpg-dbhin2vf3r2c73d0vhp0-a`), plan free, **vence el 2026-11-28** |
+
+Los tres servicios desplegaron el commit `d706ddd` de la rama `v2` al primer intento (estado `live`, unos 2,5 minutos cada uno) y `/api/salud` responde `ok` en los tres.
+
+**Cuentas de demostración** (contraseña `Demo2026!`, las mismas que en local):
+
+| Sistema | Correo | Rol |
+|---|---|---|
+| Vínculo | `valentina.rios@demo.test` · `santiago.mejia@demo.test` | Candidatos |
+| Vínculo | `reclutadora@andina.demo.test` | Reclutadora (Andina Software S.A.S., ficticia) |
+| Talentia | `admin@andina.demo.test` · `reclutador@andina.demo.test` | Administradora · Reclutador |
+| Puente | `admin@puente.demo.test` · `operador@puente.demo.test` | Administrador · Operador |
+
+**Estado de los datos en Render (tras la prueba de humo):**
+
+- Las conexiones del puente **ya están configuradas**: aplicación «Puente de postulaciones 202610291128» (`vin_b67d8160a16b763b`) autorizada por Andina, con webhook validado, y la API Key «Puente Render 202610291131» de Talentia.
+- Quedaron revocadas una aplicación de Vínculo («… 202610291131») y una API Key («… 202610291128») creadas de más por una segunda ejecución accidental de la prueba de humo completa (ver docs/estado.md).
+- El proceso **9001** está publicado en Vínculo con Solicitud sencilla y tiene dos postulaciones de prueba (Valentina y Santiago, ambas Completado y «CV descargado»). Para la demo conviene publicar y postular a otro proceso (por ejemplo 9003, como en el guion).
+
+**Prueba de humo** (`e2e/humo-render.spec.ts`, configuración `playwright.render.config.ts`):
+
+```bash
+RENDER_HUMO=1 npx playwright test -c playwright.render.config.ts                    # recorrido completo (solo en un despliegue sin conectar)
+RENDER_HUMO=1 RENDER_CANDIDATO=santiago npx playwright test -c playwright.render.config.ts -g "(0 ·|6 ·|7 ·|8 ·)"   # solo postular y verificar
+```
+
+Las URL se pueden cambiar con `RENDER_VIN`, `RENDER_TAL` y `RENDER_PUE`. **Atención:** los pasos 1 a 5 registran otra aplicación y otra llave y reconfiguran el puente; sobre un despliegue ya conectado dejan la vacante publicada en manos de una aplicación cuyo secreto el puente ya no tiene. En ese caso, solo ejecutar los pasos 0 y 6 a 8. Resultado en docs/resultados-pruebas.md.
+
 ## Qué crea el Blueprint
 
 | Recurso | Nombre | Plan | Notas |
@@ -18,7 +55,7 @@
 
 ## Paso a paso
 
-1. **Crear el Blueprint** (paso manual: la CLI de Render solo valida Blueprints, no los crea):
+1. **Crear el Blueprint** (paso manual: la CLI de Render solo valida Blueprints, no los crea; **hecho por el equipo el 2026-10-29**):
    Render → **New** → **Blueprint** → elegir el repositorio **puente-postulaciones-sena**, rama **v2** → **Deploy Blueprint**.
    Si Render no ve el repositorio privado, en GitHub dale acceso a la app de Render (Settings → Integrations → Render → acceso al repositorio).
 2. **Esperar el primer despliegue** de los tres servicios (unos 5 a 10 minutos cada uno en el plan gratuito). Comprobar `https://<servicio>.onrender.com/api/salud` → `{"estado":"ok",…}`.
@@ -34,7 +71,7 @@ Las URL exactas de los servicios las muestra Render en cada servicio (si el nomb
 
 ## Límites del plan gratuito (Supuesto pendiente: revisar en render.com/pricing antes de presentar)
 
-- Los servicios web gratuitos **se duermen tras unos 15 minutos sin tráfico** y tardan alrededor de un minuto en despertar. Mientras duermen, sus workers tampoco corren.
+- Los servicios web gratuitos **se duermen tras unos 15 minutos sin tráfico** y tardan entre uno y dos minutos en despertar (medido el 2026-10-29 tras 17 minutos sin uso: Vínculo 65 s, Talentia 83 s, Puente 92 s). Mientras duermen, sus workers tampoco corren.
 - Por eso: Vínculo reintenta cada entrega hasta 6 veces (unos 15 minutos) con 75 s de espera por intento; el puente espera hasta 75 s cuando el otro sistema lleva más de 10 minutos sin responder y reintenta hasta 10 veces (unos 13 minutos); «Probar conexión» muestra «Despertando…».
 - La base PostgreSQL gratuita tiene capacidad limitada y **vence a los 30 días**: para una presentación posterior, crearla de nuevo (o pasar a un plan pago) y repetir el paso 3.
 - Horas de instancia gratuitas limitadas por mes y por cuenta: apagar o suspender los servicios cuando no se usen.

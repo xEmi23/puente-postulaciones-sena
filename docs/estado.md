@@ -510,3 +510,40 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 
 - Crear el Blueprint en Render (paso manual de arriba) y conectar los sistemas por pantallas.
 - D-26: encabezado real de la API Key de BUK. D-39: revisar los nombres generados. Ley 1581: revisión de `docs/seguridad.md`. Lista de revisión de `docs/uso-ia.md`.
+
+## Render: verificación y prueba de humo (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29). El equipo creó el Blueprint.
+
+### Servicios
+
+- `render services -o json`: 3 servicios web **free** (`vinculo-simulado`, `talentia-simulado`, `puente-postulaciones`, rama `v2`) y la base **free** `puente-postulaciones-db` (disponible; **vence el 2026-11-28**).
+- `render deploys list <servicio>`: los tres despliegues del commit `d706ddd` están **live** al primer intento (11:19 → 11:21–11:22 UTC). No hubo que corregir código ni `render.yaml`.
+- `/api/salud` → `ok` en los tres. URLs: https://vinculo-simulado.onrender.com · https://talentia-simulado.onrender.com · https://puente-postulaciones.onrender.com.
+
+### Prueba de humo
+
+- Nueva `e2e/humo-render.spec.ts` con su propia configuración (`playwright.render.config.ts`, sin global-setup; excluida de la suite local con `testIgnore`). Recorre por las pantallas: API Key en Talentia → aplicación en Vínculo autorizada por Andina → conexiones del puente → webhook validado → publicar 9001 → Solicitud sencilla con un PDF → Completado en el puente, tarjeta en Postulantes y mismo SHA-256 → «CV descargado».
+- **Resultado:** todos los pasos pasaron contra Render (detalle por ejecución en docs/resultados-pruebas.md). El único fallo fue de la prueba (la candidata demo tiene CV en su perfil y el formulario lo preselecciona); se corrigió la prueba.
+- **Incidente y reparación:** al documentar, un comando de shell interpretó texto entre comillas invertidas y volvió a ejecutar la prueba de humo **completa**: creó una segunda aplicación en Vínculo y una segunda API Key, y dejó el puente con la aplicación nueva, mientras la vacante 9001 seguía siendo de la primera (las entregas a 9001 habrían fallado la firma). Se reparó por las pantallas con un script puntual de Playwright (fuera del repositorio): se revocó la aplicación sobrante, se regeneró el secreto de la original, se guardó en el puente («Token obtenido… autorizada por Andina») y Vínculo revalidó el webhook; también se revocó la API Key que quedó sin uso. Verificación posterior con `santiago.mejia@demo.test`: 4/4. Desde entonces, los documentos se editan solo con las herramientas de edición, no con la shell.
+
+### Arranque en frío
+
+- Medido tras 17 minutos sin tráfico, con `curl` a `/api/salud`: **Talentia 83 s**, **Puente 92 s**, **Vínculo 65 s** (el primer intento a Vínculo falló al instante por un fallo de DNS de esta máquina, `HTTP 000` en 0,08 s, no del servicio; se repitió). Los tres respondieron `200` al despertar.
+- Consecuencia: las esperas del sistema (75 s por llamada si el otro lleva más de 10 minutos sin responder, más los reintentos: unos 13 minutos en el puente y unos 15 en Vínculo) cubren el despertar, pero **un solo intento puede vencerse** si el servicio tarda más de 75 s (el puente tardó 92 s); el reintento siguiente lo encuentra despierto. Para la demo: despertar los tres 15 minutos antes, como dice docs/despliegue.md.
+
+### Comandos
+
+| Comando | Resultado |
+|---|---|
+| `render services -o json` / `render deploys list` | 3 web free + 1 base free; 3 despliegues `live` |
+| `RENDER_HUMO=1 npx playwright test -c playwright.render.config.ts` | 6 ✓, 1 ✗ (prueba), 2 sin ejecutar |
+| `… -g "(0 ·\|6 ·\|7 ·\|8 ·)"` (Valentina) | 4/4 ✓ |
+| `RENDER_CANDIDATO=santiago … -g "(0 ·\|6 ·\|7 ·\|8 ·)"` (tras la reparación) | 4/4 ✓ |
+| `npx playwright test --list` (suite local) | la prueba de humo no aparece (excluida) |
+
+### Pendientes
+
+- Ensayar la demo en Render despertando los servicios 15 minutos antes (docs/despliegue.md) y usar otro proceso (p. ej. 9003): 9001 ya tiene postulaciones de prueba.
+- La base gratuita vence el **2026-11-28**: para una presentación posterior, recrearla y volver a conectar.
+- Siguen los pendientes del equipo: D-26, D-39, Ley 1581, lista de `docs/uso-ia.md`.

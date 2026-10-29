@@ -126,3 +126,28 @@ Las pruebas de contrato de cada simulador (`contrato-openapi.test.ts`) comprueba
 - Pruebas contra LinkedIn o BUK reales: no hay acceso (y no se buscaría).
 - Pruebas de carga: fuera del alcance del prototipo.
 - Docker Compose: no probado en esta máquina.
+
+## v2 · Prueba de humo en Render (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29). `e2e/humo-render.spec.ts` con `playwright.render.config.ts` (Chrome de escritorio), contra https://vinculo-simulado.onrender.com, https://talentia-simulado.onrender.com y https://puente-postulaciones.onrender.com. Todo por las pantallas, sin tocar las bases.
+
+| Paso | Qué comprueba | Resultado |
+|---|---|---|
+| 0 | `/api/salud` de los tres servicios responde `ok` | ✓ |
+| 1 | Talentia: el admin crea una API Key con Lectura y Modificación (se ve una vez) | ✓ |
+| 2 | Vínculo: la reclutadora registra la aplicación, copia Client ID y Client Secret, y Andina la autoriza | ✓ |
+| 3 | Puente: «Guardar y probar» Vínculo (token y empresa) y Talentia (permisos y procesos) | ✓ |
+| 4 | Vínculo valida el webhook del puente por desafío firmado (https, sin redes privadas) | ✓ |
+| 5 | Puente: «Publicar en Vínculo» el proceso 9001 con Solicitud sencilla | ✓ |
+| 6 | La candidata `valentina.rios@demo.test` postula con Solicitud sencilla y un PDF | ✗ en la 1.ª ejecución (la prueba esperaba el campo de archivo, pero la candidata ya tiene CV en su perfil y el formulario lo preselecciona: era la prueba, no la app). Corregida (elige «Subir otra hoja de vida») → ✓ |
+| 7 | El puente marca **Completado**; la tarjeta aparece en **Postulantes** del proceso 9001 en Talentia; el CV descargado tiene el **mismo SHA-256** que `fixtures/cv/cv-camila-ejemplo.pdf` | ✓ |
+| 8 | La candidata ve **«CV descargado»** en Mis postulaciones (aviso RESUME_DOWNLOADED del puente) | ✓ |
+
+Ejecuciones:
+
+1. Pasos 0–5 ✓, paso 6 ✗ (prueba), 7–8 no corrieron. 2,0 min.
+2. Pasos 0 y 6–8 con Valentina: **4/4 ✓** (34,6 s; el paso 7 tardó 20 s, incluidos los ingresos).
+3. Ejecución completa accidental (ver docs/estado.md): pasos 1–4 ✓ de nuevo; paso 5 ✗ porque 9001 ya estaba publicado (el botón era «Cerrar en Vínculo»). Dejó el puente con otra aplicación; se reparó por las pantallas (revocar la aplicación sobrante, regenerar el secreto de la original, guardarlo en el puente y revalidar el webhook).
+4. Tras la reparación, pasos 0 y 6–8 con `santiago.mejia@demo.test`: **4/4 ✓** (20,4 s).
+
+Los servicios estaban despiertos (recién desplegados). La medición del arranque en frío está en docs/estado.md (F7, «Arranque en frío»).

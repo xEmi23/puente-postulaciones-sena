@@ -4,6 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
 // en los puertos 3211 (Vínculo), 3212 (Talentia) y 3213 (Puente), para que las pruebas puedan reiniciarlos.
 export default defineConfig({
   testDir: "e2e",
+  // La prueba de humo de Render tiene su propia configuración (playwright.render.config.ts).
+  testIgnore: ["humo-render.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
