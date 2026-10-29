@@ -500,3 +500,13 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 ### Criterios
 
 - **15 · Cumple:** instalación limpia desde el README (F6) y `render blueprints validate` sin errores.
+
+### Repositorio
+
+- `gh repo create puente-postulaciones-sena --private` → https://github.com/xEmi23/puente-postulaciones-sena (**privado**). `--source .` no funcionó porque esta carpeta es un *worktree* (`.git` es un archivo); el remoto `origin` se agregó a mano con la misma URL.
+- `git push -u origin v2`: rama `v2` publicada; es la **única** rama del remoto. Comprobado en GitHub: sin `.env`, sin `docs/ficha/`, con `render.yaml` en la raíz.
+
+### Pendientes que dependen del equipo o la empresa
+
+- Crear el Blueprint en Render (paso manual de arriba) y conectar los sistemas por pantallas.
+- D-26: encabezado real de la API Key de BUK. D-39: revisar los nombres generados. Ley 1581: revisión de `docs/seguridad.md`. Lista de revisión de `docs/uso-ia.md`.
