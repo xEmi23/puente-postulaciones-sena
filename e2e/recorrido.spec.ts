@@ -43,7 +43,7 @@ test.describe("Recorrido principal", () => {
 
   test("la Solicitud sencilla rechaza con mensajes claros datos inválidos y archivos que no son PDF", async ({ page }) => {
     await registrarCandidato(page, "Carla", `Validacion ${sufijoUnico()}`, correoUnico("validacion"));
-    await abrirVacante(page, "RT-2026-101");
+    await abrirVacante(page, "9001");
     await page.getByRole("link", { name: "Solicitud sencilla" }).click();
     // Paso 1: los obligatorios vacíos se marcan y el foco va al primero.
     await page.getByLabel("Ciudad").fill("");

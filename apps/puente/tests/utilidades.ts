@@ -6,19 +6,40 @@ import { firmarCuerpo } from "@/lib/firma";
 import { sembrarDemo } from "../prisma/datos-demo";
 import { procesarPendientes } from "@/modules/procesador";
 import { olvidarToken } from "@/modules/vinculo-cliente";
-import * as webhook from "@/app/api/puente/webhook/route";
-import * as estadoVacante from "@/app/api/puente/vacantes/estado/route";
+import * as webhook from "@/app/api/webhooks/vinculo/route";
+import { guardarTalentia, guardarVinculo } from "@/modules/conexiones";
 import { TalentiaDoble, VinculoDoble } from "./dobles";
 
 export { prisma };
 
-export const vinculo = new VinculoDoble("http://vinculo.test", () => ({ clientId: process.env.VINCULO_CLIENT_ID!, clientSecret: process.env.SIM_CLIENT_SECRET! }));
-export const talentia = new TalentiaDoble(() => process.env.ATS_API_KEY!);
+/** Credenciales de los dobles: el puente las recibe como en /conexiones (se guardan cifradas). */
+export const CREDENCIALES = { clientId: "vin_pruebas00000001", clientSecret: "secreto-cliente-de-pruebas-0123456789", apiKey: "tal_pruebas0.llave-de-pruebas-0123456789" };
 
-/** Vacía el esquema del puente, siembra las correspondencias de demo y reinicia los dobles. */
+export const vinculo = new VinculoDoble("http://vinculo.test", () => ({ clientId: CREDENCIALES.clientId, clientSecret: CREDENCIALES.clientSecret }));
+export const talentia = new TalentiaDoble(() => CREDENCIALES.apiKey);
+
+/** Configura las dos conexiones (como un administrador en /conexiones, ya probadas). */
+export async function conectar() {
+  const v = await guardarVinculo({ urlBase: "http://vinculo.test", clientId: CREDENCIALES.clientId, clientSecret: CREDENCIALES.clientSecret });
+  const t = await guardarTalentia({ urlBase: "http://talentia.test", apiKey: CREDENCIALES.apiKey });
+  if (!v.ok || !t.ok) throw new Error("No se pudieron guardar las conexiones de prueba");
+  await prisma.conexion.update({ where: { tipo: "VINCULO" }, data: { estadoPrueba: "OK", empresaId: vinculo.empresa.companyId, empresaNombre: vinculo.empresa.name } });
+  await prisma.conexion.update({ where: { tipo: "TALENTIA" }, data: { estadoPrueba: "OK" } });
+}
+
+/**
+ * Vacía el esquema del puente, siembra las cuentas, configura las conexiones con los dobles y crea dos correspondencias
+ * (RT-2026-101 → 9001 y RT-2026-102 → 9002, vacantes creadas directamente en Vínculo). RT-2026-103 queda sin proceso.
+ */
 export async function reiniciarBd() {
-  await prisma.$executeRawUnsafe(`TRUNCATE "EventoRecepcion", "Trabajo", "Recepcion", "EntregaRechazada", "Correspondencia", "FalloSimulado" CASCADE`);
+  await prisma.$executeRawUnsafe(
+    `TRUNCATE "EventoRecepcion", "Trabajo", "Recepcion", "EntregaRechazada", "Correspondencia", "Publicacion", "Conexion", "Configuracion", "FalloSimulado", "Session", "Account", "Verification", "User" CASCADE`,
+  );
   await sembrarDemo(prisma);
+  await conectar();
+  for (const [externalJobId, procesoAtsId] of [["RT-2026-101", 9001], ["RT-2026-102", 9002]] as const) {
+    await prisma.correspondencia.create({ data: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` } });
+  }
   vinculo.reiniciar();
   olvidarToken();
   talentia.reiniciar();
@@ -46,8 +67,7 @@ async function despachar(req: Request): Promise<Response> {
   if (url.host === "vinculo.test") return vinculo.atender(req);
   if (url.host === "talentia.test") return talentia.atender(req);
   if (url.host !== "puente.test") throw new TypeError(`fetch a host no permitido en pruebas: ${url.host}`);
-  if (url.pathname === "/api/puente/webhook") return req.method === "GET" ? webhook.GET(req) : webhook.POST(req);
-  if (url.pathname === "/api/puente/vacantes/estado") return estadoVacante.POST(req);
+  if (url.pathname === "/api/webhooks/vinculo") return req.method === "GET" ? webhook.GET(req) : webhook.POST(req);
   return new Response("No encontrado", { status: 404 });
 }
 
@@ -83,9 +103,9 @@ export function construirEntrega(opciones: { codigo?: string; datos?: typeof dat
 /** Envía un payload firmado (o con la firma indicada) al webhook del puente. */
 export async function enviarWebhook(cuerpo: string, firma?: string | null) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const f = firma === undefined ? firmarCuerpo(cuerpo, process.env.SIM_CLIENT_SECRET!) : firma;
+  const f = firma === undefined ? firmarCuerpo(cuerpo, CREDENCIALES.clientSecret) : firma;
   if (f !== null) headers["X-LI-Signature"] = f;
-  const r = await fetchEnProceso("http://puente.test/api/puente/webhook", { method: "POST", headers, body: cuerpo });
+  const r = await fetchEnProceso("http://puente.test/api/webhooks/vinculo", { method: "POST", headers, body: cuerpo });
   return { status: r.status, body: (await r.json()) as Record<string, unknown> };
 }
 
@@ -95,17 +115,6 @@ export async function postular(opciones: Parameters<typeof construirEntrega>[0] 
   const r = await enviarWebhook(e.cuerpo);
   if (r.status !== 200) throw new Error(`El puente rechazó la entrega: ${r.status} ${JSON.stringify(r.body)}`);
   return e;
-}
-
-/** Evento JOB_POSTING_STATUS firmado (contrato del simulador, docs/contratos.md §2.1). */
-export async function enviarEstadoVacante(externalJobId: string, estado: "CERRADA" | "PUBLICADA", cambiadoEn = Date.now(), firma?: string) {
-  const cuerpo = JSON.stringify({ type: "JOB_POSTING_STATUS", externalJobId, estado, cambiadoEn });
-  const r = await fetchEnProceso("http://puente.test/api/puente/vacantes/estado", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-LI-Signature": firma ?? firmarCuerpo(cuerpo, process.env.SIM_CLIENT_SECRET!) },
-    body: cuerpo,
-  });
-  return { status: r.status, body: (await r.json()) as Record<string, unknown> };
 }
 
 /** Ejecuta el procesador hasta que no quede trabajo listo (o se agoten las vueltas). */

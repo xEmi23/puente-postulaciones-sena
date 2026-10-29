@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/generated/prisma/client";
-import { cifrar } from "../src/lib/cifrado";
 import { aSlug } from "../src/modules/slugs";
 import { CLAVE_DEMO, CUENTAS_DEMO } from "../src/modules/demo";
 import { cvPdf, generarPersonas, type PersonaFicticia } from "./generador";
@@ -157,45 +156,4 @@ export async function sembrarDemo(prisma: PrismaClient) {
     });
   }
 
-  await sembrarConexionTransitoria(prisma, andina, reclutadora);
-}
-
-/**
- * Transitorio (D-25): mientras el puente no configure su conexión por la interfaz (F3), si el .env trae las credenciales
- * del puente, se registra su aplicación, Andina la autoriza y se publican las vacantes RT-2026-101/102/103 con
- * «Solicitud sencilla» hacia su webhook (RT-2026-103 no tiene correspondencia en el puente, a propósito).
- */
-async function sembrarConexionTransitoria(prisma: PrismaClient, andina: string, reclutadora: string) {
-  const clientId = process.env.VINCULO_CLIENT_ID_PUENTE;
-  const secreto = process.env.VINCULO_SECRETO_PUENTE;
-  const webhook = process.env.PUENTE_WEBHOOK_URL;
-  if (!clientId || !secreto || !webhook) return;
-  const app = await prisma.aplicacionDev.create({
-    data: { nombre: "Puente de postulaciones (desarrollo local)", clientId, secretoCifrado: cifrar(secreto), webhookUrl: webhook, webhookEstado: "SIN_VALIDAR", propietarioId: reclutadora, demo: true },
-  });
-  await prisma.autorizacionEmpresa.create({ data: { empresaId: andina, aplicacionId: app.id, autorizadaPorId: reclutadora } });
-  const transitorias = [
-    { externalJobId: "RT-2026-101", titulo: "Desarrollador/a Backend Java", nivel: "SEMI_SENIOR" },
-    { externalJobId: "RT-2026-102", titulo: "Analista de Calidad de Software (QA)", nivel: "JUNIOR" },
-    { externalJobId: "RT-2026-103", titulo: "Diseñador/a UX (sin correspondencia)", nivel: "SEMI_SENIOR" },
-  ];
-  for (const t of transitorias) {
-    await prisma.vacante.create({
-      data: {
-        empresaId: andina,
-        externalJobId: t.externalJobId,
-        titulo: t.titulo,
-        descripcion: descripcion(t.titulo, "Andina Software S.A.S."),
-        ciudad: "Medellín",
-        modalidad: "HIBRIDO",
-        nivel: t.nivel,
-        solicitudSencilla: true,
-        aplicacionId: app.id,
-        webhookUrl: webhook,
-        urlEmpresa: "https://andina-software.test/empleos",
-        estado: "PUBLICADA",
-        publicadaEn: new Date(),
-      },
-    });
-  }
 }

@@ -2,17 +2,17 @@ import { createHmac, randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fetchEnProceso, prisma, reiniciarBd } from "./utilidades";
+import { CREDENCIALES, fetchEnProceso, prisma, reiniciarBd } from "./utilidades";
 
 // PRUEBAS DE CONTRATO INDEPENDIENTES:
 // - Puente frente a la documentación de LinkedIn (el ejemplo oficial de F1 y la tabla de errores), sin pasar por el origen.
 
 beforeEach(reiniciarBd);
 
-const firmar = (cuerpo: string) => createHmac("sha256", process.env.SIM_CLIENT_SECRET!).update(`hmacsha256=${cuerpo}`).digest("hex");
+const firmar = (cuerpo: string) => createHmac("sha256", CREDENCIALES.clientSecret).update(`hmacsha256=${cuerpo}`).digest("hex");
 
 async function postWebhook(cuerpo: string, firma = firmar(cuerpo)) {
-  const r = await fetchEnProceso("http://puente.test/api/puente/webhook", {
+  const r = await fetchEnProceso("http://puente.test/api/webhooks/vinculo", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-LI-Signature": firma },
     body: cuerpo,
@@ -62,12 +62,12 @@ describe("puente frente a la documentación de LinkedIn", () => {
 
   it("validación del endpoint según F2: 200, application/json, challengeResponse = hex(HMAC(challengeCode, secreto)) en minúsculas", async () => {
     const code = randomUUID();
-    const r = await fetchEnProceso(`http://puente.test/api/puente/webhook?challengeCode=${code}&applicationId=123`);
+    const r = await fetchEnProceso(`http://puente.test/api/webhooks/vinculo?challengeCode=${code}&applicationId=123`);
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toMatch(/^application\/json/);
     const j = await r.json();
     expect(j.challengeCode).toBe(code);
-    expect(j.challengeResponse).toBe(createHmac("sha256", process.env.SIM_CLIENT_SECRET!).update(code).digest("hex"));
+    expect(j.challengeResponse).toBe(createHmac("sha256", CREDENCIALES.clientSecret).update(code).digest("hex"));
     expect(j.challengeResponse).toMatch(/^[0-9a-f]{64}$/);
   });
 });

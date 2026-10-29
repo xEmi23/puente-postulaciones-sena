@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { enviarWebhook, fetchEnProceso, payloadValido, prisma, reiniciarBd, talentia } from "./utilidades";
+import { CREDENCIALES, enviarWebhook, fetchEnProceso, payloadValido, prisma, reiniciarBd, talentia } from "./utilidades";
 
 beforeEach(reiniciarBd);
 
@@ -14,19 +14,19 @@ describe("GET de validación del webhook", () => {
   it("responde 200 con challengeCode y challengeResponse en JSON", async () => {
     const code = "890e4665-4dfe-4ab1-b689-ed553bceeed0";
     const inicio = Date.now();
-    const r = await fetchEnProceso(`http://puente.test/api/puente/webhook?challengeCode=${code}`);
+    const r = await fetchEnProceso(`http://puente.test/api/webhooks/vinculo?challengeCode=${code}`);
     expect(Date.now() - inicio).toBeLessThan(3000);
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toContain("application/json");
     const json = await r.json();
     expect(json).toEqual({
       challengeCode: code,
-      challengeResponse: createHmac("sha256", process.env.SIM_CLIENT_SECRET!).update(code).digest("hex"),
+      challengeResponse: createHmac("sha256", CREDENCIALES.clientSecret).update(code).digest("hex"),
     });
   });
 
   it("responde 400 sin challengeCode", async () => {
-    const r = await fetchEnProceso("http://puente.test/api/puente/webhook");
+    const r = await fetchEnProceso("http://puente.test/api/webhooks/vinculo");
     expect(r.status).toBe(400);
   });
 });

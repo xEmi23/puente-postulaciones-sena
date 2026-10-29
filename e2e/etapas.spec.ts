@@ -4,7 +4,7 @@ import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilida
 
 test("el tablero muestra las etapas de la referencia con su tipo y permite descartar y restaurar sin perder la tarjeta", async ({ page }) => {
   const apellido = `Etapas ${sufijoUnico()}`;
-  await postular(page, { codigo: "RT-2026-102", apellido, correo: correoUnico("etapas") });
+  await postular(page, { codigo: "9002", apellido, correo: correoUnico("etapas") });
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
 
   await iniciarSesionDemo(page);

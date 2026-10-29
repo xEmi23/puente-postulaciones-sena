@@ -1,24 +1,27 @@
 import { prisma, esViolacionUnica } from "@/lib/db";
-import { config } from "@/lib/config";
 import { firmaValida, respuestaDesafio } from "@/lib/firma";
 import { sha256Hex } from "@/lib/archivos";
 import { cuerpoError, esquemaPayload, type CodigoError } from "@/modules/contrato-apply-connect";
-import { admitePostulacion } from "./vacantes";
+import { resolverDestino } from "./destino";
+import { conexionVinculo } from "./conexiones";
 
 export interface RespuestaHttp {
   status: number;
   body: unknown;
 }
 
-/** GET de validación del endpoint: {challengeCode, challengeResponse} con 200. */
-export function responderDesafio(challengeCode: string | null): RespuestaHttp {
+/**
+ * GET de validación del endpoint (desafío de Vínculo): {challengeCode, challengeResponse} con 200, firmado con el
+ * Client Secret de la conexión configurada. Sin conexión no se puede responder (503).
+ */
+export async function responderDesafio(challengeCode: string | null): Promise<RespuestaHttp> {
   if (!challengeCode || challengeCode.length > 200) {
     return { status: 400, body: { error: "Falta el parámetro challengeCode." } };
   }
-  return {
-    status: 200,
-    body: { challengeCode, challengeResponse: respuestaDesafio(challengeCode, config().SIM_CLIENT_SECRET) },
-  };
+  const c = await conexionVinculo();
+  if (!c) return { status: 503, body: { error: "El puente aún no tiene configurada la conexión con Vínculo." } };
+  await prisma.conexion.update({ where: { tipo: "VINCULO" }, data: { webhookValidadoEn: new Date() } });
+  return { status: 200, body: { challengeCode, challengeResponse: respuestaDesafio(challengeCode, c.clientSecret) } };
 }
 
 async function registrarRechazo(codigo: CodigoError, motivo: string, extra: { jobApplicationId?: string; externalJobId?: string } = {}) {
@@ -47,9 +50,14 @@ function respuestasFaltantes(json: unknown): string[] {
  * El procesamiento (descarga del CV, llamadas al ATS) lo hace el worker.
  */
 export async function recibirPostulacion(cuerpoCrudo: string, firma: string | null): Promise<RespuestaHttp> {
-  const cfg = config();
+  const c = await conexionVinculo();
+  if (!c) {
+    // Sin secreto no se puede verificar la firma: se pide reintentar (TRANSIENT_ERROR) en vez de perder la entrega.
+    await registrarRechazo("TRANSIENT_ERROR", "El puente aún no tiene configurada la conexión con Vínculo.");
+    return { status: 503, body: cuerpoError("TRANSIENT_ERROR", { otherErrorDetails: "Conexión con Vínculo sin configurar." }) };
+  }
 
-  if (!firmaValida(cuerpoCrudo, firma, cfg.SIM_CLIENT_SECRET)) {
+  if (!firmaValida(cuerpoCrudo, firma, c.clientSecret)) {
     await registrarRechazo("SIGNATURE_MISMATCH", "La firma X-LI-Signature no coincide con el cuerpo recibido.");
     return { status: 401, body: cuerpoError("SIGNATURE_MISMATCH") };
   }
@@ -105,7 +113,7 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
     invalidos.push({ partnerQuestionIdentifier: "email", validationHint: "Correo con formato inválido." });
   }
-  if (!urlDeMediaPermitida(cv.mediaUrl, cfg.ORIGEN_BASE_URL)) {
+  if (!urlDeMediaPermitida(cv.mediaUrl, c.urlBase)) {
     invalidos.push({ partnerQuestionIdentifier: "resume", validationHint: "mediaUrl fuera del origen autorizado." });
   }
   if (invalidos.length > 0) {
@@ -122,15 +130,10 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
   const existente = await prisma.recepcion.findUnique({ where: { jobApplicationId: p.jobApplicationId } });
   if (existente) return await responderDuplicado(existente.id, p.jobApplicationId);
 
-  const correspondencia = await prisma.correspondencia.findUnique({ where: { externalJobId: p.externalJobId } });
-  if (!admitePostulacion(correspondencia, new Date(p.appliedAt))) {
-    const motivo = !correspondencia
-      ? "La vacante no tiene correspondencia con un proceso del ATS."
-      : correspondencia.motivoCierre === "ORIGEN"
-        ? "La vacante se cerró en el origen antes de esta postulación."
-        : "La vacante está desvinculada en el puente.";
-    await registrarRechazo("JOB_POSTING_CLOSED", motivo, extra);
-    return { status: 422, body: cuerpoError("JOB_POSTING_CLOSED", { otherErrorDetails: motivo }) };
+  const destino = await resolverDestino(p.externalJobId, new Date(p.appliedAt));
+  if (!destino.ok) {
+    await registrarRechazo("JOB_POSTING_CLOSED", destino.motivo, extra);
+    return { status: 422, body: cuerpoError("JOB_POSTING_CLOSED", { otherErrorDetails: destino.motivo }) };
   }
 
   const telefono = contacto.cellphoneNumberQuestionAnswer
@@ -179,7 +182,7 @@ async function responderDuplicado(recepcionId: string, jobApplicationId: string)
   return { status: 200, body: { estado: "DUPLICADO", referencia: recepcionId, jobApplicationId } };
 }
 
-/** Solo se descargan CV desde la URL base configurada del origen y su ruta de medios, nunca de un host arbitrario. */
+/** Solo se descargan CV desde la URL base configurada de Vínculo y su ruta de medios, nunca de un host arbitrario. */
 export function urlDeMediaPermitida(mediaUrl: string, origenBase: string): boolean {
   try {
     const u = new URL(mediaUrl);

@@ -1,5 +1,5 @@
 // Puente: el producto. Esquema "puente" (DB_SCHEMA).
-// Modelo interno normalizado (Recepcion); los formatos externos viven solo en los conectores.
+// Modelo interno normalizado (Recepcion); los formatos externos viven solo en los conectores (vinculo-cliente, ats-cliente).
 // `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
 
 generator client {
@@ -10,6 +10,128 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ───────────── Autenticación (Better Auth; nombres de modelo que espera la librería) ─────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  rol           String    @default("OPERADOR") // ADMIN | OPERADOR
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  demo          Boolean   @default(true)
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(3)
+  token     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+}
+
+// ───────────── Conexiones y publicación ─────────────
+
+// Una fila por sistema (VINCULO | TALENTIA). Los secretos se guardan cifrados (AES-256-GCM, PUENTE_CLAVE_CIFRADO)
+// y nunca vuelven completos a la interfaz.
+model Conexion {
+  tipo              String    @id // VINCULO | TALENTIA
+  urlBase           String
+  clientId          String? // Vínculo
+  secretoCifrado    String // Client Secret de Vínculo o API Key de Talentia
+  secretoFinal      String // últimos 4 caracteres, para mostrar ••••abcd
+  empresaId         String? // companyId de Vínculo (empresa que autorizó la aplicación)
+  empresaNombre     String?
+  estadoPrueba      String    @default("SIN_PROBAR") // SIN_PROBAR | OK | FALLIDA
+  detallePrueba     String?
+  probadaEn         DateTime? @db.Timestamptz(3)
+  permisoLectura    Boolean? // Talentia
+  permisoEscritura  Boolean? // Talentia
+  webhookValidadoEn DateTime? @db.Timestamptz(3) // último desafío de Vínculo respondido
+  ultimoContactoEn  DateTime? @db.Timestamptz(3) // última respuesta del sistema (para estimar si está dormido)
+  actualizadaEn     DateTime  @updatedAt @db.Timestamptz(3)
+}
+
+// Procesos de Talentia publicados en Vínculo por el puente (externalJobId = id del proceso).
+model Publicacion {
+  procesoId         Int       @id
+  externalJobId     String    @unique
+  titulo            String
+  vacanteId         String? // id de la vacante en Vínculo
+  url               String?
+  estado            String    @default("PUBLICADA") // PUBLICADA | CERRADA | ERROR
+  solicitudSencilla Boolean   @default(false)
+  motivo            String?
+  automatica        Boolean   @default(false)
+  publicadaEn       DateTime? @db.Timestamptz(3)
+  cerradaEn         DateTime? @db.Timestamptz(3)
+  actualizadaEn     DateTime  @updatedAt @db.Timestamptz(3)
+  demo              Boolean   @default(true)
+}
+
+model Configuracion {
+  id                    Int       @id @default(1)
+  publicacionAutomatica Boolean   @default(false)
+  ultimoSondeoEn        DateTime? @db.Timestamptz(3)
+  resultadoSondeo       String?
+}
+
+// Vínculos manuales vacante de Vínculo → proceso de Talentia, para vacantes creadas directamente en Vínculo.
+model Correspondencia {
+  id            String    @id @default(uuid()) @db.Uuid
+  externalJobId String    @unique
+  procesoAtsId  Int
+  descripcion   String
+  activa        Boolean   @default(true)
+  // Al desvincular se guarda la hora: las postulaciones hechas antes se respetan (D-17).
+  cerradaEn     DateTime? @db.Timestamptz(3)
+  creadaEn      DateTime  @default(now()) @db.Timestamptz(3)
+  actualizadaEn DateTime  @updatedAt @db.Timestamptz(3)
+  demo          Boolean   @default(true)
+}
+
+// ───────────── Operaciones ─────────────
 
 enum EstadoRecepcion {
   RECIBIDO
@@ -22,7 +144,7 @@ enum EstadoRecepcion {
 
 enum PasoRecepcion {
   cv_descargado
-  candidato_creado
+  postulante_listo
   documento_subido
   postulacion_creada
 }
@@ -41,7 +163,7 @@ model Recepcion {
   externalJobId      String
   appliedAt          DateTime          @db.Timestamptz(3)
   payloadSha256      String            @db.Char(64)
-  // Datos normalizados (minimizados) necesarios para crear el candidato en el ATS.
+  // Datos normalizados (minimizados) necesarios para crear el postulante en Talentia.
   nombre             String
   apellido           String
   correo             String
@@ -57,7 +179,7 @@ model Recepcion {
   cvTamano           Int?
   cvNombreArchivo    String?
   cvContenido        Bytes? // temporal: se borra al completar
-  atsCandidatoId     String?
+  atsPostulanteId    String?
   atsDocumentoId     String?
   atsPostulacionId   String?
   errorCodigo        String?
@@ -65,6 +187,11 @@ model Recepcion {
   duplicadosEvitados Int               @default(0)
   recibidaEn         DateTime          @default(now()) @db.Timestamptz(3)
   completadaEn       DateTime?         @db.Timestamptz(3)
+  // Aviso RESUME_DOWNLOADED a Vínculo: aparte del procesamiento, no bloquea el COMPLETADO.
+  avisoEstado        String            @default("NO_APLICA") // NO_APLICA | PENDIENTE | ENVIADO | FALLIDO
+  avisoIntentos      Int               @default(0)
+  avisoProximoEn     DateTime?         @db.Timestamptz(3)
+  avisoError         String?
   actualizadaEn      DateTime          @updatedAt @db.Timestamptz(3)
   demo               Boolean           @default(true)
   trabajo            Trabajo?
@@ -72,6 +199,7 @@ model Recepcion {
 
   @@index([estado])
   @@index([recibidaEn])
+  @@index([avisoEstado, avisoProximoEn])
 }
 
 model Trabajo {
@@ -94,7 +222,7 @@ model EventoRecepcion {
   id          String         @id @default(uuid()) @db.Uuid
   recepcionId String         @db.Uuid
   recepcion   Recepcion      @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
-  tipo        String // RECIBIDO, PASO, INTENTO_FALLIDO, RECHAZO, COMPLETADO, DUPLICADO, ...
+  tipo        String // RECIBIDO, PASO, INTENTO_FALLIDO, RECHAZO, COMPLETADO, DUPLICADO, AVISO, ...
   paso        PasoRecepcion?
   detalle     String
   creadoEn    DateTime       @default(now()) @db.Timestamptz(3)
@@ -102,7 +230,7 @@ model EventoRecepcion {
   @@index([recepcionId, creadoEn])
 }
 
-// Entregas rechazadas antes de existir una Recepción (firma inválida, payload ilegible, vacante sin correspondencia).
+// Entregas rechazadas antes de existir una Recepción (firma inválida, payload ilegible, vacante sin proceso).
 model EntregaRechazada {
   id               String   @id @default(uuid()) @db.Uuid
   codigo           String
@@ -115,23 +243,7 @@ model EntregaRechazada {
   @@index([recibidaEn])
 }
 
-model Correspondencia {
-  id             String    @id @default(uuid()) @db.Uuid
-  externalJobId  String    @unique
-  procesoAtsId   Int
-  descripcion    String
-  activa         Boolean   @default(true)
-  // Cierre propagado desde Vínculo: las postulaciones hechas antes de cerradaEn se respetan.
-  motivoCierre   String? // ORIGEN | MANUAL
-  cerradaEn      DateTime? @db.Timestamptz(3)
-  estadoOrigenEn DateTime? @db.Timestamptz(3) // último cambio de estado aplicado (descarta eventos viejos)
-  creadaEn       DateTime  @default(now()) @db.Timestamptz(3)
-  actualizadaEn  DateTime  @updatedAt @db.Timestamptz(3)
-  demo           Boolean   @default(true)
-}
-
 // Fallos inyectables en los conectores del puente (solo con PUENTE_MODO_PRUEBAS=1 en un entorno local).
-// Simulan, desde el lado del puente, lo que ocurre cuando Talentia o Vínculo fallan.
 model FalloSimulado {
   ruta      String   @id // candidatos | documentos | postulaciones | consulta | media
   modo      String // NO_DISPONIBLE | PERDER_RESPUESTA | LENTO | CREDENCIALES | INTERRUMPIR

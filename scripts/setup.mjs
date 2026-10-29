@@ -13,7 +13,6 @@ import { parse } from "dotenv";
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const secreto = (bytes = 24) => randomBytes(bytes).toString("hex");
 const APPS = ["vinculo", "talentia", "puente"];
-const CLIENT_ID_PUENTE = "vin_puentelocal0001";
 
 const libre = (puerto) =>
   new Promise((ok) => {
@@ -34,15 +33,7 @@ async function envRaiz() {
     while (!(await libre(puerto)) && puerto < 5450) puerto++;
     if (puerto !== 5435) console.warn(`⚠ El puerto 5435 está ocupado; se usará ${puerto} para el PostgreSQL local.`);
   }
-  const valores = {
-    PG_PORT: String(puerto),
-    PG_USER: "tb2",
-    PG_PASSWORD: secreto(),
-    // Secretos compartidos entre sistemas mientras las conexiones se configuran por variables de entorno.
-    SIM_CLIENT_SECRET: secreto(),
-    ATS_API_KEY: secreto(),
-    DEMO_ADMIN_PASSWORD: secreto(8),
-  };
+  const valores = { PG_PORT: String(puerto), PG_USER: "tb2", PG_PASSWORD: secreto() };
   writeFileSync(
     ruta,
     "# Generado por npm run setup. No se versiona.\n" + Object.entries(valores).map(([k, v]) => `${k}="${v}"`).join("\n") + "\n",
@@ -55,59 +46,21 @@ function bd(r, nombre) {
   return `postgresql://${r.PG_USER}:${r.PG_PASSWORD}@localhost:${r.PG_PORT}/${nombre}`;
 }
 
+// Cada app tiene sus propios secretos: ninguno se comparte entre sistemas (las credenciales entre ellos se crean en
+// sus pantallas o con `npm run demo:conectar`).
 function plantilla(app, r) {
   const comun = {
     DATABASE_URL: bd(r, "tb2_dev"),
     DATABASE_URL_TEST: bd(r, "tb2_test"),
     DATABASE_URL_E2E: bd(r, "tb2_e2e"),
     CV_MAX_BYTES: "5242880",
-    DEMO_AUTH_ENABLED: "true",
-    DEMO_ADMIN_USER: "demo",
-    DEMO_ADMIN_PASSWORD: r.DEMO_ADMIN_PASSWORD,
-    SESSION_SECRET: secreto(32),
+    BETTER_AUTH_SECRET: secreto(32),
   };
   if (app === "vinculo") {
-    const { DATABASE_URL, DATABASE_URL_TEST, DATABASE_URL_E2E, CV_MAX_BYTES } = comun;
-    return {
-      DATABASE_URL,
-      DATABASE_URL_TEST,
-      DATABASE_URL_E2E,
-      CV_MAX_BYTES,
-      APP_BASE_URL: "http://localhost:3001",
-      BETTER_AUTH_SECRET: secreto(32),
-      VINCULO_CLAVE_CIFRADO: randomBytes(32).toString("hex"),
-      VINCULO_JWT_SECRET: secreto(32),
-      WORKER_EN_PROCESO: "1",
-      // Transitorio (D-25): la siembra registra la aplicación del puente con estas credenciales.
-      VINCULO_CLIENT_ID_PUENTE: CLIENT_ID_PUENTE,
-      VINCULO_SECRETO_PUENTE: r.SIM_CLIENT_SECRET,
-      PUENTE_WEBHOOK_URL: "http://localhost:3003/api/puente/webhook",
-    };
+    return { ...comun, APP_BASE_URL: "http://localhost:3001", VINCULO_CLAVE_CIFRADO: randomBytes(32).toString("hex"), VINCULO_JWT_SECRET: secreto(32), WORKER_EN_PROCESO: "1" };
   }
-  if (app === "talentia") {
-    const { DATABASE_URL, DATABASE_URL_TEST, DATABASE_URL_E2E, CV_MAX_BYTES } = comun;
-    return {
-      DATABASE_URL,
-      DATABASE_URL_TEST,
-      DATABASE_URL_E2E,
-      CV_MAX_BYTES,
-      APP_BASE_URL: "http://localhost:3002",
-      BETTER_AUTH_SECRET: secreto(32),
-      // Transitorio (D-25): la siembra registra como API Key la llave que el puente tiene en su .env.
-      TALENTIA_LLAVE_PUENTE: r.ATS_API_KEY,
-    };
-  }
-  return {
-    ...comun,
-    APP_BASE_URL: "http://localhost:3003",
-    ORIGEN_BASE_URL: "http://localhost:3001",
-    ATS_BASE_URL: "http://localhost:3002",
-    VINCULO_CLIENT_ID: CLIENT_ID_PUENTE,
-    SIM_CLIENT_SECRET: r.SIM_CLIENT_SECRET,
-    ATS_API_KEY: r.ATS_API_KEY,
-    PUENTE_MODO_PRUEBAS: "0",
-    WORKER_EN_PROCESO: "1",
-  };
+  if (app === "talentia") return { ...comun, APP_BASE_URL: "http://localhost:3002" };
+  return { ...comun, APP_BASE_URL: "http://localhost:3003", PUENTE_CLAVE_CIFRADO: randomBytes(32).toString("hex"), PUENTE_MODO_PRUEBAS: "0", WORKER_EN_PROCESO: "1" };
 }
 
 function envApp(app, r) {

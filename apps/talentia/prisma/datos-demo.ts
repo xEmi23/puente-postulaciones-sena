@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/generated/prisma/client";
 import { etapasParaCrear } from "../src/modules/etapas";
-import { hashLlave } from "../src/modules/api/llaves";
 import { CLAVE_DEMO, EMPRESA_DEMO, USUARIOS_DEMO } from "../src/modules/demo";
 
 // Datos ficticios de Talentia para la empresa demo «Andina Software S.A.S.» (ficticia).
@@ -105,11 +104,5 @@ export async function sembrarDemo(prisma: PrismaClient) {
         },
       },
     });
-  }
-
-  // Transitorio (D-25): mientras el puente no reciba la llave por /conexiones, la siembra registra la que tiene en su .env.
-  const semilla = process.env.TALENTIA_LLAVE_PUENTE;
-  if (semilla) {
-    await prisma.apiKey.create({ data: { nombre: "Puente (desarrollo local)", prefijo: "tal_semilla", hash: hashLlave(semilla), permisoLectura: true, permisoModificacion: true } });
   }
 }

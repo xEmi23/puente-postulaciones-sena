@@ -5,14 +5,30 @@ import { createHash, randomUUID } from "node:crypto";
 // Las pruebas de contrato de cada simulador verifican que el sistema real cumple el mismo contrato.
 
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
-const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+const json = (status: number, body: unknown, encabezados: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...encabezados } });
 
-/** Vínculo: token por client credentials y URL privada del CV (mediaUrl con Bearer y expiración). */
+interface PublicacionDoble {
+  id: string;
+  externalJobId: string;
+  companyId: string;
+  title: string;
+  webhook: string | null;
+  estado: "LISTED" | "CLOSED";
+  closedAt: string | null;
+}
+
+/** Vínculo: token por client credentials, mediaUrl con Bearer y expiración, autorizaciones, publicación, cierre y ciclo de vida. */
 export class VinculoDoble {
   archivos = new Map<string, { bytes: Uint8Array; nombre: string; expiraEn: number }>();
   descargas = 0;
   tokensEmitidos = 0;
   private tokens = new Set<string>();
+  empresa = { companyId: "6f1d2c3b-4a5e-4f60-8a71-b2c3d4e5f601", name: "Andina Software S.A.S." };
+  publicaciones = new Map<string, PublicacionDoble>();
+  avisos: { jobApplicationId: string; action: string }[] = [];
+  /** Respuestas forzadas para el ciclo de vida (p. ej. [503, 503]); después responde 200. */
+  fallosAviso: number[] = [];
 
   constructor(
     private base: string,
@@ -24,12 +40,32 @@ export class VinculoDoble {
     this.descargas = 0;
     this.tokensEmitidos = 0;
     this.tokens.clear();
+    this.publicaciones.clear();
+    this.avisos = [];
+    this.fallosAviso = [];
+  }
+
+  /** Invalida los tokens emitidos (como al regenerar el Client Secret). */
+  invalidarTokens() {
+    this.tokens.clear();
   }
 
   agregarCv(bytes: Uint8Array, nombre = "cv.pdf", expiraEn = Date.now() + 30 * 86_400_000) {
     const id = randomUUID();
     this.archivos.set(id, { bytes, nombre, expiraEn });
     return { mediaUrl: `${this.base}/api/v1/media/${id}`, mediaUrn: `urn:li:media:${id}` };
+  }
+
+  private vista(v: PublicacionDoble) {
+    return {
+      id: v.id,
+      externalJobId: v.externalJobId,
+      state: v.estado,
+      applyMethod: v.webhook ? "ONSITE_APPLY" : "COMPANY_SITE",
+      url: `${this.base}/empleos/${v.id}`,
+      notOnsiteReason: null,
+      closedAt: v.closedAt,
+    };
   }
 
   async atender(req: Request): Promise<Response> {
@@ -45,10 +81,49 @@ export class VinculoDoble {
       this.tokensEmitidos++;
       return json(200, { access_token: token, expires_in: 3600, token_type: "Bearer" });
     }
-    const m = ruta.match(/^\/api\/v1\/media\/([^/]+)$/);
-    if (!m) return json(404, { mensaje: "No existe." });
     const presentado = req.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
     if (!this.tokens.has(presentado)) return json(401, { status: 401, code: "INVALID_ACCESS_TOKEN", message: "Token inválido." });
+
+    if (ruta === "/api/v1/autorizaciones") {
+      return json(200, {
+        application: { clientId: this.credenciales().clientId, name: "Puente de pruebas", webhookStatus: "VALIDADO" },
+        elements: [{ ...this.empresa, authorizedAt: new Date().toISOString() }],
+      });
+    }
+    if (ruta === "/api/v1/jobPostings" && req.method === "POST") {
+      const d = (await req.json()) as { externalJobId: string; companyId: string; title: string; onsiteApply?: { jobApplicationWebhookUrl: string } };
+      if (d.companyId !== this.empresa.companyId) return json(403, { status: 403, code: "COMPANY_NOT_AUTHORIZED", message: "No autorizada." });
+      const previa = this.publicaciones.get(d.externalJobId);
+      const v: PublicacionDoble = {
+        id: previa?.id ?? randomUUID(),
+        externalJobId: d.externalJobId,
+        companyId: d.companyId,
+        title: d.title,
+        webhook: d.onsiteApply?.jobApplicationWebhookUrl ?? null,
+        estado: "LISTED",
+        closedAt: null,
+      };
+      this.publicaciones.set(d.externalJobId, v);
+      return json(previa ? 200 : 201, { ...this.vista(v), webhookValidation: "ok" });
+    }
+    const cierre = ruta.match(/^\/api\/v1\/jobPostings\/([^/]+)\/close$/);
+    if (cierre && req.method === "POST") {
+      const v = this.publicaciones.get(decodeURIComponent(cierre[1]));
+      if (!v) return json(404, { status: 404, code: "JOB_POSTING_NOT_FOUND", message: "No existe." });
+      v.estado = "CLOSED";
+      v.closedAt ??= new Date().toISOString();
+      return json(200, this.vista(v));
+    }
+    const ciclo = ruta.match(/^\/api\/v1\/jobApplications\/([^/]+)\/lifecycle$/);
+    if (ciclo && req.method === "POST") {
+      const forzado = this.fallosAviso.shift();
+      if (forzado) return json(forzado, { status: forzado, code: "TRANSIENT", message: "Falla forzada." });
+      const { action } = (await req.json()) as { action: string };
+      this.avisos.push({ jobApplicationId: decodeURIComponent(ciclo[1]), action });
+      return json(200, { jobApplicationId: decodeURIComponent(ciclo[1]), action, status: "CV_DESCARGADO" });
+    }
+    const m = ruta.match(/^\/api\/v1\/media\/([^/]+)$/);
+    if (!m) return json(404, { mensaje: "No existe." });
     const a = this.archivos.get(m[1]);
     if (!a) return json(404, { mensaje: "No existe." });
     if (a.expiraEn < Date.now()) return json(410, { mensaje: "Expiró." });
@@ -70,21 +145,29 @@ interface Postulacion {
   etapa: string;
 }
 
-const errorTal = (status: number, codigo: string, mensaje: string, detalle?: Record<string, unknown>) =>
-  json(status, { error: detalle ? { codigo, mensaje, detalle } : { codigo, mensaje } });
+const errorTal = (status: number, codigo: string, mensaje: string, detalle?: Record<string, unknown>, encabezados: Record<string, string> = {}) =>
+  json(status, { error: detalle ? { codigo, mensaje, detalle } : { codigo, mensaje } }, encabezados);
 
 /**
- * Talentia: la API v1 del simulador (postulantes, documentos multipart, postulaciones, procesos), con la API Key en
- * `auth_token`, errores { error: { codigo, mensaje, detalle } } e Idempotency-Key.
+ * Talentia: la API v1 del simulador (postulantes, documentos multipart, postulaciones, procesos, llave actual), con la
+ * API Key en `auth_token`, errores { error: { codigo, mensaje, detalle } }, Idempotency-Key, 401/403 y 429 con Retry-After.
  */
 export class TalentiaDoble {
   candidatos = new Map<string, { id: string; correo: string; nombre: string; apellido: string; telefono?: string | null; ciudad?: string | null }>();
   documentos: { id: string; candidatoId: string; sha256: string; bytes: Uint8Array }[] = [];
   postulaciones: Postulacion[] = [];
   procesos = [
-    { id: 9001, titulo: "Desarrollador/a Backend Java", estado: "INICIADO" },
-    { id: 9002, titulo: "Analista de Calidad de Software (QA)", estado: "INICIADO" },
+    { id: 9001, titulo: "Desarrollador/a Backend Java", estado: "INICIADO", area: "Ingeniería", ciudad: "Medellín", descripcion: "Servicios backend en Java. Proceso ficticio de pruebas.", prioridad: "Alta", total_postulaciones: 0 },
+    { id: 9002, titulo: "Analista de Calidad de Software (QA)", estado: "INICIADO", area: "Calidad", ciudad: "Medellín", descripcion: "Pruebas funcionales. Proceso ficticio de pruebas.", prioridad: "Media", total_postulaciones: 0 },
+    { id: 9003, titulo: "Proceso cerrado", estado: "CERRADO", area: "Datos", ciudad: "Remoto", descripcion: "", prioridad: "Baja", total_postulaciones: 0 },
   ];
+  /** La llave fue revocada en Talentia: todo responde 401. */
+  revocada = false;
+  permisos = { lectura: true, modificacion: true };
+  /** Cuántas solicitudes siguientes responden 429 con Retry-After. */
+  limitar = 0;
+  retryAfter = 2;
+  solicitudes = 0;
   private claves = new Map<string, { hash: string; status: number; body: unknown }>();
 
   constructor(private apiKey: () => string) {}
@@ -94,6 +177,10 @@ export class TalentiaDoble {
     this.documentos = [];
     this.postulaciones = [];
     this.claves.clear();
+    this.revocada = false;
+    this.permisos = { lectura: true, modificacion: true };
+    this.limitar = 0;
+    this.solicitudes = 0;
   }
 
   conteo() {
@@ -121,11 +208,24 @@ export class TalentiaDoble {
   });
 
   async atender(req: Request): Promise<Response> {
-    if (req.headers.get("auth_token") !== this.apiKey()) return errorTal(401, "NO_AUTORIZADO", "La API Key no es válida.");
+    this.solicitudes++;
+    if (this.revocada || req.headers.get("auth_token") !== this.apiKey()) return errorTal(401, "NO_AUTORIZADO", "La API Key fue revocada.");
+    if (this.limitar > 0) {
+      this.limitar--;
+      return errorTal(429, "LIMITE_EXCEDIDO", "Se superó el límite.", undefined, { "Retry-After": String(this.retryAfter) });
+    }
     const url = new URL(req.url);
+    if (url.pathname === "/api/v1/api-key") {
+      return json(200, { data: { nombre: "Llave de pruebas", prefijo: "tal_0000test", permisos: { seleccion: this.permisos }, creada_en: new Date().toISOString() } });
+    }
     const ruta = url.pathname.replace(/^\/api\/v1\/seleccion/, "");
     if (req.method === "GET") {
       if (ruta === "/procesos") return json(200, { data: this.procesos.map((p) => ({ ...p, etapas: [{ nombre: "Postulantes" }] })) });
+      const mp = ruta.match(/^\/procesos\/(\d+)$/);
+      if (mp) {
+        const p = this.procesos.find((x) => x.id === Number(mp[1]));
+        return p ? json(200, { data: { ...p, etapas: [{ nombre: "Postulantes" }] } }) : errorTal(404, "NO_ENCONTRADO", "No existe.");
+      }
       if (ruta === "/postulantes") {
         const email = url.searchParams.get("email")?.toLowerCase();
         return json(200, { data: [...this.candidatos.values()].filter((c) => c.correo === email), paginacion: { pagina: 1, por_pagina: 25, total: 0 } });
@@ -136,6 +236,7 @@ export class TalentiaDoble {
       }
       return errorTal(404, "NO_ENCONTRADO", "Ruta inexistente.");
     }
+    if (!this.permisos.modificacion) return errorTal(403, "PERMISO_INSUFICIENTE", "La API Key no tiene el permiso de Modificación del módulo Selección.");
     const multipart = /\/documentos$/.test(ruta);
     const form = multipart ? await req.formData() : null;
     const crudo = multipart ? `${form!.get("sha256")}` : await req.text();
@@ -203,5 +304,4 @@ export class TalentiaDoble {
     }
     return error(404, "NO_ENCONTRADO", "Ruta inexistente.");
   }
-
 }

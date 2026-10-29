@@ -69,7 +69,7 @@ test.describe("Vínculo", () => {
     const correo = correoUnico("repite");
     await postular(page, { apellido: `Repite ${sufijoUnico()}`, correo });
     await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
-    await abrirVacante(page, "RT-2026-101");
+    await abrirVacante(page, "9001");
     await expect(page.getByTestId("accion-postular")).toContainText("Ya enviaste tu solicitud");
     await iniciarSesionVinculo(page, "reclutadora");
     await page.goto(`${VIN}/mis-postulaciones`);

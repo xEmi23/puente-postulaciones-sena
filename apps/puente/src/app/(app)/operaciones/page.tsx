@@ -31,7 +31,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
     <>
       <ActualizarCada ms={3000} />
       <h1>Operaciones del puente</h1>
-      <p className="p-sub">Cada postulación recibida por el webhook y su avance hasta el ATS. Se actualiza solo.</p>
+      <p className="p-sub">Cada postulación recibida de Vínculo y su avance hasta Talentia. Se actualiza solo.</p>
 
       <section aria-labelledby="t-metricas">
         <h2 id="t-metricas" className="visualmente-oculto">
@@ -78,18 +78,18 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
       <section className="p-tarjeta" aria-labelledby="t-lista">
         <h2 id="t-lista">Operaciones recientes</h2>
         <nav className="p-filtros" aria-label="Filtrar por estado">
-          <Link href="/" aria-current={!filtro ? "true" : undefined}>
+          <Link href="/operaciones" aria-current={!filtro ? "true" : undefined}>
             Todas
           </Link>
           {ESTADOS.map((e) => (
-            <Link key={e} href={`/?estado=${e}`} aria-current={filtro === e ? "true" : undefined}>
+            <Link key={e} href={`/operaciones?estado=${e}`} aria-current={filtro === e ? "true" : undefined}>
               {ETIQUETA_ESTADO[e]}
             </Link>
           ))}
         </nav>
         {operaciones.length === 0 ? (
           <p className="vacio">
-            {filtro ? "No hay operaciones en este estado." : "Aún no llegan postulaciones. Postula desde el portal de origen para ver la primera."}
+            {filtro ? "No hay operaciones en este estado." : "Aún no llegan postulaciones. Cuando alguien postule con «Solicitud sencilla» en Vínculo, aparecerá aquí."}
           </p>
         ) : (
           <div className="p-tabla-contenedor">

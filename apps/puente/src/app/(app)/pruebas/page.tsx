@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { modoPrueba } from "@/lib/config";
-import { exigirSesionAccion } from "@/lib/sesion-servidor";
+import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { MODOS_FALLO, RUTAS_FALLO, configurarFallo, limpiarFallos } from "@/modules/fallos";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ const esquema = z.object({
 
 async function configurar(formData: FormData) {
   "use server";
-  await exigirSesionAccion();
+  await exigirUsuarioAccion("ADMIN");
   if (!modoPrueba()) notFound();
   const r = esquema.safeParse(Object.fromEntries(formData));
   if (!r.success) redirect("/pruebas?error=Datos%20inv%C3%A1lidos");
@@ -34,7 +34,7 @@ async function configurar(formData: FormData) {
 
 async function limpiar() {
   "use server";
-  await exigirSesionAccion();
+  await exigirUsuarioAccion("ADMIN");
   if (!modoPrueba()) notFound();
   await limpiarFallos();
   redirect("/pruebas?ok=Fallos%20eliminados");

@@ -1,20 +1,31 @@
+import { randomUUID } from "node:crypto";
+import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/generated/prisma/client";
+import { CLAVE_DEMO, USUARIOS_DEMO } from "../src/modules/demo";
 
-// Datos ficticios del puente: correspondencias vacante de Vínculo → proceso de Talentia.
-// RT-2026-103 queda a propósito SIN correspondencia (el puente no adivina el proceso).
+// Datos de demostración del puente (ESPECIFICACION §5): solo las cuentas. SIN conexiones configuradas: la demo las
+// configura en vivo en /conexiones, o `npm run demo:conectar` las configura solo (pruebas y plan B).
 
-export const CORRESPONDENCIAS = [
-  { externalJobId: "RT-2026-101", procesoAtsId: 9001, descripcion: "Desarrollador/a Backend Java → proceso 9001" },
-  { externalJobId: "RT-2026-102", procesoAtsId: 9002, descripcion: "Analista de Calidad de Software (QA) → proceso 9002" },
-] as const;
-
-/** Borra solo las filas marcadas demo = true y vuelve a sembrar. */
+/**
+ * Borra lo marcado como demo y también las conexiones y publicaciones (apuntan a credenciales de Vínculo y Talentia
+ * que su propio demo:reset borra), y vuelve a sembrar las cuentas.
+ */
 export async function sembrarDemo(prisma: PrismaClient) {
   await prisma.$transaction([
     prisma.recepcion.deleteMany({ where: { demo: true } }),
     prisma.entregaRechazada.deleteMany({ where: { demo: true } }),
     prisma.correspondencia.deleteMany({ where: { demo: true } }),
+    prisma.publicacion.deleteMany({}),
+    prisma.conexion.deleteMany({}),
     prisma.falloSimulado.deleteMany({}),
+    prisma.user.deleteMany({ where: { demo: true } }),
   ]);
-  for (const c of CORRESPONDENCIAS) await prisma.correspondencia.create({ data: c });
+  await prisma.configuracion.upsert({ where: { id: 1 }, create: { id: 1 }, update: { publicacionAutomatica: false, ultimoSondeoEn: null, resultadoSondeo: null } });
+  const hash = await hashPassword(CLAVE_DEMO);
+  for (const u of USUARIOS_DEMO) {
+    const id = randomUUID();
+    await prisma.user.create({
+      data: { id, name: u.nombre, email: u.correo, emailVerified: true, rol: u.rol, accounts: { create: { id: randomUUID(), accountId: id, providerId: "credential", password: hash } } },
+    });
+  }
 }

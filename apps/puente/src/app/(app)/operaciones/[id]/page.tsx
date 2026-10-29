@@ -4,10 +4,10 @@ import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
 import { formatoTamano } from "@/lib/archivos";
 import { enmascararCorreo, referenciaCorta } from "@/lib/privacidad";
-import { exigirSesionAccion } from "@/lib/sesion-servidor";
+import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { ActualizarCada } from "@/components/actualizar-cada";
 import { reconciliar, reintentar } from "@/modules/operaciones";
-import { ETIQUETA_ESTADO, ETIQUETA_PASO, PASOS, explicarError } from "@/modules/mensajes";
+import { ETIQUETA_AVISO, ETIQUETA_ESTADO, ETIQUETA_PASO, PASOS, explicarError } from "@/modules/mensajes";
 
 export const dynamic = "force-dynamic";
 
@@ -31,13 +31,13 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
 
   async function accionReintentar() {
     "use server";
-    await exigirSesionAccion();
+    await exigirUsuarioAccion();
     const r = await reintentar(id);
     redirect(`/operaciones/${id}?${r.ok ? "ok" : "error"}=${encodeURIComponent(r.mensaje)}`);
   }
   async function accionReconciliar() {
     "use server";
-    await exigirSesionAccion();
+    await exigirUsuarioAccion();
     const r = await reconciliar(id);
     redirect(`/operaciones/${id}?${r.ok ? "ok" : "error"}=${encodeURIComponent(r.mensaje)}`);
   }
@@ -88,14 +88,14 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           {puedeReconciliar && (
             <form action={accionReconciliar}>
               <button className="p-boton" type="submit">
-                Reconciliar con el ATS
+                Reconciliar con Talentia
               </button>
             </form>
           )}
           <span className="p-nota">
             {puedeReintentar
-              ? "Seguro: cada escritura en el ATS usa Idempotency-Key y el candidato se busca por correo."
-              : "Consulta al ATS por la referencia externa antes de volver a escribir."}
+              ? "Seguro: cada escritura en Talentia usa Idempotency-Key y el postulante se busca por correo."
+              : "Consulta a Talentia por la referencia externa antes de volver a escribir."}
           </span>
         </div>
       )}
@@ -115,7 +115,7 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           <dd className="mono">{rec.jobApplicationId}</dd>
           <dt>Vacante (externalJobId)</dt>
           <dd className="mono">{rec.externalJobId}</dd>
-          <dt>Proceso ATS</dt>
+          <dt>Proceso de Talentia</dt>
           <dd>{rec.procesoAtsId ?? "—"}</dd>
           <dt>Postulante</dt>
           <dd>
@@ -130,6 +130,11 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           </dd>
           <dt>Duplicados evitados</dt>
           <dd>{rec.duplicadosEvitados}</dd>
+          <dt>Aviso «CV descargado» a Vínculo</dt>
+          <dd data-testid="estado-aviso">
+            {ETIQUETA_AVISO[rec.avisoEstado] ?? rec.avisoEstado}
+            {rec.avisoError && rec.avisoEstado !== "ENVIADO" ? ` · ${rec.avisoError}` : ""}
+          </dd>
         </dl>
       </section>
 

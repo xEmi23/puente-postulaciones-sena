@@ -1,49 +1,62 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { exigirSesion } from "@/lib/sesion-servidor";
-import { COOKIE_SESION } from "@/lib/sesion";
+import { auth } from "@/lib/auth";
+import { exigirUsuario } from "@/lib/sesion-servidor";
 import { modoPrueba } from "@/lib/config";
+import { EnlaceMenu } from "@/components/enlace-menu";
 import "../puente.css";
 
 async function salir() {
   "use server";
-  (await cookies()).delete(COOKIE_SESION);
+  await auth.api.signOut({ headers: await headers() });
   redirect("/ingresar");
 }
 
 export default async function LayoutPuente({ children }: { children: React.ReactNode }) {
-  await exigirSesion("/");
+  const usuario = await exigirUsuario("/operaciones");
   const prueba = modoPrueba();
   return (
     <div className="m-puente">
       <header className="p-barra">
         <div className="p-barra-interior">
-          <Link href="/" className="p-marca">
+          <Link href="/operaciones" className="p-marca">
             <span className="p-marca-logo" aria-hidden="true">
-              tb
+              P
             </span>
             Puente
           </Link>
           <nav aria-label="Menú del panel">
             <ul className="p-nav">
               <li>
-                <Link href="/">Operaciones</Link>
+                <EnlaceMenu href="/operaciones">Operaciones</EnlaceMenu>
               </li>
               <li>
-                <Link href="/correspondencias">Correspondencias</Link>
+                <EnlaceMenu href="/conexiones">Conexiones</EnlaceMenu>
               </li>
               <li>
-                <Link href="/rechazos">Rechazos en la entrada</Link>
+                <EnlaceMenu href="/procesos">Procesos</EnlaceMenu>
               </li>
-              {prueba && (
+              <li>
+                <EnlaceMenu href="/correspondencias">Correspondencias</EnlaceMenu>
+              </li>
+              <li>
+                <EnlaceMenu href="/rechazos">Rechazos</EnlaceMenu>
+              </li>
+              <li>
+                <EnlaceMenu href="/metricas">Métricas</EnlaceMenu>
+              </li>
+              {prueba && usuario.rol === "ADMIN" && (
                 <li>
-                  <Link href="/pruebas">Controles de prueba</Link>
+                  <EnlaceMenu href="/pruebas">Controles de prueba</EnlaceMenu>
                 </li>
               )}
             </ul>
           </nav>
           <form action={salir} className="p-salir">
+            <span className="p-usuario">
+              {usuario.nombre} · {usuario.rol === "ADMIN" ? "Administrador/a" : "Operador/a"}
+            </span>{" "}
             <button type="submit">Salir</button>
           </form>
         </div>

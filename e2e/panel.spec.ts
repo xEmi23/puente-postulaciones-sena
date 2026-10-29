@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { PUE, TAL } from "./procesos";
-import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
+import { PUE, TAL, VIN } from "./procesos";
+import { abrirVacante, correoUnico, iniciarSesionDemo, iniciarSesionPuente, postular, quitarFallos, sufijoUnico } from "./utilidades";
 
 /** Lee la referencia de la confirmación del origen (el panel enmascara el nombre y el correo a propósito). */
 async function referenciaDeConfirmacion(page: Page): Promise<string> {
@@ -17,6 +17,10 @@ async function abrirOperacion(page: Page, jobApplicationId: string) {
 }
 
 test.describe("Panel del puente", () => {
+  test.afterEach(async ({ page }, info) => {
+    info.setTimeout(info.timeout + 30_000); // la limpieza no compite con el tiempo de la prueba
+    await quitarFallos(page);
+  });
   test("sin sesión no se entra al panel ni al ATS; con credenciales erróneas se informa", async ({ page }) => {
     await page.goto(`${PUE}/`);
     await expect(page).toHaveURL(new RegExp(`^${PUE}/ingresar\\?siguiente=%2F`));
@@ -26,10 +30,19 @@ test.describe("Panel del puente", () => {
     expect([307, 308, 401]).toContain(r.status());
 
     await page.goto(`${PUE}/ingresar`);
-    await page.getByLabel("Usuario").fill("demo-e2e");
+    await page.getByLabel("Correo").fill("admin@puente.demo.test");
     await page.getByLabel("Contraseña").fill("incorrecta");
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page.getByText("Usuario o contraseña incorrectos.")).toBeVisible();
+    await expect(page.getByText("Correo o contraseña incorrectos.")).toBeVisible();
+
+    // Criterio 1: con sesión en el puente, Talentia y Vínculo siguen pidiendo su propio ingreso (cookies separadas).
+    await iniciarSesionPuente(page, "operador");
+    await expect(page).toHaveURL(new RegExp(`^${PUE}/operaciones`));
+    await page.goto(`${TAL}/seleccion/procesos`);
+    await expect(page).toHaveURL(/\/ingresar/);
+    await page.goto(`${VIN}/reclutador`);
+    await expect(page).toHaveURL(/\/ingresar/);
+    expect((await page.context().cookies()).map((c) => c.name).filter((n) => /^(tal|vin)_/.test(n))).toEqual([]);
   });
 
   test("muestra la operación completada con su línea de tiempo y las métricas medidas", async ({ page }) => {
@@ -45,7 +58,7 @@ test.describe("Panel del puente", () => {
     const linea = page.getByTestId("linea-tiempo");
     await expect(linea).toContainText("Postulación recibida y firma verificada.");
     await expect(linea).toContainText("CV descargado");
-    await expect(linea).toContainText("Postulación creada en la etapa Postulantes.");
+    await expect(linea).toContainText("Postulación creada en la etapa Postulantes de Talentia.");
     // El correo completo nunca aparece en el panel (solo enmascarado).
     await expect(page.locator("body")).not.toContainText(correo);
     await expect(page.locator("body")).toContainText("pa•••@demo.test");
@@ -56,23 +69,24 @@ test.describe("Panel del puente", () => {
     await expect(metricas.locator('[data-metrica="tiempos"]')).toContainText(/n = [1-9]/);
   });
 
-  test("vacante desvinculada → el origen no puede entregar (JOB_POSTING_CLOSED) y aparece en rechazos", async ({ page }) => {
+  test("«Cerrar en Vínculo» deja la vacante sin recibir postulaciones; «Publicar de nuevo» la reabre", async ({ page }) => {
     await iniciarSesionDemo(page);
-    await page.goto(`${PUE}/correspondencias`);
-    const fila = page.getByTestId("fila-correspondencia").filter({ hasText: "RT-2026-102" });
-    await fila.getByRole("button", { name: "Desvincular" }).click();
-    await expect(page.getByText(/RT-2026-102 desvinculada/)).toBeVisible();
-
+    await page.goto(`${PUE}/procesos`);
+    const fila = page.locator('[data-testid="fila-proceso"][data-proceso="9002"]');
+    const urlVacante = (await fila.getByRole("link", { name: /Ver en Vínculo/ }).getAttribute("href"))!;
+    await fila.getByRole("button", { name: "Cerrar en Vínculo" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("cerrada en Vínculo");
     try {
-      await postular(page, { codigo: "RT-2026-102", apellido: `Cerrada ${sufijoUnico()}`, correo: correoUnico("cerrada") });
-      await expect(page.locator("[data-estado-entrega]")).toHaveText("No se pudo entregar", { timeout: 30_000 });
-      await page.goto(`${PUE}/rechazos`);
-      await expect(page.getByTestId("fila-rechazo").filter({ hasText: "RT-2026-102" }).first()).toContainText("JOB_POSTING_CLOSED");
+      await expect(page.locator('[data-testid="fila-proceso"][data-proceso="9002"]').getByTestId("estado-publicacion")).toContainText("Cerrada");
+      await page.goto(urlVacante); // el buscador ya no la lista
+      await expect(page.getByTestId("accion-postular")).toContainText("Esta vacante ya no recibe postulaciones.");
     } finally {
-      await page.goto(`${PUE}/correspondencias`);
-      await page.getByTestId("fila-correspondencia").filter({ hasText: "RT-2026-102" }).getByRole("button", { name: "Activar" }).click();
-      await expect(page.getByText(/RT-2026-102 vinculada de nuevo/)).toBeVisible();
+      await page.goto(`${PUE}/procesos`);
+      await page.locator('[data-testid="fila-proceso"][data-proceso="9002"]').getByRole("button", { name: "Publicar de nuevo" }).click();
+      await expect(page.locator(".alerta-exito")).toContainText("publicado en Vínculo con «Solicitud sencilla»");
     }
+    await abrirVacante(page, "9002");
+    await expect(page.getByRole("link", { name: "Solicitud sencilla" })).toBeVisible();
   });
 
   test("ATS caído: reintenta solo y completa; la línea de tiempo muestra el intento fallido", async ({ page }) => {
@@ -91,7 +105,7 @@ test.describe("Panel del puente", () => {
     await expect(page.getByTestId("linea-tiempo")).toContainText("ATS_NO_DISPONIBLE");
   });
 
-  test("respuesta perdida sin forma de saber → Requiere verificación → «Reconciliar con el ATS» la completa", async ({ page }) => {
+  test("respuesta perdida sin forma de saber → Requiere verificación → «Reconciliar con Talentia» la completa", async ({ page }) => {
     await iniciarSesionDemo(page);
     await page.goto(`${PUE}/pruebas`);
     for (const [ruta, modo, n] of [
@@ -116,8 +130,8 @@ test.describe("Panel del puente", () => {
     await page.goto(`${PUE}/pruebas`);
     await page.getByRole("button", { name: "Quitar todos los fallos" }).click();
     await page.goto(url);
-    await page.getByRole("button", { name: "Reconciliar con el ATS" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText("El ATS ya tenía la postulación");
+    await page.getByRole("button", { name: "Reconciliar con Talentia" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("Talentia ya tenía la postulación");
     await expect(page.getByTestId("linea-tiempo")).toContainText("Reconciliado desde el panel");
     await expect(page.getByTestId("estado-operacion")).toHaveText("Completado");
   });

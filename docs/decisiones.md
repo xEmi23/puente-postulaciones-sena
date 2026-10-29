@@ -302,3 +302,47 @@
 
 - **Fecha:** 2026-10-28 (F2)
 - **Decisión:** las llamadas salientes de Vínculo (desafío y entregas) usan `fetchSaliente()` (`src/lib/salida.ts`), que las pruebas reemplazan por un fetch en proceso con webhooks dobles. En ejecución normal es el fetch global.
+
+## D-41 · Conexiones del puente guardadas en su base, cifradas (reemplaza la siembra transitoria de D-25)
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** las URL y credenciales de Vínculo (Client ID y Client Secret) y de Talentia (API Key) se configuran en `/conexiones` y se guardan en `puente.Conexion`, con el secreto cifrado con AES-256-GCM (`PUENTE_CLAVE_CIFRADO`, solo en `.env`) y visible solo como `••••` más sus 4 últimos caracteres. «Probar conexión» deja su resultado guardado (token y empresa que autorizó la aplicación; permisos de la llave y procesos visibles). Ya no hay `ORIGEN_BASE_URL`, `ATS_BASE_URL`, `ATS_API_KEY` ni secretos compartidos entre `.env`.
+- **Alternativa descartada:** variables de entorno por conexión. Obligan a reiniciar y a copiar secretos entre apps; la especificación pide configurarlas en pantalla.
+
+## D-42 · Better Auth en el puente con dos roles
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** igual que en Talentia (D-27): correo y contraseña, sin registro público, cookie `pue_sesion`. ADMIN configura conexiones, publicación, correspondencias y los controles de prueba; OPERADOR supervisa operaciones, rechazos y métricas y puede reintentar. Cuentas demo `admin@puente.demo.test` y `operador@puente.demo.test` (`Demo2026!`), visibles en `/ingresar`.
+- **Alternativa descartada:** el usuario único de demostración de la v1 (`DEMO_ADMIN_USER`).
+
+## D-43 · Webhook en `/api/webhooks/vinculo` y 503 sin conexión
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** el webhook del puente pasa a `/api/webhooks/vinculo` (GET desafío, POST entregas). El desafío y la firma usan el Client Secret guardado; si aún no hay conexión con Vínculo responde 503 para que Vínculo reintente, sin guardar nada. Se elimina `/api/puente/vacantes/estado` (D-35).
+
+## D-44 · Publicación desde el puente y resolución del proceso
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** «Publicar en Vínculo» (en `/procesos`) crea o actualiza la vacante por `POST /api/v1/jobPostings` con `externalJobId` = id del proceso de Talentia y el webhook del puente; «Cerrar en Vínculo» usa `close`. El destino de una postulación se resuelve primero por publicación y, para vacantes creadas a mano en Vínculo, por correspondencia manual; en ambos casos se aplica D-17 (se respeta lo postulado antes del cierre). Publicación automática opcional: cada 2 minutos se publican los procesos «Iniciados» sin publicación (`PUENTE_SONDEO_MS`).
+
+## D-45 · Errores de Talentia: 401 y 403 detienen, 429 respeta Retry-After
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** 401 (llave revocada o inválida) → `ATS_AUTENTICACION`, se detiene sin reintentar con el mensaje «La API Key de Talentia fue revocada o no es válida.»; 403 → `ATS_PERMISO`, se detiene; 429 → `ATS_LIMITE`, se reintenta esperando al menos `Retry-After`. Sin conexión configurada → `PUENTE_SIN_CONEXION`, se detiene. Tras corregir la conexión, «Reintentar» continúa desde el último paso.
+- **Decisión complementaria:** si Vínculo rechaza el access token al descargar el CV (por ejemplo tras regenerar el Client Secret), el puente pide un token nuevo una vez antes de dar el error por definitivo.
+
+## D-46 · Reintentos y esperas del puente para el arranque en frío
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** hasta 10 intentos por postulación con espera exponencial desde 2 s y tope de 5 min (unos 13 min en total); espera por llamada de 75 s si el sistema destino no respondió en los últimos 10 minutos (puede estar dormido en Render) y de 20 s si respondió hace poco (`PUENTE_TIMEOUT_MS` lo fija en pruebas). En `/conexiones`, «Probar conexión» muestra «Despertando…» si tarda más de 3 s.
+
+## D-47 · Aviso RESUME_DOWNLOADED en un ciclo aparte
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** al completar, la recepción queda con aviso PENDIENTE y un ciclo del worker llama a `POST /api/v1/jobApplications/{id}/lifecycle` con `RESUME_DOWNLOADED` (hasta 8 intentos con espera creciente). Su resultado se ve en la operación, pero no cambia el COMPLETADO: la transferencia ya terminó cuando existe `postulacion_creada`.
+- **Alternativa descartada:** avisar dentro del mismo trabajo; una caída de Vínculo dejaría la transferencia como no completada.
+
+## D-48 · `demo:conectar` como orquestación por procesos
+
+- **Fecha:** 2026-10-29 (F3)
+- **Decisión:** `npm run demo:conectar` (y la preparación de las E2E) hace lo mismo que el administrador en las pantallas, ejecutando en cada app su propio script con su propio `.env` (`scripts/conectar-lib.mjs`): Talentia crea la API Key, Vínculo registra y autoriza la aplicación, el puente guarda y prueba las conexiones y publica 9001 y 9002, y Vínculo registra el webhook. Ninguna app toca el esquema de otra. `demo:reset` del puente borra conexiones y publicaciones; después hay que volver a conectar.

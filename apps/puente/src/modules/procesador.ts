@@ -1,16 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { config } from "@/lib/config";
+import { conexionVinculo } from "./conexiones";
+import { resolverDestino } from "./destino";
 import { pareceUnPdf, sha256Hex, nombreArchivoSeguro } from "@/lib/archivos";
 import type { PasoRecepcion, Recepcion } from "@/generated/prisma/client";
 import { urlDeMediaPermitida } from "./webhook";
-import { admitePostulacion } from "./vacantes";
 import * as ats from "./ats-cliente";
 import { conFalloSimulado } from "./fallos";
 import * as vinculo from "./vinculo-cliente";
 
 // Procesador del puente (corre en el worker). Cada trabajo avanza por pasos confirmados:
-//   cv_descargado → candidato_creado → documento_subido → postulacion_creada
+//   cv_descargado → postulante_listo → documento_subido → postulacion_creada
 // Cada paso se guarda en cuanto termina, así un reinicio retoma desde el último paso confirmado.
 // Las escrituras en el ATS llevan Idempotency-Key derivada de la recepción.
 
@@ -26,6 +27,8 @@ export class ErrorProcesamiento extends Error {
     public codigo: string,
     message: string,
     public modo: Modo,
+    /** Espera mínima antes del próximo intento (p. ej., Retry-After de un 429). */
+    public esperaMinimaMs = 0,
   ) {
     super(message);
     this.name = "ErrorProcesamiento";
@@ -49,7 +52,9 @@ export interface OpcionesProcesador {
   simularCaidaDespuesDe?: PasoRecepcion;
 }
 
-export const MAX_INTENTOS_TRABAJO = 8;
+// 10 intentos con espera exponencial desde 2 s y tope de 5 min: unos 13 minutos en total, más que el arranque en frío
+// de un servicio gratuito de Render (§6).
+export const MAX_INTENTOS_TRABAJO = 10;
 
 export function backoffConJitter(intento: number, baseMs: number): number {
   const exponencial = Math.min(baseMs * 2 ** (intento - 1), 5 * 60_000);
@@ -116,34 +121,32 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
     }
 
     if (rec.procesoAtsId === null) {
-      const corr = await prisma.correspondencia.findUnique({ where: { externalJobId: rec.externalJobId } });
-      if (!admitePostulacion(corr, rec.appliedAt)) {
-        throw new ErrorProcesamiento("JOB_POSTING_CLOSED", "La vacante ya no tiene un proceso del ATS vinculado.", "rechazar");
-      }
-      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { procesoAtsId: corr!.procesoAtsId } });
+      const destino = await resolverDestino(rec.externalJobId, rec.appliedAt);
+      if (!destino.ok) throw new ErrorProcesamiento("JOB_POSTING_CLOSED", destino.motivo, "rechazar");
+      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { procesoAtsId: destino.procesoId } });
     }
 
     if (rec.paso === "cv_descargado") {
-      const candidato = await ats.crearOBuscarCandidato(
+      const postulante = await ats.crearOBuscarPostulante(
         { nombre: rec.nombre, apellido: rec.apellido, correo: rec.correo, telefono: rec.telefono, ciudad: rec.ciudad, referenciaExterna: rec.jobApplicant },
         `${rec.jobApplicationId}:postulante`,
         o,
       );
-      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "candidato_creado", atsCandidatoId: candidato.id } });
-      await evento(rec.id, "PASO", candidato.existente ? "Candidato existente reutilizado en el ATS." : "Candidato creado en el ATS.", "candidato_creado");
-      caida("candidato_creado");
+      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "postulante_listo", atsPostulanteId: postulante.id } });
+      await evento(rec.id, "PASO", postulante.existente ? "Postulante existente actualizado en Talentia (mismo correo)." : "Postulante creado en Talentia.", "postulante_listo");
+      caida("postulante_listo");
     }
 
-    if (rec.paso === "candidato_creado") {
+    if (rec.paso === "postulante_listo") {
       if (!rec.cvContenido || !rec.cvSha256) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "Se perdió la copia temporal del CV.", "detener");
       const doc = await ats.subirDocumento(
-        rec.atsCandidatoId!,
+        rec.atsPostulanteId!,
         { nombreArchivo: rec.cvNombreArchivo ?? "cv.pdf", tipo: "CV", bytes: new Uint8Array(rec.cvContenido), sha256: rec.cvSha256 },
         `${rec.jobApplicationId}:documento`,
         o,
       );
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: doc.id } });
-      await evento(rec.id, "PASO", "CV subido al ATS; el ATS confirmó el mismo SHA-256.", "documento_subido");
+      await evento(rec.id, "PASO", "CV subido a Talentia; Talentia confirmó el mismo SHA-256.", "documento_subido");
       caida("documento_subido");
     }
 
@@ -158,10 +161,10 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
         await evento(rec.id, "RECONCILIACION", "El ATS confirma que la postulación no existe; se crea de nuevo.");
       }
       let postulacionId: string;
-      let detalle = "Postulación creada en la etapa Postulantes.";
+      let detalle = "Postulación creada en la etapa Postulantes de Talentia.";
       try {
         const post = await ats.crearPostulacion(
-          { procesoId: rec.procesoAtsId!, candidatoId: rec.atsCandidatoId!, documentoId: rec.atsDocumentoId!, fuente: FUENTE_ATS, referenciaExterna: rec.jobApplicationId },
+          { procesoId: rec.procesoAtsId!, postulanteId: rec.atsPostulanteId!, documentoId: rec.atsDocumentoId!, fuente: FUENTE_ATS, referenciaExterna: rec.jobApplicationId },
           `${rec.jobApplicationId}:postulacion`,
           o,
         );
@@ -192,6 +195,9 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
         cvContenido: null,
         errorCodigo: null,
         errorDetalle: null,
+        // Aviso RESUME_DOWNLOADED a Vínculo: se envía aparte y no bloquea el COMPLETADO (§4.3, paso 7).
+        avisoEstado: "PENDIENTE",
+        avisoProximoEn: new Date(),
       },
     }),
     prisma.trabajo.update({ where: { recepcionId: rec.id }, data: { estado: "HECHO", leaseHasta: null, ultimoError: null } }),
@@ -203,7 +209,10 @@ function clasificar(e: unknown, rec: Recepcion): ErrorProcesamiento {
   if (e instanceof ErrorProcesamiento) return e;
   if (e instanceof ats.ErrorAts) {
     const codigoAts = e.codigo;
+    if (e.tipo === "sin_conexion") return new ErrorProcesamiento("PUENTE_SIN_CONEXION", e.message, "detener");
     if (e.tipo === "autenticacion") return new ErrorProcesamiento("ATS_AUTENTICACION", e.message, "detener");
+    if (e.tipo === "permiso") return new ErrorProcesamiento("ATS_PERMISO", e.message, "detener");
+    if (e.status === 429) return new ErrorProcesamiento("ATS_LIMITE", e.message, "reintentar", (e.reintentarEn ?? 60) * 1000);
     if (e.resultadoIncierto) {
       const escritura = rec.paso === "documento_subido";
       return new ErrorProcesamiento(escritura ? "ATS_SIN_RESPUESTA" : "ATS_NO_DISPONIBLE", e.message, "reintentar");
@@ -234,7 +243,7 @@ async function manejarFallo(trabajoId: string, rec: Recepcion, e: unknown, opcio
   const detener = error.modo === "detener" || agotado;
   // Si el último fallo dejó una escritura con resultado desconocido y ya no se reintentará, alguien debe verificar.
   const estado = detener && error.codigo === "ATS_SIN_RESPUESTA" ? "REQUIERE_VERIFICACION" : "FALLIDO_REINTENTABLE";
-  const espera = backoffConJitter(trabajo.intentos, opciones.baseBackoffMs ?? 2000);
+  const espera = Math.max(backoffConJitter(trabajo.intentos, opciones.baseBackoffMs ?? 2000), error.esperaMinimaMs);
   await prisma.$transaction([
     prisma.recepcion.update({ where: { id: rec.id }, data: { estado, errorCodigo: error.codigo, errorDetalle: error.message } }),
     prisma.trabajo.update({
@@ -265,32 +274,40 @@ interface CvDescargado {
 /** Descarga el CV del mediaUrl con Bearer, solo desde el origen configurado, con límite de tamaño y validación de PDF. */
 export async function descargarCv(rec: Pick<Recepcion, "mediaUrl">, fetchImpl: typeof fetch = fetch): Promise<CvDescargado> {
   const cfg = config();
-  if (!urlDeMediaPermitida(rec.mediaUrl, cfg.ORIGEN_BASE_URL)) {
+  const c = await conexionVinculo();
+  if (!c) throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", "El puente no tiene configurada la conexión con Vínculo.", "detener");
+  if (!urlDeMediaPermitida(rec.mediaUrl, c.urlBase)) {
     throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El enlace del CV no pertenece al origen autorizado.", "rechazar");
   }
-  let token: string;
-  try {
-    token = await vinculo.obtenerToken(fetchImpl);
-  } catch (e) {
-    if (e instanceof vinculo.ErrorVinculo && e.tipo === "credenciales") throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", e.message, "detener");
-    throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "Vínculo no está disponible.", "reintentar");
+  let r: Response | null = null;
+  // Si Vínculo rechaza el token (vencido o invalidado al regenerar el secreto), se pide uno nuevo una sola vez.
+  for (let intento = 0; intento < 2; intento++) {
+    let token: string;
+    try {
+      token = await vinculo.obtenerToken(fetchImpl, { forzar: intento > 0 });
+    } catch (e) {
+      if (e instanceof vinculo.ErrorVinculo && e.tipo === "credenciales") throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", e.message, "detener");
+      if (e instanceof vinculo.ErrorVinculo && e.tipo === "sin_conexion") throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", e.message, "detener");
+      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "Vínculo no está disponible.", "reintentar");
+    }
+    try {
+      const senal = AbortSignal.timeout(Number(process.env.PUENTE_TIMEOUT_MS ?? 0) || 75_000);
+      r = await conFalloSimulado("media", senal, () =>
+        fetchImpl(rec.mediaUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: "manual",
+          signal: senal,
+        }),
+      );
+    } catch {
+      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
+    }
+    if (r.status !== 401) break;
   }
-  let r: Response;
-  try {
-    const senal = AbortSignal.timeout(15_000);
-    r = await conFalloSimulado("media", senal, () =>
-      fetchImpl(rec.mediaUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-        redirect: "manual",
-        signal: senal,
-      }),
-    );
-  } catch {
-    throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
-  }
+  if (!r) throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
   if (r.status >= 300 && r.status < 400) throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El origen intentó redirigir la descarga del CV.", "rechazar");
   if (r.status === 401 || r.status === 403) {
-    vinculo.olvidarToken(); // el próximo intento pide un token nuevo
+    vinculo.olvidarToken();
     throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "Vínculo rechazó el token del puente al descargar el CV.", "detener");
   }
   if (r.status === 404 || r.status === 410) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "El enlace del CV expiró o no existe.", "rechazar");

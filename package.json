@@ -26,7 +26,8 @@
     "db:migrate": "npm run db:migrate --workspaces",
     "db:seed": "npm run db:seed --workspaces",
     "demo:reset": "npm run demo:reset --workspaces",
-    "cv:generar": "tsx scripts/generar-cv.ts"
+    "cv:generar": "tsx scripts/generar-cv.ts",
+    "demo:conectar": "node scripts/demo-conectar.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

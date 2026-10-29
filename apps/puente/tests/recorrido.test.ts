@@ -16,7 +16,7 @@ describe("recorrido del puente: webhook → CV de Vínculo → candidato, docume
     expect(rec.procesoAtsId).toBe(9001);
     expect(rec.cvContenido).toBeNull(); // la copia temporal se elimina al completar
     expect(rec.eventos.map((e) => e.paso).filter(Boolean)).toEqual(
-      expect.arrayContaining(["cv_descargado", "candidato_creado", "documento_subido", "postulacion_creada"]),
+      expect.arrayContaining(["cv_descargado", "postulante_listo", "documento_subido", "postulacion_creada"]),
     );
     expect(vinculo.descargas).toBe(1);
 

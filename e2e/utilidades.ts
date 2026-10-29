@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { DEMO_CLAVE, DEMO_USUARIO, PUE, TAL, VIN } from "./procesos";
+import { PUE, TAL, VIN } from "./procesos";
 
 export { PUE, TAL, VIN };
 
@@ -15,6 +15,7 @@ export const correoUnico = (prefijo: string) => `${prefijo}.${Date.now()}.${Math
 /** Cuentas de demostración (se muestran en las pantallas de ingreso). */
 export const CLAVE_DEMO = "Demo2026!";
 export const TALENTIA = { admin: "admin@andina.demo.test", reclutador: "reclutador@andina.demo.test", clave: CLAVE_DEMO };
+export const PUENTE = { admin: "admin@puente.demo.test", operador: "operador@puente.demo.test" };
 export const VINCULO = { reclutadora: "reclutadora@andina.demo.test", candidata: "valentina.rios@demo.test", candidato: "santiago.mejia@demo.test" };
 
 /** Inicia sesión en Talentia con una cuenta de demostración (Better Auth, cookie tal_sesion). */
@@ -47,9 +48,15 @@ export async function iniciarSesionVinculo(page: Page, cuenta: keyof typeof VINC
 export async function iniciarSesionEn(page: Page, base: string) {
   if (base === TAL) return iniciarSesionTalentia(page);
   if (base === VIN) return iniciarSesionVinculo(page, "reclutadora");
-  await page.goto(`${base}/ingresar`);
-  await page.getByLabel("Usuario").fill(DEMO_USUARIO);
-  await page.getByLabel("Contraseña").fill(DEMO_CLAVE);
+  return iniciarSesionPuente(page);
+}
+
+/** Inicia sesión en el puente (Better Auth, cookie pue_sesion). */
+export async function iniciarSesionPuente(page: Page, cuenta: keyof typeof PUENTE = "admin") {
+  if ((await page.context().cookies(PUE)).some((c) => c.name === "pue_sesion")) return;
+  await page.goto(`${PUE}/ingresar`);
+  await page.getByLabel("Correo").fill(PUENTE[cuenta]);
+  await page.getByLabel("Contraseña").fill(CLAVE_DEMO);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await expect(page).not.toHaveURL(/ingresar/);
 }
@@ -59,14 +66,13 @@ export async function iniciarSesionDemo(page: Page) {
   for (const base of [TAL, PUE]) await iniciarSesionEn(page, base);
 }
 
-/** Títulos de las vacantes de Andina publicadas para el puente en la siembra transitoria (D-25). */
+/** Procesos de Talentia que el puente publica en Vínculo al preparar las pruebas (externalJobId = id del proceso). */
 export const TITULOS: Record<string, string> = {
-  "RT-2026-101": "Desarrollador/a Backend Java",
-  "RT-2026-102": "Analista de Calidad de Software (QA)",
-  "RT-2026-103": "Diseñador/a UX (sin correspondencia)",
+  "9001": "Desarrollador/a Backend Java",
+  "9002": "Analista de Calidad de Software (QA)",
 };
 
-/** Abre una vacante de Andina por su título (o por el código de las vacantes transitorias). */
+/** Abre una vacante de Andina por su título (o por el id del proceso publicado por el puente). */
 export async function abrirVacante(page: Page, codigoOTitulo: string) {
   const titulo = TITULOS[codigoOTitulo] ?? codigoOTitulo;
   await page.goto(`${VIN}/empleos?${new URLSearchParams({ q: titulo, empresa: "andina-software" })}`);
@@ -92,7 +98,7 @@ export async function postular(
 ) {
   const nombre = opciones.nombre ?? "Camila";
   await registrarCandidato(page, nombre, opciones.apellido, opciones.correo);
-  await abrirVacante(page, opciones.codigo ?? "RT-2026-101");
+  await abrirVacante(page, opciones.codigo ?? "9001");
   await page.getByRole("link", { name: "Solicitud sencilla" }).click();
   await page.getByLabel("Nombre", { exact: true }).fill(nombre);
   await page.getByLabel("Apellido").fill(opciones.apellido);
@@ -116,3 +122,15 @@ export const sufijoUnico = () =>
     .split("")
     .map((d) => "abcdefghij"[Number(d)])
     .join("");
+
+/** Quita los fallos simulados del puente (para que una prueba fallida no contamine las siguientes). */
+export async function quitarFallos(page: Page) {
+  await iniciarSesionPuente(page, "admin");
+  await page.goto(`${PUE}/pruebas`);
+  const boton = page.getByRole("button", { name: "Quitar todos los fallos" });
+  if (await boton.count()) {
+    // solo aparece si hay fallos configurados
+    await boton.click();
+    await expect(boton).toHaveCount(0);
+  }
+}

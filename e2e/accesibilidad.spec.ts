@@ -28,7 +28,7 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
     if (ruta.includes("docs") || ruta.includes("apidocs")) await expect(page.locator("#swagger")).toContainText("/api/v1", { timeout: 20_000 });
     await auditar(page, nombre);
   }
-  await abrirVacante(page, "RT-2026-101");
+  await abrirVacante(page, "9001");
   await auditar(page, "detalle de vacante");
   await postular(page, { apellido: `Accesible ${sufijoUnico()}`, correo: correoUnico("a11y") });
   await expect(page.getByRole("heading", { name: "¡Tu solicitud fue enviada!" })).toBeVisible();
@@ -92,7 +92,7 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
 
 test("navegación por teclado: saltar al contenido y completar la Solicitud sencilla sin ratón", async ({ page }) => {
   await registrarCandidato(page, "Laura", `Teclado ${sufijoUnico()}`, correoUnico("teclado"));
-  await abrirVacante(page, "RT-2026-102");
+  await abrirVacante(page, "9002");
   await page.getByRole("link", { name: "Solicitud sencilla" }).click();
   await expect(page.getByRole("heading", { name: "Solicitud sencilla" })).toBeVisible();
   await page.goto(page.url()); // carga completa: el foco empieza en el documento, como al llegar por un enlace externo

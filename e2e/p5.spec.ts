@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PUE, VIN } from "./procesos";
-import { correoUnico, iniciarSesionDemo, iniciarSesionVinculo, postular, sufijoUnico } from "./utilidades";
+import { correoUnico, iniciarSesionDemo, iniciarSesionVinculo, postular, quitarFallos, sufijoUnico } from "./utilidades";
 
 async function fallo(page: Page, ruta: string, modo: string, n: string) {
   await page.goto(`${PUE}/pruebas`);
@@ -20,6 +20,10 @@ async function abrirOperacionDeConfirmacion(page: Page) {
 }
 
 test.describe("P5 · vacantes y casos de fallo", () => {
+  test.afterEach(async ({ page }, info) => {
+    info.setTimeout(info.timeout + 30_000); // la limpieza no compite con el tiempo de la prueba
+    await quitarFallos(page);
+  });
   test("editar, cerrar y reabrir una vacante en Vínculo: deja de recibir solicitudes y vuelve a aparecer", async ({ page }) => {
     await iniciarSesionVinculo(page, "reclutadora");
     await page.goto(`${VIN}/reclutador/vacantes/nueva`);
@@ -65,8 +69,8 @@ test.describe("P5 · vacantes y casos de fallo", () => {
     await postular(page, { apellido: `Credenciales ${sufijoUnico()}`, correo: correoUnico("credenciales") });
     await abrirOperacionDeConfirmacion(page);
     await expect(page.getByTestId("estado-operacion")).toHaveText("Fallido (reintentable)", { timeout: 30_000 });
-    await expect(page.getByText(/rechazó las credenciales del puente/).first()).toBeVisible();
-    await expect(page.getByText(/Revisa ATS_API_KEY/)).toBeVisible();
+    await expect(page.getByText("La API Key de Talentia fue revocada o no es válida.").first()).toBeVisible();
+    await expect(page.getByText(/Administración → API Keys/)).toBeVisible();
     const url = page.url();
     await page.goto(`${PUE}/pruebas`);
     await page.getByRole("button", { name: "Quitar todos los fallos" }).click();

@@ -4,53 +4,48 @@ import { reintentar } from "@/modules/operaciones";
 import { explicarError } from "@/modules/mensajes";
 import { configurarFallo } from "@/modules/fallos";
 import { sha256Hex } from "@/lib/archivos";
-import { construirEntrega, drenar, enviarEstadoVacante, enviarWebhook, leerCv, opcionesRapidas, payloadValido, postular, prisma, reiniciarBd, talentia } from "./utilidades";
+import { cerrarPublicacion, publicarProceso } from "@/modules/publicacion";
+import { construirEntrega, drenar, enviarWebhook, fetchEnProceso, leerCv, opcionesRapidas, payloadValido, postular, prisma, reiniciarBd, talentia } from "./utilidades";
 
 beforeEach(reiniciarBd);
 
 const conteoAts = () => talentia.conteo();
 
-describe("P5.1 · cierre de vacantes propagado desde Vínculo (JOB_POSTING_STATUS)", () => {
-  it("cerrar: el puente marca la correspondencia y responde JOB_POSTING_CLOSED a las postulaciones posteriores al cierre", async () => {
-    expect((await enviarEstadoVacante("RT-2026-101", "CERRADA")).status).toBe(200);
-    const corr = await prisma.correspondencia.findUniqueOrThrow({ where: { externalJobId: "RT-2026-101" } });
-    expect(corr).toMatchObject({ activa: false, motivoCierre: "ORIGEN" });
+describe("P5.1 · cierre de vacantes (publicación del puente o correspondencia desvinculada)", () => {
+  it("cerrar en Vínculo: las postulaciones posteriores al cierre se rechazan con JOB_POSTING_CLOSED", async () => {
+    expect((await publicarProceso(9001, { fetchImpl: fetchEnProceso })).ok).toBe(true);
+    expect((await cerrarPublicacion(9001, fetchEnProceso)).ok).toBe(true);
+    expect(await prisma.publicacion.findUniqueOrThrow({ where: { procesoId: 9001 } })).toMatchObject({ estado: "CERRADA" });
 
-    const tarde = await enviarWebhook(JSON.stringify(payloadValido({ appliedAt: Date.now() + 1000 })));
+    const tarde = await enviarWebhook(JSON.stringify(payloadValido({ externalJobId: "9001", appliedAt: Date.now() + 1000 })));
     expect(tarde.status).toBe(422);
     expect((tarde.body.errors as { errorCode: string }[])[0].errorCode).toBe("JOB_POSTING_CLOSED");
     expect(await prisma.recepcion.count()).toBe(0);
   });
 
-  it("una postulación hecha ANTES del cierre pero entregada después se respeta y llega al ATS", async () => {
-    const antes = construirEntrega({ appliedAt: Date.now() - 60_000 });
-    await enviarEstadoVacante("RT-2026-101", "CERRADA");
+  it("una postulación hecha ANTES del cierre pero entregada después se respeta y llega a Talentia", async () => {
+    await publicarProceso(9001, { fetchImpl: fetchEnProceso });
+    const antes = construirEntrega({ codigo: "9001", appliedAt: Date.now() - 60_000 });
+    await cerrarPublicacion(9001, fetchEnProceso);
     expect((await enviarWebhook(antes.cuerpo)).status).toBe(200);
     await drenar();
-    expect((await prisma.recepcion.findFirstOrThrow()).estado).toBe("COMPLETADO");
+    expect(await prisma.recepcion.findFirstOrThrow()).toMatchObject({ estado: "COMPLETADO", procesoAtsId: 9001 });
     expect(conteoAts()).toEqual({ candidatos: 1, documentos: 1, postulaciones: 1 });
   });
 
-  it("reabrir reactiva la correspondencia; un evento viejo que llega tarde se ignora", async () => {
-    const cierre = Date.now();
-    await enviarEstadoVacante("RT-2026-101", "PUBLICADA", cierre + 10);
-    const r = await enviarEstadoVacante("RT-2026-101", "CERRADA", cierre);
-    expect(r.body.estado).toBe("IGNORADO_EVENTO_ANTERIOR");
-    expect((await prisma.correspondencia.findUniqueOrThrow({ where: { externalJobId: "RT-2026-101" } })).activa).toBe(true);
-    expect((await enviarWebhook(JSON.stringify(payloadValido({ appliedAt: Date.now() })))).status).toBe(200);
+  it("«Publicar de nuevo» reabre la vacante y vuelve a aceptar postulaciones", async () => {
+    await publicarProceso(9001, { fetchImpl: fetchEnProceso });
+    await cerrarPublicacion(9001, fetchEnProceso);
+    expect((await publicarProceso(9001, { fetchImpl: fetchEnProceso })).ok).toBe(true);
+    expect((await enviarWebhook(JSON.stringify(payloadValido({ externalJobId: "9001", appliedAt: Date.now() })))).status).toBe(200);
   });
 
-  it("reabrir en Vínculo no reactiva una vacante desvinculada a mano en el panel", async () => {
-    await prisma.correspondencia.update({ where: { externalJobId: "RT-2026-102" }, data: { activa: false, motivoCierre: "MANUAL" } });
-    await enviarEstadoVacante("RT-2026-102", "CERRADA");
-    await enviarEstadoVacante("RT-2026-102", "PUBLICADA", Date.now() + 10);
-    expect((await prisma.correspondencia.findUniqueOrThrow({ where: { externalJobId: "RT-2026-102" } })).activa).toBe(false);
-  });
-
-  it("el evento de cierre exige firma válida", async () => {
-    const r = await enviarEstadoVacante("RT-2026-101", "CERRADA", Date.now(), "0".repeat(64));
-    expect(r.status).toBe(401);
-    expect((await prisma.correspondencia.findUniqueOrThrow({ where: { externalJobId: "RT-2026-101" } })).activa).toBe(true);
+  it("una correspondencia desvinculada a mano solo admite lo postulado antes de desvincular", async () => {
+    const antes = construirEntrega({ codigo: "RT-2026-102", appliedAt: Date.now() - 60_000 });
+    await prisma.correspondencia.update({ where: { externalJobId: "RT-2026-102" }, data: { activa: false, cerradaEn: new Date() } });
+    expect((await enviarWebhook(antes.cuerpo)).status).toBe(200);
+    const tarde = await enviarWebhook(JSON.stringify(payloadValido({ externalJobId: "RT-2026-102", appliedAt: Date.now() + 1000 })));
+    expect(tarde.status).toBe(422);
   });
 });
 
@@ -85,7 +80,7 @@ describe("P5.3 · error de autenticación entre puente y ATS", () => {
     expect(rec.trabajo!.estado).toBe("DETENIDO");
     expect(rec.trabajo!.intentos).toBe(1); // un solo intento: no insiste con credenciales malas
     expect(rec.eventos.some((e) => e.detalle.includes("Se detienen los reintentos automáticos"))).toBe(true);
-    expect(explicarError("ATS_AUTENTICACION")!.hacer).toMatch(/ATS_API_KEY/);
+    expect(explicarError("ATS_AUTENTICACION")!.hacer).toMatch(/API Key/);
 
     await prisma.falloSimulado.deleteMany({});
     expect((await reintentar(rec.id)).ok).toBe(true);
@@ -106,7 +101,7 @@ describe("P5.4 · candidato creado pero postulación pendiente", () => {
     await drenar();
     const rec = await prisma.recepcion.findFirstOrThrow({ include: { eventos: true } });
     expect(rec.estado).toBe("COMPLETADO");
-    expect(rec.eventos.filter((e) => e.paso === "candidato_creado")).toHaveLength(1);
+    expect(rec.eventos.filter((e) => e.paso === "postulante_listo")).toHaveLength(1);
     expect(rec.eventos.filter((e) => e.paso === "documento_subido")).toHaveLength(1);
     expect(conteoAts()).toEqual({ candidatos: 1, documentos: 1, postulaciones: 1 });
   });

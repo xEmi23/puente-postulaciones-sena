@@ -14,29 +14,21 @@ export const PUE = `http://localhost:${PUERTOS.puente}`;
 const PUERTO_CONTROL = 3219;
 const CONTROL = `http://127.0.0.1:${PUERTO_CONTROL}`;
 
-export const DEMO_USUARIO = "demo-e2e";
-export const DEMO_CLAVE = "clave-e2e-solo-local";
-
 type App = keyof typeof PUERTOS;
 
-function envApp(app: App): NodeJS.ProcessEnv {
+export function envApp(app: App): NodeJS.ProcessEnv {
   const leido = parse(readFileSync(path.join(RAIZ, "apps", app, ".env")));
   if (!leido.DATABASE_URL_E2E) throw new Error(`Falta DATABASE_URL_E2E en apps/${app}/.env`);
   const comunes = {
     DATABASE_URL: leido.DATABASE_URL_E2E,
     APP_BASE_URL: `http://localhost:${PUERTOS[app]}`,
-    DEMO_AUTH_ENABLED: "true",
-    DEMO_ADMIN_USER: DEMO_USUARIO,
-    DEMO_ADMIN_PASSWORD: DEMO_CLAVE,
     WORKER_EN_PROCESO: "0",
     WORKER_INTERVALO_MS: "300",
   };
   const propios: Record<App, Record<string, string>> = {
-    vinculo: { PUENTE_WEBHOOK_URL: `${PUE}/api/puente/webhook` },
+    vinculo: {},
     talentia: {},
     puente: {
-      ORIGEN_BASE_URL: VIN,
-      ATS_BASE_URL: TAL,
       PUENTE_MODO_PRUEBAS: "1",
       PUENTE_MAX_INTENTOS: "3",
       PUENTE_BACKOFF_BASE_MS: "300",
@@ -115,4 +107,13 @@ export function prepararBase() {
     r = spawnSync("npx", ["tsx", "scripts/demo-reset.ts"], opciones);
     if (r.status !== 0) throw new Error(`${app}: demo-reset falló: ${r.stderr}${r.stdout}`);
   }
+}
+
+/**
+ * Conecta los tres sistemas como lo haría el equipo con `npm run demo:conectar` (cada app ejecuta su parte con su
+ * propio .env): API Key de Talentia, aplicación autorizada en Vínculo, conexiones del puente y publicación de 9001/9002.
+ */
+export async function conectarSistemas() {
+  const { conectar } = await import("../scripts/conectar-lib.mjs");
+  conectar({ raiz: RAIZ, entorno: (app: string) => envApp(app as App), urls: { vinculo: VIN, talentia: TAL, puente: PUE }, publicar: [9001, 9002], registro: () => undefined });
 }

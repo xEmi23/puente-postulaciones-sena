@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
-import { exigirSesionAccion } from "@/lib/sesion-servidor";
+import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { listarProcesos } from "@/modules/ats-cliente";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ const esquema = z.object({
 
 async function guardar(formData: FormData) {
   "use server";
-  await exigirSesionAccion();
+  await exigirUsuarioAccion("ADMIN");
   const r = esquema.safeParse({ externalJobId: formData.get("externalJobId"), procesoAtsId: formData.get("procesoAtsId") });
   if (!r.success) redirect(`/correspondencias?error=${encodeURIComponent(r.error.issues[0].message)}`);
   const { externalJobId, procesoAtsId } = r.data;
@@ -26,20 +26,20 @@ async function guardar(formData: FormData) {
   await prisma.correspondencia.upsert({
     where: { externalJobId },
     create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
-    update: { procesoAtsId, activa: true, motivoCierre: null, cerradaEn: null, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
+    update: { procesoAtsId, activa: true, cerradaEn: null, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
   });
   redirect(`/correspondencias?ok=${encodeURIComponent(`Vacante ${externalJobId} vinculada al proceso ${procesoAtsId}.`)}`);
 }
 
 async function alternar(formData: FormData) {
   "use server";
-  await exigirSesionAccion();
+  await exigirUsuarioAccion("ADMIN");
   const id = String(formData.get("id"));
   const c = await prisma.correspondencia.findUnique({ where: { id } });
   if (!c) redirect("/correspondencias");
   await prisma.correspondencia.update({
     where: { id },
-    data: c.activa ? { activa: false, motivoCierre: "MANUAL", cerradaEn: null } : { activa: true, motivoCierre: null, cerradaEn: null },
+    data: c.activa ? { activa: false, cerradaEn: null } : { activa: true, cerradaEn: null },
   });
   redirect(`/correspondencias?ok=${encodeURIComponent(c.activa ? `Vacante ${c.externalJobId} desvinculada: nuevas postulaciones recibirán JOB_POSTING_CLOSED.` : `Vacante ${c.externalJobId} vinculada de nuevo.`)}`);
 }
@@ -50,13 +50,13 @@ export default async function Correspondencias({ searchParams }: { searchParams:
     prisma.correspondencia.findMany({ orderBy: { externalJobId: "asc" } }),
     listarProcesos().catch(() => null),
   ]);
-  const nombre = new Map((procesos ?? []).map((p) => [p.id, p.nombre]));
+  const nombre = new Map((procesos ?? []).map((p) => [p.id, p.titulo]));
 
   return (
     <>
       <h1>Correspondencias de vacantes</h1>
       <p className="p-sub">
-        Qué vacante del origen (externalJobId) corresponde a qué proceso del ATS. Sin correspondencia activa, el puente responde
+        Para vacantes creadas directamente en Vínculo (las que publica el puente ya están asociadas a su proceso): qué vacante (externalJobId) corresponde a qué proceso de Talentia. Sin correspondencia activa ni publicación, el puente responde
         JOB_POSTING_CLOSED y no adivina el proceso.
       </p>
       <div role="status" aria-live="polite">
@@ -71,18 +71,18 @@ export default async function Correspondencias({ searchParams }: { searchParams:
         ) : (
           <form action={guardar} className="p-form-linea">
             <div className="p-campo">
-              <label htmlFor="externalJobId">Código de la vacante en el origen</label>
+              <label htmlFor="externalJobId">Código de la vacante en Vínculo</label>
               <input id="externalJobId" name="externalJobId" placeholder="RT-2026-103" required />
             </div>
             <div className="p-campo">
-              <label htmlFor="procesoAtsId">Proceso del ATS</label>
+              <label htmlFor="procesoAtsId">Proceso de Talentia</label>
               <select id="procesoAtsId" name="procesoAtsId" required defaultValue="">
                 <option value="" disabled>
                   Elige un proceso…
                 </option>
                 {procesos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.id} · {p.nombre}
+                    {p.id} · {p.titulo}
                   </option>
                 ))}
               </select>
@@ -121,7 +121,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
                     </td>
                     <td>
                       <span className={`p-estado ${c.activa ? "p-estado-COMPLETADO" : "p-estado-RECHAZADO"}`}>
-                        {c.activa ? "Activa" : c.motivoCierre === "ORIGEN" ? "Cerrada en el origen" : "Desvinculada"}
+                        {c.activa ? "Activa" : "Desvinculada"}
                       </span>
                       {c.cerradaEn && <small style={{ display: "block" }}>desde {fechaHora(c.cerradaEn)}</small>}
                     </td>

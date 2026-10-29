@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
+  // La portada es la lista de operaciones. Redirección HTTP (no en la página) para que no ocurra en pleno streaming.
+  redirects: async () => [{ source: "/", destination: "/operaciones", permanent: false }],
   // Evita que `next dev` genere AGENTS.md en el repositorio.
   agentRules: false,
   turbopack: { root: raiz },

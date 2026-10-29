@@ -2,20 +2,14 @@ import { z } from "zod";
 
 // Configuración del puente validada con Zod. Se lee en cada llamada para que las pruebas
 // puedan ajustar process.env sin reiniciar módulos.
+// Las URL y credenciales de Vínculo y Talentia NO van aquí: se configuran en /conexiones (ESPECIFICACION §6).
 const esquema = z.object({
   DATABASE_URL: z.url(),
-  APP_BASE_URL: z.url(),
-  ORIGEN_BASE_URL: z.url(),
-  ATS_BASE_URL: z.url(),
-  SIM_CLIENT_SECRET: z.string().min(16),
-  VINCULO_CLIENT_ID: z.string().min(4),
-  ATS_API_KEY: z.string().min(16),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  // 32 bytes en hexadecimal: cifra el Client Secret de Vínculo y la API Key de Talentia (AES-256-GCM, §4.4).
+  PUENTE_CLAVE_CIFRADO: z.string().regex(/^[0-9a-f]{64}$/, "Debe tener 64 caracteres hexadecimales (32 bytes)."),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   PUENTE_MODO_PRUEBAS: z.enum(["0", "1"]).default("0"),
-  DEMO_AUTH_ENABLED: z.enum(["true", "false"]).default("false"),
-  DEMO_ADMIN_USER: z.string().optional(),
-  DEMO_ADMIN_PASSWORD: z.string().optional(),
-  SESSION_SECRET: z.string().optional(),
   NODE_ENV: z.string().default("development"),
 });
 
@@ -30,13 +24,21 @@ export function config(): Config {
   return r.data;
 }
 
+/** URL pública del puente: APP_BASE_URL local o RENDER_EXTERNAL_URL en Render. */
+export function urlPublica(): string {
+  return (process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3003").replace(/\/$/, "");
+}
+
+/** URL del webhook que se registra en Vínculo. */
+export const urlWebhook = () => `${urlPublica()}/api/webhooks/vinculo`;
+
 /**
- * ¿La aplicación se sirve desde una máquina local? (localhost, 127.0.0.1, ::1 o el TLD reservado .test).
+ * ¿Se sirve desde una máquina local? (localhost, 127.0.0.1, ::1 o el TLD reservado .test).
  * `next start` siempre corre con NODE_ENV=production, así que NODE_ENV no distingue una demo local de un
- * despliegue real; el host público sí: un entorno real nunca tiene APP_BASE_URL en localhost.
+ * despliegue real; el host público sí.
  */
 export function esEntornoLocal(): boolean {
-  const host = new URL(config().APP_BASE_URL).hostname;
+  const host = new URL(urlPublica()).hostname;
   return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) || host.endsWith(".test");
 }
 

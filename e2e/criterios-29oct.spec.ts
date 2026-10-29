@@ -28,7 +28,7 @@ test("C1 · preparar una vacante en Vínculo y un proceso en Talentia, y vincula
   await page.getByLabel("Descripción").fill("Construirás interfaces accesibles con React y Next.js junto a un equipo ágil. Vacante ficticia de la demostración.");
   await page.getByLabel("Ciudad").fill("Medellín");
   await page.getByLabel("Modalidad").selectOption("REMOTO");
-  await page.getByLabel("Entregar las solicitudes a un ATS conectado").selectOption({ label: "Puente de postulaciones (desarrollo local)" });
+  await page.getByLabel("Entregar las solicitudes a un ATS conectado").selectOption({ label: "Puente de postulaciones" });
   await page.getByRole("button", { name: "Publicar vacante" }).click();
   const aviso = page.locator(".alerta-exito");
   await expect(aviso).toContainText(/Vacante VIN-\d{4}-\d{4} publicada\.$/); // sin aviso: el webhook del puente pasó el desafío
@@ -45,8 +45,8 @@ test("C1 · preparar una vacante en Vínculo y un proceso en Talentia, y vincula
   await expect(page.locator('[data-etapa="Postulantes"]')).toBeVisible();
 
   await page.goto(`${PUE}/correspondencias`);
-  await page.getByLabel("Código de la vacante en el origen").fill(codigoVacante);
-  await page.getByLabel("Proceso del ATS").selectOption(procesoId);
+  await page.getByLabel("Código de la vacante en Vínculo").fill(codigoVacante);
+  await page.getByLabel("Proceso de Talentia").selectOption(procesoId);
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${codigoVacante} vinculada al proceso ${procesoId}`);
 });
@@ -65,7 +65,7 @@ test("C3 · ver la transferencia sin copiar nada manualmente", async ({ page }) 
   const fila = page.locator(`[data-testid="fila-operacion"][data-job-application-id="${jobApplicationId}"]`);
   await expect(fila).toContainText("Completado", { timeout: 30_000 }); // la lista se actualiza sola
   await fila.getByRole("link").click();
-  for (const paso of ["CV descargado", "Candidato creado", "Documento subido", "Postulación creada"]) {
+  for (const paso of ["CV descargado", "Postulante listo", "Documento subido", "Postulación creada"]) {
     await expect(page.locator('.p-pasos li[data-hecho="true"]', { hasText: paso })).toBeVisible();
   }
 });
@@ -174,7 +174,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await page.goto(`${PUE}/`);
   const fila9 = page.locator(`[data-testid="fila-operacion"][data-job-application-id="${ref9}"]`);
   await expect(fila9).toContainText("Procesando", { timeout: 30_000 });
-  await expect(fila9).toContainText("Candidato creado");
+  await expect(fila9).toContainText("Postulante listo");
 
   await matarWorker();
   await matarApp();

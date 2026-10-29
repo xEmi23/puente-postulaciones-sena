@@ -136,7 +136,7 @@ describe("P2.6 · ATS no disponible (5xx o timeout)", () => {
     await procesarPendientes(opcionesRapidas);
     const rec = await prisma.recepcion.findFirstOrThrow({ include: { trabajo: true } });
     expect(rec.estado).toBe("FALLIDO_REINTENTABLE");
-    expect(rec.paso).toBe("candidato_creado"); // progreso conservado
+    expect(rec.paso).toBe("postulante_listo"); // progreso conservado
     expect(rec.errorCodigo).toBe("ATS_NO_DISPONIBLE");
     expect(rec.trabajo!.estado).toBe("PENDIENTE");
     expect(rec.trabajo!.proximoIntentoEn.getTime()).toBeGreaterThan(Date.now() - 1000);
@@ -158,7 +158,7 @@ describe("P2.6 · ATS no disponible (5xx o timeout)", () => {
       await procesarPendientes(opcionesRapidas);
       const rec = await prisma.recepcion.findFirstOrThrow();
       expect(rec.estado).toBe("FALLIDO_REINTENTABLE");
-      expect(rec.paso).toBe("candidato_creado");
+      expect(rec.paso).toBe("postulante_listo");
       expect(conteoAts().documentos).toBe(1); // la escritura sí ocurrió
       await drenar();
     } finally {
@@ -193,10 +193,10 @@ describe("P2.7 · reinicio del worker a mitad del recorrido", () => {
   it("retoma desde el último paso confirmado sin crear otro candidato", async () => {
     await postular();
     const [t] = await reclamarTrabajos("worker-que-muere", 1, 60);
-    await expect(procesarTrabajo(t.id, { ...opcionesRapidas, simularCaidaDespuesDe: "candidato_creado" })).rejects.toBeInstanceOf(CaidaSimulada);
+    await expect(procesarTrabajo(t.id, { ...opcionesRapidas, simularCaidaDespuesDe: "postulante_listo" })).rejects.toBeInstanceOf(CaidaSimulada);
 
     const rec = await prisma.recepcion.findFirstOrThrow({ include: { trabajo: true } });
-    expect(rec.paso).toBe("candidato_creado");
+    expect(rec.paso).toBe("postulante_listo");
     expect(rec.trabajo!.estado).toBe("EN_CURSO"); // quedó tomado por el proceso muerto
     expect(await reclamarTrabajos("otro", 1)).toHaveLength(0); // lease vigente
 
@@ -205,7 +205,7 @@ describe("P2.7 · reinicio del worker a mitad del recorrido", () => {
     await drenar();
     const fin = await prisma.recepcion.findFirstOrThrow({ include: { eventos: true } });
     expect(fin.estado).toBe("COMPLETADO");
-    expect(fin.eventos.filter((e) => e.paso === "candidato_creado")).toHaveLength(1); // no se repitió el paso
+    expect(fin.eventos.filter((e) => e.paso === "postulante_listo")).toHaveLength(1); // no se repitió el paso
     expect(conteoAts()).toEqual({ candidatos: 1, documentos: 1, postulaciones: 1 });
   });
 

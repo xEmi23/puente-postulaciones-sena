@@ -44,8 +44,8 @@ export async function reconciliar(recepcionId: string, opciones: ats.OpcionesCli
     return { ok: false, mensaje: `No se pudo consultar el ATS (${detalle}). Intenta de nuevo más tarde.` };
   }
   if (existente) {
-    await completar(rec, existente.id, "Reconciliado desde el panel: el ATS ya tenía la postulación.");
-    return { ok: true, mensaje: "El ATS ya tenía la postulación. Operación marcada como completada." };
+    await completar(rec, existente.id, "Reconciliado desde el panel: Talentia ya tenía la postulación.");
+    return { ok: true, mensaje: "Talentia ya tenía la postulación. Operación marcada como completada." };
   }
   await prisma.$transaction([
     prisma.recepcion.update({ where: { id: recepcionId }, data: { estado: "FALLIDO_REINTENTABLE", errorCodigo: null, errorDetalle: null } }),
@@ -64,11 +64,14 @@ export interface Metricas {
   rechazadasEntrada: number;
   enCurso: number;
   requierenAtencion: number;
+  enReintento: number;
+  requierenVerificacion: number;
   duplicadosEvitados: number;
   medianaSegundos: number | null;
   p95Segundos: number | null;
   muestra: number;
   rechazosPorCodigo: { codigo: string; total: number }[];
+  porProceso: { procesoId: number; recibidas: number; completadas: number; medianaSegundos: number | null }[];
 }
 
 /** Métricas medidas sobre los datos reales de la base (no estimadas). */
@@ -80,6 +83,8 @@ export async function calcularMetricas(): Promise<Metricas> {
       rechazadas: bigint;
       en_curso: bigint;
       atencion: bigint;
+      reintento: bigint;
+      verificacion: bigint;
       duplicados: bigint | null;
       mediana: number | null;
       p95: number | null;
@@ -91,6 +96,8 @@ export async function calcularMetricas(): Promise<Metricas> {
            count(*) FILTER (WHERE estado = 'RECHAZADO') AS rechazadas,
            count(*) FILTER (WHERE estado IN ('RECIBIDO', 'PROCESANDO')) AS en_curso,
            count(*) FILTER (WHERE estado IN ('FALLIDO_REINTENTABLE', 'REQUIERE_VERIFICACION')) AS atencion,
+           count(*) FILTER (WHERE estado = 'FALLIDO_REINTENTABLE') AS reintento,
+           count(*) FILTER (WHERE estado = 'REQUIERE_VERIFICACION') AS verificacion,
            sum("duplicadosEvitados") AS duplicados,
            percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ("completadaEn" - "recibidaEn")))
              FILTER (WHERE "completadaEn" IS NOT NULL) AS mediana,
@@ -99,6 +106,11 @@ export async function calcularMetricas(): Promise<Metricas> {
            count("completadaEn") AS muestra
     FROM "Recepcion"`;
   const porCodigo = await prisma.entregaRechazada.groupBy({ by: ["codigo"], _count: { _all: true }, orderBy: { codigo: "asc" } });
+  const porProceso = await prisma.$queryRaw<{ proceso: number; recibidas: bigint; completadas: bigint; mediana: number | null }[]>`
+    SELECT "procesoAtsId" AS proceso, count(*) AS recibidas, count(*) FILTER (WHERE estado = 'COMPLETADO') AS completadas,
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ("completadaEn" - "recibidaEn")))
+             FILTER (WHERE "completadaEn" IS NOT NULL) AS mediana
+    FROM "Recepcion" WHERE "procesoAtsId" IS NOT NULL GROUP BY "procesoAtsId" ORDER BY "procesoAtsId"`;
   const rechazadasEntrada = porCodigo.reduce((s, c) => s + c._count._all, 0);
   return {
     recibidas: Number(r.recibidas),
@@ -107,10 +119,13 @@ export async function calcularMetricas(): Promise<Metricas> {
     rechazadasEntrada,
     enCurso: Number(r.en_curso),
     requierenAtencion: Number(r.atencion),
+    enReintento: Number(r.reintento),
+    requierenVerificacion: Number(r.verificacion),
     duplicadosEvitados: Number(r.duplicados ?? 0),
     medianaSegundos: r.mediana === null ? null : Number(r.mediana),
     p95Segundos: r.p95 === null ? null : Number(r.p95),
     muestra: Number(r.muestra),
     rechazosPorCodigo: porCodigo.map((c) => ({ codigo: c.codigo, total: c._count._all })),
+    porProceso: porProceso.map((p) => ({ procesoId: p.proceso, recibidas: Number(p.recibidas), completadas: Number(p.completadas), medianaSegundos: p.mediana === null ? null : Number(p.mediana) })),
   };
 }

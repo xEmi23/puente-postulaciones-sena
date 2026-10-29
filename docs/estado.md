@@ -322,3 +322,48 @@ Problemas encontrados y corregidos: el `aria-label` del logo no incluía su text
 
 - **PENDIENTE (equipo):** revisar la lista de nombres generados (D-39).
 - La revalidación del webhook cada 2 h de LinkedIn no se simula (D-33).
+
+## F3 · Puente completo (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+### Qué se hizo
+
+- **Conexiones en pantalla (`/conexiones`, D-41):** asistente de 3 pasos (Vínculo: URL, Client ID y Client Secret; Talentia: URL y API Key; webhook del puente para copiar). Los secretos se guardan cifrados (AES-256-GCM) y solo se muestran como `••••abcd`. «Probar conexión» obtiene el token y la empresa que autorizó la aplicación, o los permisos de la llave y los procesos visibles; muestra «Despertando…» si tarda (arranque en frío).
+- **Better Auth en el puente (D-42):** cuentas `admin@puente.demo.test` (ADMIN) y `operador@puente.demo.test` (OPERADOR), contraseña `Demo2026!`; cookie `pue_sesion`.
+- **Webhook en `/api/webhooks/vinculo` (D-43):** desafío y firma con el Client Secret guardado; 503 si aún no hay conexión.
+- **`/procesos` (D-44):** lista los procesos por la API de Talentia; «Publicar en Vínculo», «Cerrar en Vínculo» y «Publicar de nuevo»; publicación automática opcional. Las postulaciones se asocian al proceso por la publicación (`externalJobId` = id del proceso) o por correspondencia manual para vacantes creadas en Vínculo.
+- **Transferencia:** pasos `cv_descargado → postulante_listo → documento_subido → postulacion_creada` con Idempotency-Key por paso; 401 y 403 de Talentia detienen con mensaje claro; 429 respeta Retry-After; 10 intentos; esperas de 75 s / 20 s según el último contacto (D-45, D-46). Si Vínculo invalida el token al descargar el CV, se pide uno nuevo una vez (error encontrado con la prueba nueva).
+- **Aviso RESUME_DOWNLOADED** en un ciclo aparte del worker, con reintentos; visible en la operación (D-47).
+- **Métricas** en `/metricas`; **controles de prueba** solo con `PUENTE_MODO_PRUEBAS=1` y para ADMIN.
+- **`npm run demo:conectar`** y la preparación de las E2E conectan los tres sistemas por procesos, cada app con su `.env` (D-48). Se eliminó la siembra transitoria de D-25.
+
+### Comandos ejecutados y resultado real (2026-10-29)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | exit 0 |
+| `npm run typecheck` | exit 0 |
+| `npm test` | exit 0: Vínculo **26/26**, Talentia **30/30**, Puente **70/70** (nuevo `tests/conexiones.test.ts`: 20 pruebas) |
+| `npm run test:e2e` (build + escritorio + móvil) | 1.ª ejecución: build fallido por tipos viejos en `.next` del puente; 2.ª: 32/37 (5 fallos de la limpieza `afterEach` y un texto) |
+| `npx playwright test` tras corregir | **37/37** (4,1 min); después `e2e/panel.spec.ts` con la comprobación del criterio 1: **5/5** |
+| `npm run demo:conectar` con `npm run dev` | exit 0: llave creada, aplicación autorizada, conexiones probadas, 9001 y 9002 publicadas con Solicitud sencilla, webhook validado |
+
+Problemas encontrados y corregidos: la redirección de `/` del puente ocurría en pleno *streaming* (el navegador navegaba por su cuenta y rompía las auditorías): pasó a `redirects` de `next.config.ts`. Un fallo simulado que quedaba activo tras una prueba fallida contaminaba las siguientes: `afterEach` que quita los fallos.
+
+### Criterios
+
+- **1 · Cumple.** `e2e/panel.spec.ts` (sin sesión no se entra; con sesión en el puente, Talentia y Vínculo piden su ingreso y no hay cookies `tal_`/`vin_`).
+- **5 · Cumple.** `tests/conexiones.test.ts` («Probar conexión», secreto incorrecto, permisos, desafío con el secreto guardado) y `e2e/tres-sistemas.spec.ts` (conexión configurada solo por pantallas y webhook validado desde el portal de Vínculo).
+- **6 · Cumple.** `tests/conexiones.test.ts` (publicación, idempotencia, proceso no iniciado, automática) y `e2e/tres-sistemas.spec.ts` (proceso nuevo publicado desde `/procesos`).
+- **7 · Cumple.** `e2e/tres-sistemas.spec.ts` (Postulantes en < 30 s, SHA-256 igual) y `e2e/recorrido.spec.ts`.
+- **8 · Cumple.** `e2e/tres-sistemas.spec.ts` («CV descargado» en Mis postulaciones) y `tests/conexiones.test.ts` (aviso con reintentos).
+- **9 y 10 · Cumplen.** `tests/fiabilidad.test.ts`, `tests/recorrido.test.ts` y `e2e/criterios-29oct.spec.ts` (C6).
+- **11 · Cumple.** `tests/fiabilidad.test.ts`, `tests/p5.test.ts`, `e2e/panel.spec.ts` y `e2e/criterios-29oct.spec.ts` (C8).
+- **12 · Cumple.** `tests/conexiones.test.ts` y `e2e/tres-sistemas.spec.ts` (llave revocada en Talentia → detenido con «La API Key de Talentia fue revocada o no es válida.»; llave nueva + «Reintentar» completa).
+- **13 · Cumple.** `tests/webhook.test.ts`, `tests/p5.test.ts` (vacante cerrada), `e2e/criterios-29oct.spec.ts` (C7) y la prueba de PDF inválido en Vínculo.
+
+### Pendientes y riesgos
+
+- `e2e/tres-sistemas.spec.ts` regenera el Client Secret de la aplicación demo del puente y crea llaves nuevas en Talentia: corre con `workers: 1` y deja las conexiones funcionando para las pruebas que siguen.
+- Siguiente paso: F4 (realismo de datos, pulido visual, estados vacíos y de carga, capturas revisadas).
