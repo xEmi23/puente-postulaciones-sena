@@ -7,7 +7,8 @@ const esquema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   // 32 bytes en hexadecimal: cifra el Client Secret de Vínculo y la API Key de Talentia (AES-256-GCM, §4.4).
-  PUENTE_CLAVE_CIFRADO: z.string().regex(/^[0-9a-f]{64}$/, "Debe tener 64 caracteres hexadecimales (32 bytes)."),
+  // 64 hexadecimales (32 bytes) o cualquier secreto de 32+ caracteres (p. ej. generateValue de Render), del que se deriva la clave.
+  PUENTE_CLAVE_CIFRADO: z.string().min(32, "Debe tener al menos 32 caracteres (ideal: 64 hexadecimales)."),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   PUENTE_MODO_PRUEBAS: z.enum(["0", "1"]).default("0"),
   NODE_ENV: z.string().default("development"),

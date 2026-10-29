@@ -1,11 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { config } from "./config";
 
 // Cifrado de secretos en reposo con AES-256-GCM (clave VINCULO_CLAVE_CIFRADO). Formato: v1.<iv>.<etiqueta>.<cifrado> en base64url.
 // Vínculo necesita el Client Secret en claro para firmar las entregas y responder el desafío del webhook,
 // por eso se cifra en lugar de guardar solo un hash.
 
-const clave = () => Buffer.from(config().VINCULO_CLAVE_CIFRADO, "hex");
+/** 64 hexadecimales se usan tal cual (setup local); otro valor (Render lo genera en base64) se deriva a 32 bytes con SHA-256. */
+function clave(): Buffer {
+  const valor = config().VINCULO_CLAVE_CIFRADO;
+  return /^[0-9a-f]{64}$/i.test(valor) ? Buffer.from(valor, "hex") : createHash("sha256").update(valor, "utf8").digest();
+}
 
 export function cifrar(texto: string): string {
   const iv = randomBytes(12);

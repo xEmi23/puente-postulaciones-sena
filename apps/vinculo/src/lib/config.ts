@@ -6,7 +6,8 @@ const esquema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   // 32 bytes en hexadecimal: cifra los Client Secret de las aplicaciones (AES-256-GCM).
-  VINCULO_CLAVE_CIFRADO: z.string().regex(/^[0-9a-f]{64}$/, "Debe tener 64 caracteres hexadecimales (32 bytes)."),
+  // 64 hexadecimales (32 bytes) o cualquier secreto de 32+ caracteres (p. ej. generateValue de Render), del que se deriva la clave.
+  VINCULO_CLAVE_CIFRADO: z.string().min(32, "Debe tener al menos 32 caracteres (ideal: 64 hexadecimales)."),
   // Firma los access tokens (JWT HS256) de las aplicaciones.
   VINCULO_JWT_SECRET: z.string().min(32),
   CV_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),

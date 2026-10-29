@@ -1,0 +1,101 @@
+# Blueprint de Render (plan gratuito): tres servicios web y una base PostgreSQL compartida por esquemas.
+# Cada servicio tiene sus propios secretos (generateValue) y su esquema (DB_SCHEMA); ninguno se comparte.
+# Los workers corren dentro del proceso web (WORKER_EN_PROCESO=1). En cada arranque: migraciones y siembra solo si
+# la base está vacía (--si-vacio), así reiniciar o despertar un servicio no borra lo hecho en la demo.
+# Las conexiones entre sistemas se configuran después en las pantallas (docs/despliegue.md).
+
+services:
+  - type: web
+    name: vinculo-simulado
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build -w apps/vinculo
+    startCommand: cd apps/vinculo && npx prisma migrate deploy && npx tsx prisma/seed.ts --si-vacio && npx next start -p $PORT
+    healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: puente-postulaciones-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: vinculo
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: VINCULO_CLAVE_CIFRADO
+        generateValue: true
+      - key: VINCULO_JWT_SECRET
+        generateValue: true
+      - key: CV_MAX_BYTES
+        value: "5242880"
+      - key: WORKER_EN_PROCESO
+        value: "1"
+      # Arranque en frío del puente en el plan gratuito: hasta 75 s por intento de entrega.
+      - key: VINCULO_TIMEOUT_ENTREGA_MS
+        value: "75000"
+
+  - type: web
+    name: talentia-simulado
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build -w apps/talentia
+    startCommand: cd apps/talentia && npx prisma migrate deploy && npx tsx prisma/seed.ts --si-vacio && npx next start -p $PORT
+    healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: puente-postulaciones-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: talentia
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: CV_MAX_BYTES
+        value: "5242880"
+
+  - type: web
+    name: puente-postulaciones
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build -w apps/puente
+    startCommand: cd apps/puente && npx prisma migrate deploy && npx tsx prisma/seed.ts --si-vacio && npx next start -p $PORT
+    healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: puente-postulaciones-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: puente
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: PUENTE_CLAVE_CIFRADO
+        generateValue: true
+      - key: CV_MAX_BYTES
+        value: "5242880"
+      - key: WORKER_EN_PROCESO
+        value: "1"
+      # Nunca en la demo pública: los controles de prueba (inyección de fallos) quedan apagados.
+      - key: PUENTE_MODO_PRUEBAS
+        value: "0"
+
+databases:
+  - name: puente-postulaciones-db
+    plan: free
+    region: oregon
+    databaseName: puente_postulaciones
+    user: puente_postulaciones

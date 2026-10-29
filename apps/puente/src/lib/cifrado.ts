@@ -1,11 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { config } from "./config";
 
 // Cifrado de secretos en reposo con AES-256-GCM (clave PUENTE_CLAVE_CIFRADO). Formato: v1.<iv>.<etiqueta>.<cifrado> en base64url.
 // El puente necesita los secretos en claro para llamar a Vínculo y a Talentia y para verificar la firma de las entregas,
 // por eso se cifran en lugar de guardar solo un hash (ESPECIFICACION §4.4).
 
-const clave = () => Buffer.from(config().PUENTE_CLAVE_CIFRADO, "hex");
+/** 64 hexadecimales se usan tal cual (setup local); otro valor (Render lo genera en base64) se deriva a 32 bytes con SHA-256. */
+function clave(): Buffer {
+  const valor = config().PUENTE_CLAVE_CIFRADO;
+  return /^[0-9a-f]{64}$/i.test(valor) ? Buffer.from(valor, "hex") : createHash("sha256").update(valor, "utf8").digest();
+}
 
 export function cifrar(texto: string): string {
   const iv = randomBytes(12);

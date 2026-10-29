@@ -352,3 +352,15 @@
 - **Fecha:** 2026-10-29 (F4)
 - **Decisión:** los 15 postulantes sembrados en Talentia llevan un CV PDF de una página generado con pdf-lib en `apps/talentia/prisma/cv-demo.ts`, con la leyenda «documento ficticio». No se reutiliza el generador de Vínculo: cada sistema es independiente (regla de no importar dominio entre apps). Las fechas del historial coinciden con la fecha de la postulación.
 - **Alternativa descartada:** copiar los PDF de `fixtures/cv/`; sus nombres no coinciden con los postulantes y la ficha se vería incoherente.
+
+## D-50 · Claves de cifrado derivadas cuando no son hexadecimales
+
+- **Fecha:** 2026-10-29 (F7)
+- **Decisión:** `VINCULO_CLAVE_CIFRADO` y `PUENTE_CLAVE_CIFRADO` aceptan 64 hexadecimales (lo que genera `npm run setup`, se usan tal cual) o cualquier secreto de 32+ caracteres, del que se deriva la clave AES-256 con SHA-256. Así `render.yaml` puede usar `generateValue` sin variables manuales.
+- **Alternativa descartada:** `sync: false` para que alguien pegue una clave hexadecimal en Render (la especificación pide no usar `sync: false`).
+
+## D-51 · Render: una base, tres esquemas, siembra solo si está vacía
+
+- **Fecha:** 2026-10-29 (F7)
+- **Decisión:** el plan gratuito permite una base PostgreSQL; los tres servicios la comparten con `DB_SCHEMA` distinto (cada uno con su `_prisma_migrations`). El `startCommand` migra y siembra con `--si-vacio` (no siembra si ya hay usuarios), porque la siembra normal borra y recrea los datos demo y en Render se ejecutaría en cada arranque o despertar. Las conexiones entre sistemas se configuran en las pantallas tras el primer despliegue (no hay forma segura de pasar secretos entre servicios en el Blueprint sin compartirlos).
+- **Alternativa descartada:** tres bases (el plan gratuito no lo permite) y ejecutar `demo:conectar` en el despliegue (exigiría que un servicio conozca los secretos de otro).

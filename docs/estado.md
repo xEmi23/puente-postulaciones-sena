@@ -471,3 +471,32 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 ### Pendientes
 
 - Siguiente paso: F7 (Render, verificación de `.gitignore`, repositorio privado y push).
+
+## F7 · Render, repositorio y entrega (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+### Qué se hizo
+
+- **`render.yaml`** (plan gratuito): 3 servicios web (`vinculo-simulado`, `talentia-simulado`, `puente-postulaciones`) y 1 base (`puente-postulaciones-db`); `DB_SCHEMA` por app; secretos con `generateValue` (sin `sync: false`); workers en el proceso web; `startCommand` con `prisma migrate deploy` + siembra `--si-vacio` + `next start -p $PORT`; `healthCheckPath: /api/salud`; `PUENTE_MODO_PRUEBAS=0`; 75 s por intento de entrega para el arranque en frío.
+- **Cambios para Render:** claves de cifrado que aceptan el valor de `generateValue` (D-50, prueba `apps/puente/tests/cifrado.test.ts`); siembra idempotente `--si-vacio` en las tres apps (D-51).
+- **`docs/despliegue.md`:** paso a paso, conexión de los sistemas por pantallas, límites del plan gratuito y cómo despertar los servicios antes de presentar.
+- **Verificaciones:** `.gitignore` excluye `.env` (raíz y apps), `.pgdata`, `docs/ficha`, `capturas/`, `test-results/` y los clientes generados; solo se versionan las plantillas `.env.example`. Ni la contraseña real de PostgreSQL ni ningún secreto de los `.env` aparece en archivos versionados ni en el historial (`git log --all -p`). El nombre de la empresa retadora: 0 coincidencias en archivos y en el historial (F6, repetido antes del push).
+
+### Comandos ejecutados y resultado real (2026-10-29)
+
+| Comando | Resultado |
+|---|---|
+| `render blueprints validate render.yaml -w <workspace>` | `"valid": true` (1 base, 3 servicios, 4 acciones). Sin `-w` la CLI pedía un workspace por defecto; se fijó el único de la cuenta con `render workspace set` |
+| `render services` | `null`: la cuenta no tiene servicios ni bases (el cupo de base gratuita está libre) |
+| `npm run lint` / `npm run typecheck` | 0 / 0 |
+| `npm test` | Vínculo 26/26 · Talentia 30/30 · Puente 73/73 (incluye `cifrado.test.ts`) |
+| `npm run test:e2e` | 37/37 (3,1 min) |
+
+### Despliegue
+
+- La CLI de Render (v2.33.0) **no puede crear Blueprints** (`render blueprints` solo tiene `validate`). **Paso manual pendiente:** Render → **New** → **Blueprint** → repositorio **puente-postulaciones-sena**, rama **v2** → **Deploy Blueprint**; después conectar los sistemas por pantallas (docs/despliegue.md, paso 3).
+
+### Criterios
+
+- **15 · Cumple:** instalación limpia desde el README (F6) y `render blueprints validate` sin errores.
