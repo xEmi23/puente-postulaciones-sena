@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// La app (next start) y el worker los arranca e2e/global-setup.ts contra la base tb_e2e en el puerto 3200,
-// para que las pruebas puedan reiniciarlos (criterio 8: reiniciar sin perder datos).
+// Los tres sistemas (next start) y sus workers los arranca e2e/global-setup.ts contra la base tb2_e2e
+// en los puertos 3211 (Vínculo), 3212 (Talentia) y 3213 (Puente), para que las pruebas puedan reiniciarlos.
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: false,
@@ -13,7 +13,7 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
   use: {
-    baseURL: "http://localhost:3200",
+    baseURL: "http://localhost:3211",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "es-CO",

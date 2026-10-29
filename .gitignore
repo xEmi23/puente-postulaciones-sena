@@ -8,7 +8,7 @@ blob-report/
 *.tsbuildinfo
 next-env.d.ts
 
-# Entorno y secretos
+# Entorno y secretos (npm run setup los genera; nunca se versionan)
 .env
 .env.*
 !.env.example
@@ -16,9 +16,16 @@ next-env.d.ts
 # PostgreSQL local del proyecto
 .pgdata/
 .pglog/
+.pgpw.tmp
 
-# Cliente Prisma generado
-src/generated/
+# Clientes Prisma generados (uno por app)
+apps/*/src/generated/
+
+# Recursos copiados desde node_modules al compilar (documentación de API)
+apps/*/public/vendor/
+
+# Capturas de revisión visual
+capturas/
 
 # La ficha del reto no se publica (contiene datos de contacto de la empresa)
 docs/ficha/

@@ -1,28 +1,26 @@
-// Clúster PostgreSQL propio del proyecto (.pgdata, puerto 5433), alternativa a Docker.
+// Clúster PostgreSQL propio del proyecto (.pgdata, puerto 5435 por defecto), alternativa a Docker.
+// La v1 usa su propio clúster en el 5433: este script nunca lo toca.
 // Uso: node scripts/pg-local.mjs init|start|stop|status
 import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import path from "node:path";
-import "dotenv/config";
+import { config as cargarEnv } from "dotenv";
 
-const DATA = path.resolve(".pgdata");
-// El puerto sale de DATABASE_URL (setup-env elige uno libre desde 5433).
-const PORT = (() => {
-  try {
-    return new URL(process.env.DATABASE_URL ?? "").port || "5433";
-  } catch {
-    return "5433";
-  }
-})();
-const LOG = path.resolve(".pglog", "postgres.log");
+const RAIZ = path.resolve(import.meta.dirname, "..");
+cargarEnv({ path: path.join(RAIZ, ".env"), quiet: true });
+
+const DATA = path.join(RAIZ, ".pgdata");
+const LOG = path.join(RAIZ, ".pglog", "postgres.log");
+const PORT = process.env.PG_PORT || "5435";
+const BASES = ["tb2_dev", "tb2_test", "tb2_e2e"];
 
 function binDir() {
   if (process.env.PG_BIN) return process.env.PG_BIN;
   const candidatos = [
     "C:/Program Files/PostgreSQL/17/bin",
     "C:/Program Files/PostgreSQL/16/bin",
-    "/usr/lib/postgresql/16/bin",
     "/usr/lib/postgresql/17/bin",
+    "/usr/lib/postgresql/16/bin",
     "/opt/homebrew/bin",
     "/usr/local/bin",
   ];
@@ -31,13 +29,10 @@ function binDir() {
 const bin = (n) => (binDir() ? path.join(binDir(), n) : n);
 
 function credenciales() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("Falta DATABASE_URL en .env (ejecuta node scripts/setup-env.mjs).");
-  const u = new URL(url);
-  if (!["localhost", "127.0.0.1"].includes(u.hostname)) {
-    throw new Error("DATABASE_URL no apunta a localhost; este script no hace nada.");
-  }
-  return { user: decodeURIComponent(u.username), password: decodeURIComponent(u.password) };
+  const user = process.env.PG_USER;
+  const password = process.env.PG_PASSWORD;
+  if (!user || !password) throw new Error("Faltan PG_USER y PG_PASSWORD en .env (ejecuta npm run setup).");
+  return { user, password };
 }
 
 function estaCorriendo() {
@@ -48,6 +43,7 @@ function estaCorriendo() {
 
 function start() {
   if (estaCorriendo()) return console.log(`PostgreSQL local ya está corriendo en ${PORT}.`);
+  if (!existsSync(path.join(DATA, "PG_VERSION"))) throw new Error("No hay clúster en .pgdata: ejecuta npm run setup.");
   mkdirSync(path.dirname(LOG), { recursive: true });
   // En Windows, postgres hereda los descriptores de pg_ctl; con stdio "ignore" y detached el script no queda colgado.
   const hijo = spawn(bin("pg_ctl"), ["start", "-D", DATA, "-l", LOG, "-o", `-p ${PORT} -c listen_addresses=localhost`], {
@@ -66,8 +62,11 @@ function start() {
 
 function crearBases(user, password) {
   const env = { ...process.env, PGPASSWORD: password };
-  for (const db of ["tb_dev", "tb_test", "tb_e2e"]) {
-    const existe = spawnSync(bin("psql"), ["-h", "localhost", "-p", PORT, "-U", user, "-d", "postgres", "-tAc", `SELECT 1 FROM pg_database WHERE datname='${db}'`], { env, encoding: "utf8" });
+  for (const db of BASES) {
+    const existe = spawnSync(bin("psql"), ["-h", "localhost", "-p", PORT, "-U", user, "-d", "postgres", "-tAc", `SELECT 1 FROM pg_database WHERE datname='${db}'`], {
+      env,
+      encoding: "utf8",
+    });
     if (existe.stdout.trim() === "1") continue;
     execFileSync(bin("createdb"), ["-h", "localhost", "-p", PORT, "-U", user, db], { env, stdio: "inherit" });
     console.log(`Base ${db} creada.`);
@@ -78,7 +77,7 @@ const cmd = process.argv[2];
 if (cmd === "init") {
   const { user, password } = credenciales();
   if (!existsSync(path.join(DATA, "PG_VERSION"))) {
-    const pwfile = path.resolve(".pgpw.tmp");
+    const pwfile = path.join(RAIZ, ".pgpw.tmp");
     writeFileSync(pwfile, password);
     try {
       execFileSync(bin("initdb"), ["-D", DATA, "-U", user, "--pwfile", pwfile, "--auth=scram-sha-256", "-E", "UTF8", "--locale=C"], { stdio: "inherit" });

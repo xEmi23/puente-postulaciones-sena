@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { TAL } from "./procesos";
 import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
 
 test("el tablero muestra las etapas de la referencia con su tipo y permite descartar y restaurar sin perder la tarjeta", async ({ page }) => {
@@ -7,7 +8,7 @@ test("el tablero muestra las etapas de la referencia con su tipo y permite desca
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
 
   await iniciarSesionDemo(page);
-  await page.goto("/ats/procesos/9002");
+  await page.goto(`${TAL}/procesos/9002`);
   const columnas = page.locator("[data-etapa]");
   await expect(columnas).toHaveCount(9);
   await expect(columnas.first()).toHaveAttribute("data-etapa", "Postulantes");

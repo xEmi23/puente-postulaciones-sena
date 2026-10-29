@@ -1,0 +1,140 @@
+// Puente: el producto. Esquema "puente" (DB_SCHEMA).
+// Modelo interno normalizado (Recepcion); los formatos externos viven solo en los conectores.
+// `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoRecepcion {
+  RECIBIDO
+  PROCESANDO
+  COMPLETADO
+  RECHAZADO
+  FALLIDO_REINTENTABLE
+  REQUIERE_VERIFICACION
+}
+
+enum PasoRecepcion {
+  cv_descargado
+  candidato_creado
+  documento_subido
+  postulacion_creada
+}
+
+enum EstadoTrabajo {
+  PENDIENTE
+  EN_CURSO
+  HECHO
+  DETENIDO
+}
+
+model Recepcion {
+  id                 String            @id @default(uuid()) @db.Uuid
+  jobApplicationId   String            @unique
+  jobApplicant       String
+  externalJobId      String
+  appliedAt          DateTime          @db.Timestamptz(3)
+  payloadSha256      String            @db.Char(64)
+  // Datos normalizados (minimizados) necesarios para crear el candidato en el ATS.
+  nombre             String
+  apellido           String
+  correo             String
+  telefono           String?
+  ciudad             String?
+  mediaUrl           String
+  mediaUrn           String
+  // Resultado del procesamiento
+  estado             EstadoRecepcion   @default(RECIBIDO)
+  paso               PasoRecepcion?
+  procesoAtsId       Int?
+  cvSha256           String?           @db.Char(64)
+  cvTamano           Int?
+  cvNombreArchivo    String?
+  cvContenido        Bytes? // temporal: se borra al completar
+  atsCandidatoId     String?
+  atsDocumentoId     String?
+  atsPostulacionId   String?
+  errorCodigo        String?
+  errorDetalle       String?
+  duplicadosEvitados Int               @default(0)
+  recibidaEn         DateTime          @default(now()) @db.Timestamptz(3)
+  completadaEn       DateTime?         @db.Timestamptz(3)
+  actualizadaEn      DateTime          @updatedAt @db.Timestamptz(3)
+  demo               Boolean           @default(true)
+  trabajo            Trabajo?
+  eventos            EventoRecepcion[]
+
+  @@index([estado])
+  @@index([recibidaEn])
+}
+
+model Trabajo {
+  id               String        @id @default(uuid()) @db.Uuid
+  recepcionId      String        @unique @db.Uuid
+  recepcion        Recepcion     @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
+  estado           EstadoTrabajo @default(PENDIENTE)
+  intentos         Int           @default(0)
+  proximoIntentoEn DateTime      @default(now()) @db.Timestamptz(3)
+  leaseHasta       DateTime?     @db.Timestamptz(3)
+  leaseDueno       String?
+  ultimoError      String?
+  creadoEn         DateTime      @default(now()) @db.Timestamptz(3)
+  actualizadoEn    DateTime      @updatedAt @db.Timestamptz(3)
+
+  @@index([estado, proximoIntentoEn])
+}
+
+model EventoRecepcion {
+  id          String         @id @default(uuid()) @db.Uuid
+  recepcionId String         @db.Uuid
+  recepcion   Recepcion      @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
+  tipo        String // RECIBIDO, PASO, INTENTO_FALLIDO, RECHAZO, COMPLETADO, DUPLICADO, ...
+  paso        PasoRecepcion?
+  detalle     String
+  creadoEn    DateTime       @default(now()) @db.Timestamptz(3)
+
+  @@index([recepcionId, creadoEn])
+}
+
+// Entregas rechazadas antes de existir una Recepción (firma inválida, payload ilegible, vacante sin correspondencia).
+model EntregaRechazada {
+  id               String   @id @default(uuid()) @db.Uuid
+  codigo           String
+  motivo           String
+  jobApplicationId String?
+  externalJobId    String?
+  recibidaEn       DateTime @default(now()) @db.Timestamptz(3)
+  demo             Boolean  @default(true)
+
+  @@index([recibidaEn])
+}
+
+model Correspondencia {
+  id             String    @id @default(uuid()) @db.Uuid
+  externalJobId  String    @unique
+  procesoAtsId   Int
+  descripcion    String
+  activa         Boolean   @default(true)
+  // Cierre propagado desde Vínculo: las postulaciones hechas antes de cerradaEn se respetan.
+  motivoCierre   String? // ORIGEN | MANUAL
+  cerradaEn      DateTime? @db.Timestamptz(3)
+  estadoOrigenEn DateTime? @db.Timestamptz(3) // último cambio de estado aplicado (descarta eventos viejos)
+  creadaEn       DateTime  @default(now()) @db.Timestamptz(3)
+  actualizadaEn  DateTime  @updatedAt @db.Timestamptz(3)
+  demo           Boolean   @default(true)
+}
+
+// Fallos inyectables en los conectores del puente (solo con PUENTE_MODO_PRUEBAS=1 en un entorno local).
+// Simulan, desde el lado del puente, lo que ocurre cuando Talentia o Vínculo fallan.
+model FalloSimulado {
+  ruta      String   @id // candidatos | documentos | postulaciones | consulta | media
+  modo      String // NO_DISPONIBLE | PERDER_RESPUESTA | LENTO | CREDENCIALES | INTERRUMPIR
+  restantes Int      @default(1) // cuántas solicitudes afecta; -1 = indefinido
+  creadoEn  DateTime @default(now()) @db.Timestamptz(3)
+}

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PUE, TAL } from "./procesos";
 import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
 
 /** Lee la referencia de la confirmación del origen (el panel enmascara el nombre y el correo a propósito). */
@@ -9,7 +10,7 @@ async function referenciaDeConfirmacion(page: Page): Promise<string> {
 }
 
 async function abrirOperacion(page: Page, jobApplicationId: string) {
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   const fila = page.locator(`[data-testid="fila-operacion"][data-job-application-id="${jobApplicationId}"]`);
   await expect(fila).toBeVisible({ timeout: 30_000 });
   await fila.getByRole("link").click();
@@ -17,14 +18,14 @@ async function abrirOperacion(page: Page, jobApplicationId: string) {
 
 test.describe("Panel del puente", () => {
   test("sin sesión no se entra al panel ni al ATS; con credenciales erróneas se informa", async ({ page }) => {
-    await page.goto("/puente");
-    await expect(page).toHaveURL(/\/ingresar\?siguiente=%2Fpuente/);
-    await page.goto("/ats/procesos/9001");
+    await page.goto(`${PUE}/`);
+    await expect(page).toHaveURL(new RegExp(`^${PUE}/ingresar\\?siguiente=%2F`));
+    await page.goto(`${TAL}/procesos/9001`);
     await expect(page).toHaveURL(/\/ingresar/);
-    const r = await page.request.get("/ats/documentos/00000000-0000-4000-8000-000000000000/descargar", { maxRedirects: 0 });
+    const r = await page.request.get(`${TAL}/documentos/00000000-0000-4000-8000-000000000000/descargar`, { maxRedirects: 0 });
     expect([307, 308, 401]).toContain(r.status());
 
-    await page.goto("/ingresar");
+    await page.goto(`${PUE}/ingresar`);
     await page.getByLabel("Usuario").fill("demo-e2e");
     await page.getByLabel("Contraseña").fill("incorrecta");
     await page.getByRole("button", { name: "Ingresar" }).click();
@@ -49,7 +50,7 @@ test.describe("Panel del puente", () => {
     await expect(page.locator("body")).not.toContainText(correo);
     await expect(page.locator("body")).toContainText("pa•••@demo.test");
 
-    await page.goto("/puente");
+    await page.goto(`${PUE}/`);
     const metricas = page.getByTestId("metricas");
     await expect(metricas).toContainText("Recibidas");
     await expect(metricas.locator('[data-metrica="tiempos"]')).toContainText(/n = [1-9]/);
@@ -57,7 +58,7 @@ test.describe("Panel del puente", () => {
 
   test("vacante desvinculada → el origen no puede entregar (JOB_POSTING_CLOSED) y aparece en rechazos", async ({ page }) => {
     await iniciarSesionDemo(page);
-    await page.goto("/puente/correspondencias");
+    await page.goto(`${PUE}/correspondencias`);
     const fila = page.getByTestId("fila-correspondencia").filter({ hasText: "RT-2026-102" });
     await fila.getByRole("button", { name: "Desvincular" }).click();
     await expect(page.getByText(/RT-2026-102 desvinculada/)).toBeVisible();
@@ -65,10 +66,10 @@ test.describe("Panel del puente", () => {
     try {
       await postular(page, { codigo: "RT-2026-102", apellido: `Cerrada ${sufijoUnico()}`, correo: correoUnico("cerrada") });
       await expect(page.locator("[data-estado-entrega]")).toHaveText("No se pudo entregar", { timeout: 30_000 });
-      await page.goto("/puente/rechazos");
+      await page.goto(`${PUE}/rechazos`);
       await expect(page.getByTestId("fila-rechazo").filter({ hasText: "RT-2026-102" }).first()).toContainText("JOB_POSTING_CLOSED");
     } finally {
-      await page.goto("/puente/correspondencias");
+      await page.goto(`${PUE}/correspondencias`);
       await page.getByTestId("fila-correspondencia").filter({ hasText: "RT-2026-102" }).getByRole("button", { name: "Activar" }).click();
       await expect(page.getByText(/RT-2026-102 vinculada de nuevo/)).toBeVisible();
     }
@@ -76,7 +77,7 @@ test.describe("Panel del puente", () => {
 
   test("ATS caído: reintenta solo y completa; la línea de tiempo muestra el intento fallido", async ({ page }) => {
     await iniciarSesionDemo(page);
-    await page.goto("/puente/pruebas");
+    await page.goto(`${PUE}/pruebas`);
     await page.getByLabel("Operación del ATS").selectOption("documentos");
     await page.getByLabel("Tipo de fallo").selectOption("NO_DISPONIBLE");
     await page.getByLabel(/Solicitudes afectadas/).fill("1");
@@ -92,7 +93,7 @@ test.describe("Panel del puente", () => {
 
   test("respuesta perdida sin forma de saber → Requiere verificación → «Reconciliar con el ATS» la completa", async ({ page }) => {
     await iniciarSesionDemo(page);
-    await page.goto("/puente/pruebas");
+    await page.goto(`${PUE}/pruebas`);
     for (const [ruta, modo, n] of [
       ["postulaciones", "PERDER_RESPUESTA", "1"],
       ["consulta", "NO_DISPONIBLE", "-1"],
@@ -112,7 +113,7 @@ test.describe("Panel del puente", () => {
     await expect(page.getByRole("button", { name: "Reintentar" })).toHaveCount(0);
 
     const url = page.url();
-    await page.goto("/puente/pruebas");
+    await page.goto(`${PUE}/pruebas`);
     await page.getByRole("button", { name: "Quitar todos los fallos" }).click();
     await page.goto(url);
     await page.getByRole("button", { name: "Reconciliar con el ATS" }).click();

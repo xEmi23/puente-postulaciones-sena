@@ -1,0 +1,97 @@
+// Talentia: ATS simulado (tipo BUK). Esquema "talentia" (DB_SCHEMA).
+// Su API es contrato del simulador (docs/contratos.md); no son rutas oficiales de BUK.
+// `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Proceso {
+  id            Int           @id // 9001, 9002 …
+  nombre        String
+  area          String
+  ciudad        String
+  estado        String        @default("INICIADO") // INICIADO | CERRADO (como en el ATS de la empresa)
+  prioridad     String        @default("Media") // Alta | Media | Baja
+  fechaInicio   DateTime      @default(now()) @db.Timestamptz(3)
+  creadoEn      DateTime      @default(now()) @db.Timestamptz(3)
+  demo          Boolean       @default(true)
+  etapas        Etapa[]
+  postulaciones Postulacion[]
+}
+
+model Etapa {
+  id            String        @id @default(uuid()) @db.Uuid
+  procesoId     Int
+  proceso       Proceso       @relation(fields: [procesoId], references: [id], onDelete: Cascade)
+  nombre        String
+  orden         Int
+  tipo          String? // Filtro | Validaciones | Entrevistas (null en la entrada y en la etapa final)
+  postulaciones Postulacion[]
+
+  @@unique([procesoId, orden])
+}
+
+model Candidato {
+  id                String        @id @default(uuid()) @db.Uuid
+  nombre            String
+  apellido          String
+  correo            String        @unique // normalizado en minúsculas
+  telefono          String?
+  ciudad            String?
+  referenciaExterna String?
+  creadoEn          DateTime      @default(now()) @db.Timestamptz(3)
+  demo              Boolean       @default(true)
+  documentos        Documento[]
+  postulaciones     Postulacion[]
+}
+
+model Documento {
+  id            String        @id @default(uuid()) @db.Uuid
+  candidatoId   String        @db.Uuid
+  candidato     Candidato     @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  tipo          String        @default("CV")
+  nombreArchivo String
+  mime          String
+  tamano        Int
+  sha256        String        @db.Char(64)
+  contenido     Bytes
+  creadoEn      DateTime      @default(now()) @db.Timestamptz(3)
+  postulaciones Postulacion[]
+
+  @@index([candidatoId])
+}
+
+model Postulacion {
+  id                String     @id @default(uuid()) @db.Uuid
+  procesoId         Int
+  proceso           Proceso    @relation(fields: [procesoId], references: [id], onDelete: Cascade)
+  candidatoId       String     @db.Uuid
+  candidato         Candidato  @relation(fields: [candidatoId], references: [id], onDelete: Cascade)
+  etapaId           String     @db.Uuid
+  etapa             Etapa      @relation(fields: [etapaId], references: [id])
+  documentoId       String?    @db.Uuid
+  documento         Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull)
+  calificacion      String     @default("SIN_CALIFICAR")
+  fuente            String
+  referenciaExterna String     @unique // jobApplicationId de Vínculo
+  vista             Boolean    @default(false)
+  descartadaEn      DateTime?  @db.Timestamptz(3) // descartada dentro de su etapa (sección «Descartados»)
+  creadaEn          DateTime   @default(now()) @db.Timestamptz(3)
+
+  @@unique([procesoId, candidatoId])
+}
+
+model ClaveIdempotencia {
+  clave         String   @id
+  ruta          String
+  hashSolicitud String   @db.Char(64)
+  estadoHttp    Int
+  respuesta     String
+  creadaEn      DateTime @default(now()) @db.Timestamptz(3)
+}

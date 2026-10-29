@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { TAL, VIN } from "./procesos";
 import { CV, correoUnico, iniciarSesionDemo, postular, sha256Archivo, sufijoUnico } from "./utilidades";
 
 test.describe("Recorrido principal", () => {
@@ -7,7 +8,7 @@ test.describe("Recorrido principal", () => {
     const correo = correoUnico("camila.recorrido");
 
     // Portal de origen: catálogo y detalle.
-    await page.goto("/origen");
+    await page.goto(`${VIN}/`);
     await expect(page.getByText("Entorno de simulación").first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Desarrollador/a Backend Java" })).toBeVisible();
 
@@ -18,7 +19,7 @@ test.describe("Recorrido principal", () => {
 
     // ATS: el tablero del proceso correcto muestra la tarjeta en la columna Postulantes.
     await iniciarSesionDemo(page);
-    await page.goto("/ats/procesos/9001");
+    await page.goto(`${TAL}/procesos/9001`);
     const columna = page.locator('[data-etapa="Postulantes"]');
     const tarjeta = columna.getByTestId("tarjeta-postulante").filter({ hasText: apellido });
     await expect(tarjeta).toBeVisible({ timeout: 30_000 });
@@ -27,11 +28,11 @@ test.describe("Recorrido principal", () => {
     await expect(page.getByTestId("aviso-nuevos")).toContainText(/postulantes? nuevos? fue(ron)? agregados? al proceso/);
 
     // No aparece en el otro proceso.
-    await page.goto("/ats/procesos/9002");
+    await page.goto(`${TAL}/procesos/9002`);
     await expect(page.getByText(apellido)).toHaveCount(0);
 
     // Detalle del candidato y descarga del CV: el hash coincide con el archivo original.
-    await page.goto("/ats/procesos/9001");
+    await page.goto(`${TAL}/procesos/9001`);
     await page.getByRole("link", { name: new RegExp(apellido) }).click();
     await expect(page.getByRole("heading", { name: new RegExp(apellido) })).toBeVisible();
     const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByTestId("descargar-cv").click()]);
@@ -41,7 +42,7 @@ test.describe("Recorrido principal", () => {
   });
 
   test("el formulario rechaza con mensajes claros datos inválidos y archivos que no son PDF", async ({ page }) => {
-    await page.goto("/origen/vacantes/RT-2026-101");
+    await page.goto(`${VIN}/vacantes/RT-2026-101`);
     await page.getByLabel("Nombre").fill("C");
     await page.getByLabel("Apellido").fill("Prueba");
     await page.getByLabel("Correo electrónico").fill("no-es-correo");

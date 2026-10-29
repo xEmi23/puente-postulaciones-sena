@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { PUE, TAL, VIN } from "./procesos";
 import { CV, correoUnico, iniciarSesionDemo, postular, sha256Archivo, sufijoUnico } from "./utilidades";
 import { iniciarApp, iniciarWorker, matarApp, matarWorker } from "./procesos";
 
@@ -19,7 +20,7 @@ async function referencia(page: Page) {
 test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ page }) => {
   await iniciarSesionDemo(page);
 
-  await page.goto("/origen/admin/vacantes/nueva");
+  await page.goto(`${VIN}/admin/vacantes/nueva`);
   await page.getByLabel("Título del cargo").fill(`Desarrollador/a Frontend ${sufijoUnico()}`);
   await page.getByLabel("Área").fill("Ingeniería");
   await page.getByLabel("Ciudad").fill("Medellín");
@@ -30,7 +31,7 @@ test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ pa
   await expect(aviso).toContainText(/Vacante RT-\d{4}-\d{3} publicada/);
   codigoVacante = (await aviso.textContent())!.match(/RT-\d{4}-\d{3}/)![0];
 
-  await page.goto("/ats/procesos/nuevo");
+  await page.goto(`${TAL}/procesos/nuevo`);
   await page.getByLabel("Nombre del proceso").fill("Desarrollador/a Frontend");
   await page.getByLabel("Área").fill("Ingeniería");
   await page.getByLabel("Ciudad").fill("Remoto");
@@ -39,7 +40,7 @@ test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ pa
   procesoId = page.url().match(/procesos\/(\d+)/)![1];
   await expect(page.locator('[data-etapa="Postulantes"]')).toBeVisible();
 
-  await page.goto("/puente/correspondencias");
+  await page.goto(`${PUE}/correspondencias`);
   await page.getByLabel("Código de la vacante en el origen").fill(codigoVacante);
   await page.getByLabel("Proceso del ATS").selectOption(procesoId);
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -47,7 +48,7 @@ test("C1 · preparar una vacante en origen y destino y vincularlas", async ({ pa
 });
 
 test("C2 · postular una persona ficticia con un PDF", async ({ page }) => {
-  await page.goto("/origen");
+  await page.goto(`${VIN}/`);
   await page.getByRole("link", { name: /Desarrollador\/a Frontend/ }).first().click();
   await expect(page).toHaveURL(new RegExp(codigoVacante));
   await postular(page, { codigo: codigoVacante, apellido, correo: correoUnico("criterios"), telefono: "3000000009" });
@@ -57,7 +58,7 @@ test("C2 · postular una persona ficticia con un PDF", async ({ page }) => {
 
 test("C3 · ver la transferencia sin copiar nada manualmente", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   const fila = page.locator(`[data-testid="fila-operacion"][data-job-application-id="${jobApplicationId}"]`);
   await expect(fila).toContainText("Completado", { timeout: 30_000 }); // la lista se actualiza sola
   await fila.getByRole("link").click();
@@ -68,21 +69,21 @@ test("C3 · ver la transferencia sin copiar nada manualmente", async ({ page }) 
 
 test("C4 · la postulación aparece en la columna Postulantes del proceso correcto", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto(`/ats/procesos/${procesoId}`);
+  await page.goto(`${TAL}/procesos/${procesoId}`);
   const tarjeta = page.locator('[data-etapa="Postulantes"]').getByTestId("tarjeta-postulante").filter({ hasText: apellido });
   await expect(tarjeta).toBeVisible();
   await expect(tarjeta).toContainText("Sin calificar");
   await expect(tarjeta).toContainText("Portal simulado (tipo LinkedIn)");
   await expect(page.getByTestId("aviso-nuevos")).toHaveText(/1 postulante nuevo fue agregado al proceso/);
   for (const otro of ["9001", "9002"]) {
-    await page.goto(`/ats/procesos/${otro}`);
+    await page.goto(`${TAL}/procesos/${otro}`);
     await expect(page.getByText(apellido)).toHaveCount(0);
   }
 });
 
 test("C5 · descargar el CV y comprobar que el hash coincide con el original", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto(`/ats/procesos/${procesoId}`);
+  await page.goto(`${TAL}/procesos/${procesoId}`);
   await page.getByRole("link", { name: new RegExp(apellido) }).click();
   const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByTestId("descargar-cv").click()]);
   expect(sha256Archivo((await descarga.path())!)).toBe(sha256Archivo(CV));
@@ -90,20 +91,20 @@ test("C5 · descargar el CV y comprobar que el hash coincide con el original", a
 
 test("C6 · reenviar el evento sin duplicar", async ({ page }) => {
   await iniciarSesionDemo(page);
-  await page.goto("/origen/admin");
+  await page.goto(`${VIN}/admin`);
   await page.locator(`[data-testid="fila-entrega"][data-job-application-id="${jobApplicationId}"]`).getByRole("button", { name: "Reenviar evento" }).click();
   await expect(page.locator(".alerta-exito")).toContainText("HTTP 200 · DUPLICADO");
 
-  await page.goto(`/ats/procesos/${procesoId}`);
+  await page.goto(`${TAL}/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido })).toHaveCount(1);
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   await page.locator(`[data-testid="fila-operacion"][data-job-application-id="${jobApplicationId}"]`).getByRole("link").click();
   await expect(page.getByTestId("linea-tiempo")).toContainText("Se recibió de nuevo el mismo jobApplicationId; no se creó nada.");
 });
 
 test("C7 · rechazo controlado de entradas inválidas", async ({ page }) => {
   // Formulario del portal.
-  await page.goto(`/origen/vacantes/${codigoVacante}`);
+  await page.goto(`${VIN}/vacantes/${codigoVacante}`);
   await page.getByLabel("Nombre").fill("Ana");
   await page.getByLabel("Apellido").fill("Prueba");
   await page.getByLabel("Correo electrónico").fill("ana@demo.test");
@@ -123,13 +124,13 @@ test("C7 · rechazo controlado de entradas inválidas", async ({ page }) => {
     ["json_ilegible", "HTTP 400", "INPUT_VALIDATION_FAILED"],
   ];
   for (const [caso, status, codigo] of casos) {
-    await page.goto("/origen/admin/consola");
+    await page.goto(`${VIN}/admin/consola`);
     await page.getByLabel("Caso").selectOption(caso);
     await page.getByRole("button", { name: "Enviar al webhook" }).click();
     await expect(page.getByTestId("consola-status")).toHaveText(status);
     await expect(page.getByTestId("consola-cuerpo")).toContainText(codigo);
   }
-  await page.goto("/puente/rechazos");
+  await page.goto(`${PUE}/rechazos`);
   await expect(page.getByTestId("fila-rechazo").first()).toBeVisible();
 });
 
@@ -156,12 +157,12 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await iniciarWorker();
   await expect(page.locator("[data-estado-entrega]")).toHaveText("Entregada a la empresa", { timeout: 30_000 });
   await iniciarSesionDemo(page);
-  await page.goto(`/ats/procesos/${procesoId}`);
+  await page.goto(`${TAL}/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido8 })).toBeVisible({ timeout: 30_000 });
 
   // d) Caída a mitad de una llamada al ATS: el ATS ya guardó el documento pero tarda en responder,
   //    y en ese momento mueren app y worker. Al volver, la Idempotency-Key evita el documento duplicado.
-  await page.goto("/puente/pruebas");
+  await page.goto(`${PUE}/pruebas`);
   await page.getByLabel("Operación del ATS").selectOption("documentos");
   await page.getByLabel("Tipo de fallo").selectOption("LENTO");
   await page.getByLabel(/Solicitudes afectadas/).fill("1");
@@ -171,7 +172,7 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await postular(page, { codigo: codigoVacante, apellido: apellido9, correo: correoUnico("mitad") });
   const ref9 = await referencia(page);
   await iniciarSesionDemo(page);
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   const fila9 = page.locator(`[data-testid="fila-operacion"][data-job-application-id="${ref9}"]`);
   await expect(fila9).toContainText("Procesando", { timeout: 30_000 });
   await expect(fila9).toContainText("Candidato creado");
@@ -181,9 +182,9 @@ test("C8 · reiniciar app y worker sin perder datos ni operaciones pendientes", 
   await iniciarApp();
   await iniciarWorker();
   await iniciarSesionDemo(page);
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   await expect(page.locator(`[data-testid="fila-operacion"][data-job-application-id="${ref9}"]`)).toContainText("Completado", { timeout: 60_000 });
-  await page.goto(`/ats/procesos/${procesoId}`);
+  await page.goto(`${TAL}/procesos/${procesoId}`);
   await expect(page.getByTestId("tarjeta-postulante").filter({ hasText: apellido9 })).toHaveCount(1);
   await page.getByRole("link", { name: new RegExp(apellido9) }).click();
   await expect(page.getByTestId("descargar-cv")).toHaveCount(1); // un solo documento

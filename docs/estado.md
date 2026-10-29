@@ -219,3 +219,37 @@ Comandos y resultado real: `npm run typecheck` 0 · `npm run lint` 0 (0 adverten
 - **Tarjeta:** casilla de selección solo visual; sin ícono de IA; «Sin calificar».
 - Comandos y resultado real: `npm run demo:reset` 0 · `npm run typecheck` 0 · `npm run lint` 0 · `npm test` **82/82** (12 archivos) · `npm run test:e2e` **26/26** · `npm run build` 0.
 - El pendiente D-19 de la sección anterior queda **cerrado**.
+
+---
+
+# Versión 2 (rama v2)
+
+> Actualizado por Claude Code. Plan: fases F0–F7 de PROMPT_V2.md sobre docs/v2/SOLUCION.md y docs/v2/ESPECIFICACION.md.
+
+## F0 · Monorepo (2026-10-28)
+
+### Qué se hizo
+
+- npm workspaces: `apps/vinculo` (puerto 3001), `apps/talentia` (3002), `apps/puente` (3003). Cada app con su `package.json`, esquema Prisma, migración inicial, cliente generado propio, `.env`, seed, `demo:reset` y pruebas. Ninguna importa código de otra (D-20).
+- PostgreSQL local del proyecto en el 5435 (`.pgdata` de esta carpeta), bases `tb2_dev`, `tb2_test`, `tb2_e2e`; un esquema por sistema (D-21). El clúster de la v1 en el 5433 no se tocó.
+- `npm run setup` genera `.env` (raíz y por app, con secretos aleatorios), crea el clúster, migra y siembra las tres apps. `npm run dev` arranca PostgreSQL y las tres apps con sus workers dentro del proceso (D-24).
+- Fallos inyectables movidos a los conectores del puente (D-23). Talentia y Vínculo ya no tienen código de fallos.
+- Pruebas de la v1 adaptadas: por app con PostgreSQL real; el puente con dobles de contrato (D-22). E2E de la v1 adaptadas a tres sistemas como procesos reales (supervisor en `e2e/`).
+
+### Comandos ejecutados y resultado real (2026-10-28)
+
+| Comando | Resultado |
+|---|---|
+| `npm install` | exit 0 (645 paquetes) |
+| `npm run setup` | exit 0: `.env` de la raíz y de cada app, clúster en 5435, 3 migraciones y 3 seeds |
+| `npm run lint` | exit 0, 0 advertencias |
+| `npm run typecheck` | exit 0 (3 apps) |
+| `npm test` | exit 0: Vínculo **20/20** (5 archivos), Talentia **20/20** (5), Puente **57/57** (8) |
+| `npm run build` | exit 0 (3 apps) |
+| `npx playwright test --project=escritorio` | **25/25** (2,8 min), incluidos los 8 criterios del 29/10 y el reinicio a mitad de llamada |
+| `npx playwright test --project=movil` | **1/1** |
+
+### Pendientes y riesgos
+
+- Transitorio (D-25): contratos y secretos de la v1 hasta F1–F3.
+- `docker-compose.yml` actualizado al 5435 pero sin probar (no hay Docker en la máquina).

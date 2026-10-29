@@ -167,3 +167,50 @@
 - **Proceso:** se agregaron **prioridad** (Alta/Media/Baja), **fecha de inicio**, **vigencia** (días completos desde el inicio, calculada al mostrarla) y **estado «Iniciado»** en lugar de «Abierto» (migración `proceso_prioridad_inicio`, que convierte los `ABIERTO` existentes). Se muestran en el encabezado del proceso y en la lista, como en `docs/referencia-ats.md`. Seed ficticio: 9001 Alta, iniciado hace 10 días; 9002 Media, hace 3 días. «Nuevo proceso» pide prioridad y fecha de inicio. Solo un proceso «Iniciado» recibe postulaciones (`PROCESO_CERRADO` en otro caso).
 - **Tarjeta:** casilla de selección **solo visual** (sin acciones masivas). **Sin ícono de IA**: la calificación está fuera de alcance y la tarjeta muestra «Sin calificar».
 - **Estructura** (rutas, módulos, `bytea`): se mantiene como se describe en `CLAUDE.md`.
+
+---
+
+# Versión 2
+
+> Actualizado por Claude Code (2026-10-28). Decisiones de la v2 (docs/v2/SOLUCION.md y docs/v2/ESPECIFICACION.md).
+
+## D-20 · Monorepo con npm workspaces y tres apps sin código compartido
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** `apps/vinculo` (sale del origen v1), `apps/talentia` (sale del ATS v1) y `apps/puente` (sale del puente v1 con su worker), cada una con su `package.json`, `prisma/schema.prisma`, migraciones, cliente generado en `src/generated/prisma` y pruebas. Las utilidades pequeñas (`lib/firma`, `lib/archivos`, `lib/http`, `lib/fechas`, `lib/sesion`) se **duplican** en cada app; no hay `packages/` todavía. Reemplaza D-02 (una sola app con tres módulos).
+- **Alternativa descartada:** un paquete `packages/comun` con esas utilidades. Es legal (no es dominio), pero acopla versiones entre apps y cada sistema evoluciona distinto (Vínculo firma y el puente verifica).
+- **Motivo:** independencia real exigida por ESPECIFICACION §0.1: ninguna app importa nada de otra.
+
+## D-21 · Una base, un esquema por sistema, migraciones dentro del esquema
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** el `DATABASE_URL` no lleva esquema. Cada app usa `DB_SCHEMA` (por defecto `vinculo`, `talentia` o `puente`): `prisma.config.ts` agrega `?schema=` para las migraciones (la tabla `_prisma_migrations` queda dentro del esquema) y el cliente usa la opción `schema` del adaptador pg más `search_path` (las consultas SQL crudas usan nombres sin esquema). Las migraciones de la v1 se reemplazaron por una migración inicial por app (la historia de la v1 sigue en git). PostgreSQL local del proyecto en el **5435** con `tb2_dev`, `tb2_test` y `tb2_e2e`; el clúster de la v1 (5433) no se toca.
+- **Alternativa descartada:** un solo `schema.prisma` con `multiSchema` (como la v1): un cliente y un historial de migraciones compartidos rompen la independencia.
+- **Motivo:** en Render hay una sola base gratuita (SOLUCION §7); así las tres apps la comparten sin mezclar tablas ni historial. En producción cada sistema tendría su base.
+
+## D-22 · Estrategia de pruebas entre sistemas independientes
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** cada app tiene su Vitest contra PostgreSQL real (su esquema en `tb2_test`), con sus rutas reales llamadas en proceso. Las pruebas del puente usan **dobles de contrato** de Vínculo y Talentia (`apps/puente/tests/dobles.ts`), escritos desde docs/contratos.md sin importar código de esas apps; las pruebas de contrato de cada simulador verifican que el sistema real cumple ese mismo contrato. El recorrido entre los tres se prueba con Playwright contra **procesos reales** (`e2e/supervisor.mjs` arranca y reinicia cada app y cada worker en los puertos 3211–3213).
+- **Alternativa descartada:** cargar en un mismo proceso de Vitest las rutas de las tres apps. Exige importar código entre apps y las tres leerían el mismo `process.env` (URLs y secretos chocan).
+- **Motivo:** probar el puente como se usaría en la vida real: solo por HTTP y contra un contrato.
+
+## D-23 · Fallos inyectables en los conectores del puente
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** los fallos de prueba (NO_DISPONIBLE, PERDER_RESPUESTA, LENTO, CREDENCIALES, INTERRUMPIR) se aplican en las llamadas HTTP salientes del puente (`apps/puente/src/modules/fallos.ts`, tabla `puente.FalloSimulado`), no dentro de Talentia ni de Vínculo. Solo existen con `PUENTE_MODO_PRUEBAS=1` y host local (misma protección que D-12). PERDER_RESPUESTA hace la llamada real y luego falla como un corte de red; LENTO retiene la respuesta más que el tiempo de espera; INTERRUMPIR corta el cuerpo a la mitad conservando `Content-Length`.
+- **Alternativa descartada:** controles de fallos dentro de cada simulador (v1). Los simuladores tendrían código de prueba expuesto en Render y el puente dependería de esa cooperación.
+- **Motivo:** ESPECIFICACION §4.2 pone `/pruebas` en el puente; además «Talentia caído» se prueba de verdad deteniendo el proceso de Talentia en las E2E.
+
+## D-24 · Workers dentro del proceso web o aparte
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** el despachador de Vínculo y el procesador del puente arrancan en `instrumentation.ts` cuando `WORKER_EN_PROCESO=1` (lo que se usa en Render y en `npm run dev`), con apagado ordenado en SIGTERM. `npm run worker -w apps/<app>` los corre aparte; las E2E los corren aparte para poder matar el worker sin matar la web (criterio 8 de la v1).
+- **Alternativa descartada:** solo procesos aparte (Render gratuito no los permite) o solo dentro de la web (no se podría probar la caída aislada del worker).
+- **Motivo:** ESPECIFICACION §6 y conservar las pruebas de reinicio de la v1.
+
+## D-25 · F0 conserva los contratos y la autenticación de la v1 (transitorio)
+
+- **Fecha:** 2026-10-28 (F0)
+- **Decisión:** en F0 los sistemas siguen hablando con los contratos de la v1 (webhook del puente en `/api/puente/webhook`, CV en `/api/origen/media/{id}`, API del ATS en `/api/ats/v1/...`) y con secretos compartidos por variables de entorno que `npm run setup` genera una vez en el `.env` de la raíz y copia al `.env` de cada app. Cada app tiene su propio inicio de sesión de demostración con cookie propia (`vin_sesion`, `tal_sesion`, `pue_sesion`). F1–F3 reemplazan esto por las APIs de la especificación, API Keys y credenciales configuradas en `/conexiones`.
+- **Motivo:** la puerta de F0 exige que las pruebas y el recorrido de la v1 sigan pasando antes de cambiar los contratos.

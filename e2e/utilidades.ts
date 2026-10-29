@@ -2,26 +2,35 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
+import { DEMO_CLAVE, DEMO_USUARIO, PUE, TAL, VIN } from "./procesos";
 
-export const CV = path.resolve("fixtures/cv/cv-camila-ejemplo.pdf");
+export { PUE, TAL, VIN };
+
+export const CV = path.resolve(__dirname, "../fixtures/cv/cv-camila-ejemplo.pdf");
 export const sha256Archivo = (ruta: string) => createHash("sha256").update(readFileSync(ruta)).digest("hex");
 
 /** Correo único por ejecución para no chocar con datos de pruebas anteriores. */
 export const correoUnico = (prefijo: string) => `${prefijo}.${Date.now()}.${Math.floor(Math.random() * 1e4)}@demo.test`;
 
-export async function iniciarSesionDemo(page: Page) {
-  await page.goto("/ingresar");
-  await page.getByLabel("Usuario").fill("demo-e2e");
-  await page.getByLabel("Contraseña").fill("clave-e2e-solo-local");
+/** Inicia sesión de demostración en un sistema (cada uno tiene su propio inicio de sesión y su cookie). */
+export async function iniciarSesionEn(page: Page, base: string) {
+  await page.goto(`${base}/ingresar`);
+  await page.getByLabel("Usuario").fill(DEMO_USUARIO);
+  await page.getByLabel("Contraseña").fill(DEMO_CLAVE);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await expect(page).not.toHaveURL(/ingresar/);
+}
+
+/** Sesión en los tres sistemas (administración de Vínculo, Talentia y el panel del puente). */
+export async function iniciarSesionDemo(page: Page) {
+  for (const base of [VIN, TAL, PUE]) await iniciarSesionEn(page, base);
 }
 
 export async function postular(
   page: Page,
   opciones: { codigo?: string; nombre?: string; apellido: string; correo: string; cv?: string; telefono?: string },
 ) {
-  await page.goto(`/origen/vacantes/${opciones.codigo ?? "RT-2026-101"}`);
+  await page.goto(`${VIN}/vacantes/${opciones.codigo ?? "RT-2026-101"}`);
   await page.getByLabel("Nombre").fill(opciones.nombre ?? "Camila");
   await page.getByLabel("Apellido").fill(opciones.apellido);
   await page.getByLabel("Correo electrónico").fill(opciones.correo);

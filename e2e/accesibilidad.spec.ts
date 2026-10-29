@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { PUE, TAL, VIN } from "./procesos";
 import { expect, test, type Page } from "@playwright/test";
 import { correoUnico, iniciarSesionDemo, postular, sufijoUnico } from "./utilidades";
 
@@ -13,11 +14,11 @@ async function auditar(page: Page, nombre: string) {
 }
 
 test("las pantallas principales no tienen violaciones de accesibilidad serias", async ({ page }) => {
-  await page.goto("/");
+  await page.goto(`${VIN}/`);
   await auditar(page, "inicio");
-  await page.goto("/origen");
+  await page.goto(`${VIN}/`);
   await auditar(page, "catálogo");
-  await page.goto("/origen/vacantes/RT-2026-101");
+  await page.goto(`${VIN}/vacantes/RT-2026-101`);
   await auditar(page, "detalle de vacante");
   await page.getByRole("button", { name: "Enviar postulación" }).click();
   await expect(page.getByText("Revisa los campos marcados para continuar.")).toBeVisible();
@@ -25,34 +26,34 @@ test("las pantallas principales no tienen violaciones de accesibilidad serias", 
   await postular(page, { apellido: `Accesible ${sufijoUnico()}`, correo: correoUnico("a11y") });
   await expect(page.getByRole("heading", { name: "¡Tu postulación fue enviada!" })).toBeVisible();
   await auditar(page, "confirmación");
-  await page.goto("/ingresar");
+  await page.goto(`${PUE}/ingresar`);
   await auditar(page, "ingreso");
   await iniciarSesionDemo(page);
   for (const [ruta, nombre] of [
-    ["/puente", "panel"],
-    ["/puente/correspondencias", "correspondencias"],
-    ["/puente/rechazos", "rechazos"],
-    ["/puente/pruebas", "controles de prueba"],
-    ["/ats", "procesos ATS"],
-    ["/ats/procesos/9001", "tablero ATS"],
-    ["/ats/procesos/nuevo", "nuevo proceso"],
-    ["/origen/admin", "admin origen"],
-    ["/origen/admin/vacantes/nueva", "publicar vacante"],
-    ["/origen/admin/consola", "consola"],
+    [`${PUE}/`, "panel"],
+    [`${PUE}/correspondencias`, "correspondencias"],
+    [`${PUE}/rechazos`, "rechazos"],
+    [`${PUE}/pruebas`, "controles de prueba"],
+    [`${TAL}/`, "procesos ATS"],
+    [`${TAL}/procesos/9001`, "tablero ATS"],
+    [`${TAL}/procesos/nuevo`, "nuevo proceso"],
+    [`${VIN}/admin`, "admin origen"],
+    [`${VIN}/admin/vacantes/nueva`, "publicar vacante"],
+    [`${VIN}/admin/consola`, "consola"],
   ]) {
     await page.goto(ruta);
     await auditar(page, nombre);
   }
-  await page.goto("/puente");
+  await page.goto(`${PUE}/`);
   await page.getByTestId("fila-operacion").first().getByRole("link").click();
   await auditar(page, "detalle de operación");
-  await page.goto("/ats/procesos/9001");
+  await page.goto(`${TAL}/procesos/9001`);
   await page.getByTestId("tarjeta-postulante").first().getByRole("link").click();
   await auditar(page, "detalle de candidato");
 });
 
 test("navegación por teclado: saltar al contenido y completar la postulación sin ratón", async ({ page }) => {
-  await page.goto("/origen/vacantes/RT-2026-102");
+  await page.goto(`${VIN}/vacantes/RT-2026-102`);
   await page.waitForLoadState("networkidle"); // el formulario ya está hidratado
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Saltar al contenido" })).toBeFocused();
@@ -82,7 +83,7 @@ test("navegación por teclado: saltar al contenido y completar la postulación s
 });
 
 test("con errores, el foco va al primer campo inválido", async ({ page }) => {
-  await page.goto("/origen/vacantes/RT-2026-101");
+  await page.goto(`${VIN}/vacantes/RT-2026-101`);
   await page.getByLabel("Nombre").fill("Ana");
   await page.getByRole("button", { name: "Enviar postulación" }).click();
   await expect(page.getByLabel("Apellido")).toBeFocused();

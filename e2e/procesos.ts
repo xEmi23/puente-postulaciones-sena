@@ -1,38 +1,62 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, openSync } from "node:fs";
+import { mkdirSync, openSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { config as cargarEnv } from "dotenv";
+import { parse } from "dotenv";
 
-// Arranque y parada de la app (next start) y del worker para las pruebas E2E, a través de e2e/supervisor.mjs.
+// Arranque y parada de los tres sistemas (next start) y de sus workers para las pruebas E2E, a través de e2e/supervisor.mjs.
+// Cada sistema usa su .env con la base tb2_e2e y puertos propios (no chocan con `npm run dev` ni con la v1).
 
-export const PUERTO = 3200;
-export const BASE = `http://localhost:${PUERTO}`;
-const PUERTO_CONTROL = 3299;
+const RAIZ = path.resolve(__dirname, "..");
+export const PUERTOS = { vinculo: 3211, talentia: 3212, puente: 3213 } as const;
+export const VIN = `http://localhost:${PUERTOS.vinculo}`;
+export const TAL = `http://localhost:${PUERTOS.talentia}`;
+export const PUE = `http://localhost:${PUERTOS.puente}`;
+const PUERTO_CONTROL = 3219;
 const CONTROL = `http://127.0.0.1:${PUERTO_CONTROL}`;
 
-export function entornoE2E(): NodeJS.ProcessEnv {
-  const leido = cargarEnv({ quiet: true, processEnv: {} }).parsed ?? {};
-  if (!leido.DATABASE_URL_E2E) throw new Error("Falta DATABASE_URL_E2E en .env");
-  return {
-    ...process.env,
-    ...leido,
+export const DEMO_USUARIO = "demo-e2e";
+export const DEMO_CLAVE = "clave-e2e-solo-local";
+
+type App = keyof typeof PUERTOS;
+
+function envApp(app: App): NodeJS.ProcessEnv {
+  const leido = parse(readFileSync(path.join(RAIZ, "apps", app, ".env")));
+  if (!leido.DATABASE_URL_E2E) throw new Error(`Falta DATABASE_URL_E2E en apps/${app}/.env`);
+  const comunes = {
     DATABASE_URL: leido.DATABASE_URL_E2E,
-    APP_BASE_URL: BASE,
-    ORIGEN_BASE_URL: BASE,
-    PUENTE_WEBHOOK_URL: `${BASE}/api/puente/webhook`,
-    ATS_BASE_URL: `${BASE}/api/ats/v1`,
-    SIMULADOR_MODO_PRUEBA: "true",
+    APP_BASE_URL: `http://localhost:${PUERTOS[app]}`,
     DEMO_AUTH_ENABLED: "true",
-    DEMO_ADMIN_USER: "demo-e2e",
-    DEMO_ADMIN_PASSWORD: "clave-e2e-solo-local",
+    DEMO_ADMIN_USER: DEMO_USUARIO,
+    DEMO_ADMIN_PASSWORD: DEMO_CLAVE,
+    WORKER_EN_PROCESO: "0",
     WORKER_INTERVALO_MS: "300",
-    PUENTE_MAX_INTENTOS: "3",
-    PUENTE_BACKOFF_BASE_MS: "300",
-    PUENTE_LEASE_S: "12",
-    SIMULADOR_DEMORA_LENTO_MS: "8000",
-    E2E_PUERTO_CONTROL: String(PUERTO_CONTROL),
-    E2E_PUERTO_APP: String(PUERTO),
   };
+  const propios: Record<App, Record<string, string>> = {
+    vinculo: { PUENTE_WEBHOOK_URL: `${PUE}/api/puente/webhook` },
+    talentia: {},
+    puente: {
+      ORIGEN_BASE_URL: VIN,
+      ATS_BASE_URL: `${TAL}/api/ats/v1`,
+      PUENTE_MODO_PRUEBAS: "1",
+      PUENTE_MAX_INTENTOS: "3",
+      PUENTE_BACKOFF_BASE_MS: "300",
+      PUENTE_LEASE_S: "12",
+      PUENTE_DEMORA_LENTO_MS: "8000",
+    },
+  };
+  return { ...process.env, ...leido, ...comunes, ...propios[app] };
+}
+
+function definiciones() {
+  const next = path.join(RAIZ, "node_modules/next/dist/bin/next");
+  const def: Record<string, { cwd: string; args: string[]; env: NodeJS.ProcessEnv; salud?: string }> = {};
+  for (const app of Object.keys(PUERTOS) as App[]) {
+    def[app] = { cwd: `apps/${app}`, args: [next, "start", "-p", String(PUERTOS[app])], env: envApp(app), salud: `http://localhost:${PUERTOS[app]}/ingresar` };
+  }
+  for (const app of ["vinculo", "puente"] as const) {
+    def[`worker-${app}`] = { cwd: `apps/${app}`, args: ["--import", "tsx", "worker/index.ts"], env: envApp(app) };
+  }
+  return def;
 }
 
 async function control(accion: string, intentos = 1) {
@@ -51,23 +75,44 @@ async function control(accion: string, intentos = 1) {
 export async function iniciarSupervisor() {
   await control("/todo/stop").catch(() => undefined); // restos de una ejecución anterior
   await new Promise((ok) => setTimeout(ok, 300));
-  mkdirSync("test-results", { recursive: true });
-  const log = openSync(path.resolve("test-results", "supervisor.log"), "a");
-  const s = spawn(process.execPath, [path.resolve("e2e/supervisor.mjs")], { env: entornoE2E(), stdio: ["ignore", log, log], detached: true, windowsHide: true });
+  mkdirSync(path.join(RAIZ, "test-results"), { recursive: true });
+  const log = openSync(path.join(RAIZ, "test-results", "supervisor.log"), "a");
+  const s = spawn(process.execPath, [path.join(RAIZ, "e2e/supervisor.mjs")], {
+    env: { ...process.env, E2E_PUERTO_CONTROL: String(PUERTO_CONTROL), E2E_PROCESOS: JSON.stringify(definiciones()) },
+    stdio: ["ignore", log, log],
+    detached: true,
+    windowsHide: true,
+  });
   s.unref();
 }
 
-export const iniciarApp = () => control("/app/start", 20);
-export const iniciarWorker = () => control("/worker/start", 20);
-/** Mata el proceso sin darle tiempo a terminar (simula una caída). */
-export const matarApp = () => control("/app/stop");
-export const matarWorker = () => control("/worker/stop");
+/** Arranca (o reinicia) las tres apps. */
+export const iniciarApp = async () => {
+  for (const app of Object.keys(PUERTOS)) await control(`/${app}/start`, 20);
+};
+/** Arranca (o reinicia) el despachador de Vínculo y el procesador del puente. */
+export const iniciarWorker = async () => {
+  await control("/worker-vinculo/start", 20);
+  await control("/worker-puente/start", 20);
+};
+/** Mata los procesos sin darles tiempo a terminar (simula una caída). */
+export const matarApp = async () => {
+  for (const app of Object.keys(PUERTOS)) await control(`/${app}/stop`);
+};
+export const matarWorker = async () => {
+  await control("/worker-vinculo/stop");
+  await control("/worker-puente/stop");
+};
+export const matarSistema = (app: App) => control(`/${app}/stop`);
+export const iniciarSistema = (app: App) => control(`/${app}/start`, 20);
 export const detenerTodo = () => control("/todo/stop").catch(() => undefined);
 
 export function prepararBase() {
-  const opciones = { env: entornoE2E(), stdio: "pipe" as const, shell: true };
-  let r = spawnSync("npx", ["prisma", "migrate", "deploy"], opciones);
-  if (r.status !== 0) throw new Error(`migrate deploy falló: ${r.stderr}`);
-  r = spawnSync("npx", ["tsx", "scripts/demo-reset.ts"], opciones);
-  if (r.status !== 0) throw new Error(`demo-reset falló: ${r.stderr}${r.stdout}`);
+  for (const app of Object.keys(PUERTOS) as App[]) {
+    const opciones = { cwd: path.join(RAIZ, "apps", app), env: envApp(app), stdio: "pipe" as const, shell: true };
+    let r = spawnSync("npx", ["prisma", "migrate", "deploy"], opciones);
+    if (r.status !== 0) throw new Error(`${app}: migrate deploy falló: ${r.stderr}`);
+    r = spawnSync("npx", ["tsx", "scripts/demo-reset.ts"], opciones);
+    if (r.status !== 0) throw new Error(`${app}: demo-reset falló: ${r.stderr}${r.stdout}`);
+  }
 }

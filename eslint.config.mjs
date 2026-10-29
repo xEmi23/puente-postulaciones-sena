@@ -5,5 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "src/generated/**", ".pgdata/**", "playwright-report/**", "test-results/**", "next-env.d.ts"]),
+  { settings: { next: { rootDir: ["apps/vinculo/", "apps/talentia/", "apps/puente/"] } } },
+  globalIgnores([
+    "**/.next/**",
+    "apps/*/src/generated/**",
+    "apps/*/public/vendor/**",
+    ".pgdata/**",
+    "playwright-report/**",
+    "test-results/**",
+    "**/next-env.d.ts",
+  ]),
 ]);

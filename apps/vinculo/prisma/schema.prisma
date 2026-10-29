@@ -1,0 +1,108 @@
+// Vínculo: red profesional simulada (tipo LinkedIn). Esquema "vinculo" (DB_SCHEMA).
+// Ningún otro sistema lee estas tablas: el puente solo habla con Vínculo por HTTP.
+// `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoVacante {
+  BORRADOR
+  PUBLICADA
+  CERRADA
+}
+
+enum EstadoOutbox {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+}
+
+model Vacante {
+  id            String        @id @default(uuid()) @db.Uuid
+  codigo        String        @unique // externalJobId que viaja en el webhook
+  titulo        String
+  area          String
+  ciudad        String
+  modalidad     String
+  descripcion   String
+  estado        EstadoVacante @default(PUBLICADA)
+  publicadaEn   DateTime?     @db.Timestamptz(3)
+  creadaEn      DateTime      @default(now()) @db.Timestamptz(3)
+  actualizadaEn DateTime      @updatedAt @db.Timestamptz(3)
+  demo          Boolean       @default(true)
+  postulaciones Postulacion[]
+}
+
+model ArchivoCv {
+  id            String       @id @default(uuid()) @db.Uuid
+  nombreArchivo String
+  mime          String
+  tamano        Int
+  sha256        String       @db.Char(64)
+  contenido     Bytes
+  mediaUrn      String       @unique
+  expiraEn      DateTime     @db.Timestamptz(3)
+  creadoEn      DateTime     @default(now()) @db.Timestamptz(3)
+  postulacion   Postulacion?
+}
+
+model Postulacion {
+  id               String    @id @default(uuid()) @db.Uuid
+  jobApplicationId String    @unique // urn:li:jobApplication:{id}
+  jobApplicant     String // urn:li:person:{id}, estable por correo
+  vacanteId        String    @db.Uuid
+  vacante          Vacante   @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+  nombre           String
+  apellido         String
+  correo           String
+  telefono         String?
+  ciudad           String
+  archivoCvId      String    @unique @db.Uuid
+  archivoCv        ArchivoCv @relation(fields: [archivoCvId], references: [id], onDelete: Cascade)
+  aplicadaEn       DateTime  @default(now()) @db.Timestamptz(3)
+  demo             Boolean   @default(true)
+  outbox           Outbox[]
+
+  @@index([vacanteId])
+}
+
+model Outbox {
+  id               String           @id @default(uuid()) @db.Uuid
+  postulacionId    String?          @db.Uuid
+  postulacion      Postulacion?     @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
+  // EXPORT_JOB_APPLICATION (postulación) | JOB_POSTING_STATUS (cierre o reapertura de vacante, contrato del simulador)
+  tipo             String           @default("EXPORT_JOB_APPLICATION")
+  vacanteCodigo    String?
+  payload          String // cuerpo JSON exacto que se firma y se envía
+  estado           EstadoOutbox     @default(PENDIENTE)
+  intentos         Int              @default(0)
+  proximoIntentoEn DateTime         @default(now()) @db.Timestamptz(3)
+  bloqueadoHasta   DateTime?        @db.Timestamptz(3)
+  ultimoError      String?
+  creadoEn         DateTime         @default(now()) @db.Timestamptz(3)
+  enviadoEn        DateTime?        @db.Timestamptz(3)
+  intentosEntrega  IntentoEntrega[]
+
+  @@index([estado, proximoIntentoEn])
+}
+
+model IntentoEntrega {
+  id          String   @id @default(uuid()) @db.Uuid
+  outboxId    String   @db.Uuid
+  outbox      Outbox   @relation(fields: [outboxId], references: [id], onDelete: Cascade)
+  numero      Int
+  enviadoEn   DateTime @default(now()) @db.Timestamptz(3)
+  httpStatus  Int?
+  codigoError String?
+  respuesta   String?
+  duracionMs  Int
+  error       String?
+
+  @@index([outboxId])
+}
