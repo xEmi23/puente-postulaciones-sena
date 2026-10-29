@@ -5,7 +5,7 @@ import { enmascarar } from "@/modules/conexiones";
 import { estadoConexiones } from "@/modules/prueba-conexion";
 import { ActualizarCada } from "@/components/actualizar-cada";
 import { quitar } from "./acciones";
-import { Copiar, FormularioConexion, ProbarConexion } from "./componentes";
+import { Copiar, FormularioConexion } from "./componentes";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Conexiones" };
@@ -62,8 +62,7 @@ export default async function Conexiones() {
             <dt>Empresa</dt>
             <dd>{vinculo?.empresaNombre ?? "—"}</dd>
           </dl>
-          <FormularioConexion tipo="VINCULO" nombre="Vínculo" urlBase={vinculo?.urlBase ?? ""} clientId={vinculo?.clientId ?? ""} secretoMascara={enmascarar(vinculo?.secretoFinal)} editable={admin} />
-          {vinculo && <ProbarConexion tipo="VINCULO" nombre="Vínculo" />}
+          <FormularioConexion tipo="VINCULO" nombre="Vínculo" urlBase={vinculo?.urlBase ?? ""} clientId={vinculo?.clientId ?? ""} secretoMascara={enmascarar(vinculo?.secretoFinal)} editable={admin} conectada={!!vinculo} />
           {vinculo && admin && (
             <form action={quitar}>
               <input type="hidden" name="tipo" value="VINCULO" />
@@ -89,8 +88,7 @@ export default async function Conexiones() {
               </>
             )}
           </dl>
-          <FormularioConexion tipo="TALENTIA" nombre="Talentia" urlBase={talentia?.urlBase ?? ""} secretoMascara={enmascarar(talentia?.secretoFinal)} editable={admin} />
-          {talentia && <ProbarConexion tipo="TALENTIA" nombre="Talentia" />}
+          <FormularioConexion tipo="TALENTIA" nombre="Talentia" urlBase={talentia?.urlBase ?? ""} secretoMascara={enmascarar(talentia?.secretoFinal)} editable={admin} conectada={!!talentia} />
           {talentia && admin && (
             <form action={quitar}>
               <input type="hidden" name="tipo" value="TALENTIA" />

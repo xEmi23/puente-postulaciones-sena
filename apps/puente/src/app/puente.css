@@ -74,6 +74,7 @@
   cursor: pointer;
 }
 .p-modo-prueba {
+  margin: 0;
   background: #7c2d12;
   color: #ffedd5;
   text-align: center;
@@ -442,4 +443,13 @@
   color: #b91c1c;
   text-decoration: underline;
   cursor: pointer;
+}
+/* Conexiones: separación entre el estado y el formulario. */
+.p-form-conexion {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-borde, #e5e7eb);
+}
+.p-form-conexion + form {
+  margin-top: 0.9rem;
 }

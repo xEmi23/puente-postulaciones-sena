@@ -367,3 +367,32 @@ Problemas encontrados y corregidos: la redirección de `/` del puente ocurría e
 
 - `e2e/tres-sistemas.spec.ts` regenera el Client Secret de la aplicación demo del puente y crea llaves nuevas en Talentia: corre con `workers: 1` y deja las conexiones funcionando para las pruebas que siguen.
 - Siguiente paso: F4 (realismo de datos, pulido visual, estados vacíos y de carga, capturas revisadas).
+
+## F4 · Realismo y pulido visual (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+### Qué se hizo
+
+- **Capturas revisadas a mano:** `e2e/capturas.spec.ts` (solo con `CAPTURAS=1`) guarda 31 pantallas por proyecto (escritorio y Pixel 7) en `capturas/` (ignorada por git). Se revisaron portada, buscador, vacante, Solicitud sencilla, Mis postulaciones y portal de desarrolladores de Vínculo; tablero, ficha y API Keys de Talentia; operaciones, conexiones y procesos del puente.
+- **Datos de demostración:** los postulantes sembrados en Talentia ya tienen CV PDF ficticio y fechas de historial coherentes (D-49); las cuentas demo de Vínculo tienen historial (Valentina: «CV descargado» y «Vista por la empresa»; Santiago: «Enviada»), así «Mis postulaciones» no se ve vacío en la demo.
+- **Ajustes visuales:** puente sin franja entre la barra y el aviso de modo prueba; «Conexiones» con separación entre estado y formulario y los botones «Guardar y probar» / «Probar conexión» en una fila; sin la nota de webhook desactualizada; plural correcto («1 postulación»). Talentia: contador de columna alineado; en el teléfono el menú lateral es una fila compacta y el usuario ocupa una línea.
+- Ya estaban: estados de carga (`loading.tsx`), error (`error.tsx`) y no encontrado (`not-found.tsx`) en las tres apps; estados vacíos con texto guía; «Entorno de simulación» en todas las pantallas; identidades propias (Vínculo verde azulado, Talentia índigo, puente grafito y ámbar).
+
+### Comandos ejecutados y resultado real (2026-10-29)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` / `npm run typecheck` | exit 0 / exit 0 (antes, un error de tipos en `cv-demo.ts` rompía el build de Talentia; corregido) |
+| `npm test` | Vínculo **26/26**, Talentia **30/30**, Puente **70/70**. Dos pruebas contaban filas de toda la tabla y fallaron con la siembra nueva; ahora cuentan solo las filas que crean (misma afirmación, más precisa) |
+| `npm run test:e2e` | **37/37** (escritorio + móvil), incluidas la auditoría axe (WCAG 2.1 A/AA) de las pantallas principales y la de desbordes en móvil |
+| `CAPTURAS=1 npx playwright test e2e/capturas.spec.ts` | 2/2 (capturas en escritorio y móvil) |
+
+### Criterios
+
+- **14 · Cumple.** `e2e/accesibilidad.spec.ts` (axe sin violaciones serias ni críticas en Vínculo, Talentia y el puente; navegación por teclado) y `e2e/movil.spec.ts` (sin desborde horizontal), más la revisión de capturas.
+
+### Pendientes y riesgos
+
+- **PENDIENTE (equipo):** revisar a ojo las capturas de `capturas/` y la lista de nombres generados (D-39).
+- Siguiente paso: F5 (documentación).

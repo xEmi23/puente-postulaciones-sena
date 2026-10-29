@@ -18,7 +18,7 @@ export async function probarVinculo(fetchImpl?: typeof fetch): Promise<Resultado
       await marcarPrueba("VINCULO", false, detalle, { empresaId: null, empresaNombre: null });
       return { ok: false, detalle };
     }
-    const detalle = `Token obtenido. Aplicación «${a.application.name}» autorizada por «${empresa.name}». Webhook en Vínculo: ${a.application.webhookStatus === "VALIDADO" ? "validado" : "sin validar"}.`;
+    const detalle = `Token obtenido. Aplicación «${a.application.name}» autorizada por «${empresa.name}».`;
     await marcarPrueba("VINCULO", true, detalle, { empresaId: empresa.companyId, empresaNombre: empresa.name });
     return { ok: true, detalle };
   } catch (e) {

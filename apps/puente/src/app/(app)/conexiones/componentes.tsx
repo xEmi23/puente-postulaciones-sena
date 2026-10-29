@@ -34,14 +34,17 @@ interface PropsFormulario {
   clientId?: string;
   secretoMascara: string;
   editable: boolean;
+  conectada: boolean;
 }
 
-export function FormularioConexion({ tipo, nombre, urlBase, clientId, secretoMascara, editable }: PropsFormulario) {
-  const [estado, accion, enCurso] = useActionState<EstadoAccion, FormData>(guardar, {});
-  const lento = useDespertando(enCurso);
+/** Datos de la conexión con «Guardar y probar» (solo ADMIN) y «Probar conexión» (cualquier usuario) en la misma fila. */
+export function FormularioConexion({ tipo, nombre, urlBase, clientId, secretoMascara, editable, conectada }: PropsFormulario) {
+  const [estado, accion, guardando] = useActionState<EstadoAccion, FormData>(guardar, {});
+  const [estadoPrueba, accionPrueba, probando] = useActionState<EstadoAccion, FormData>(probar, {});
+  const lento = useDespertando(guardando || probando);
   const prefijo = tipo === "VINCULO" ? "vin" : "tal";
   return (
-    <form action={accion}>
+    <form action={accion} className="p-form-conexion">
       <input type="hidden" name="tipo" value={tipo} />
       <div className="p-campo">
         <label htmlFor={`${prefijo}-url`}>URL base de {nombre}</label>
@@ -66,37 +69,25 @@ export function FormularioConexion({ tipo, nombre, urlBase, clientId, secretoMas
         />
         <p className="p-nota">Se guarda cifrada (AES-256-GCM) y nunca se vuelve a mostrar completa.</p>
       </div>
-      {editable && (
-        <button type="submit" className="p-boton" disabled={enCurso}>
-          {enCurso ? "Guardando y probando…" : "Guardar y probar"}
-        </button>
-      )}
+      <div className="p-acciones">
+        {editable && (
+          <button type="submit" className="p-boton" disabled={guardando || probando}>
+            {guardando ? "Guardando y probando…" : "Guardar y probar"}
+          </button>
+        )}
+        {conectada && (
+          <button type="submit" formAction={accionPrueba} formNoValidate className="p-boton p-boton-secundario" disabled={guardando || probando}>
+            {probando ? "Probando…" : "Probar conexión"}
+          </button>
+        )}
+      </div>
       {lento && (
         <p className="p-despertando" role="status">
           Despertando {nombre}… En el plan gratuito puede tardar cerca de un minuto.
         </p>
       )}
       <Resultado estado={estado} testid={`resultado-guardar-${prefijo}`} />
-    </form>
-  );
-}
-
-export function ProbarConexion({ tipo, nombre }: { tipo: "VINCULO" | "TALENTIA"; nombre: string }) {
-  const [estado, accion, enCurso] = useActionState<EstadoAccion, FormData>(probar, {});
-  const lento = useDespertando(enCurso);
-  const prefijo = tipo === "VINCULO" ? "vin" : "tal";
-  return (
-    <form action={accion}>
-      <input type="hidden" name="tipo" value={tipo} />
-      <button type="submit" className="p-boton p-boton-secundario" disabled={enCurso}>
-        {enCurso ? "Probando…" : "Probar conexión"}
-      </button>
-      {lento && (
-        <p className="p-despertando" role="status">
-          Despertando {nombre}… En el plan gratuito puede tardar cerca de un minuto.
-        </p>
-      )}
-      <Resultado estado={estado} testid={`resultado-probar-${prefijo}`} />
+      <Resultado estado={estadoPrueba} testid={`resultado-probar-${prefijo}`} />
     </form>
   );
 }

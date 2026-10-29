@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/generated/prisma/client";
 import { etapasParaCrear } from "../src/modules/etapas";
+import { cvDemo } from "./cv-demo";
 import { CLAVE_DEMO, EMPRESA_DEMO, USUARIOS_DEMO } from "../src/modules/demo";
 
 // Datos ficticios de Talentia para la empresa demo «Andina Software S.A.S.» (ficticia).
@@ -80,7 +81,11 @@ export async function sembrarDemo(prisma: PrismaClient) {
   for (const [i, [nombre, apellido, procesoId, orden]] of POSTULANTES.entries()) {
     const etapa = await prisma.etapa.findFirstOrThrow({ where: { procesoId, orden } });
     const primera = await prisma.etapa.findFirstOrThrow({ where: { procesoId, orden: 1 } });
-    await prisma.postulante.create({
+    const proceso = PROCESOS.find((p) => p.id === procesoId)!;
+    const creada = new Date(Date.now() - (i + 2) * 86_400_000);
+    const cv = await cvDemo(nombre, apellido, proceso.titulo, correoDe(nombre, apellido));
+    const nombreArchivo = `CV_${`${nombre}_${apellido}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_")}.pdf`;
+    const postulante = await prisma.postulante.create({
       data: {
         nombre,
         apellido,
@@ -93,16 +98,23 @@ export async function sembrarDemo(prisma: PrismaClient) {
             etapaId: etapa.id,
             fuente: i % 3 === 0 ? "Referido interno" : "Portal simulado (tipo LinkedIn)",
             vista: true,
-            creadaEn: new Date(Date.now() - (i + 2) * 86_400_000),
+            creadaEn: creada,
             historial: {
               create: [
-                { tipo: "CREADA", aEtapa: primera.nombre, autor: "Carga inicial de la demostración" },
-                ...(orden > 1 ? [{ tipo: "MOVIDA", deEtapa: primera.nombre, aEtapa: etapa.nombre, autor: USUARIOS_DEMO[1].nombre }] : []),
+                { tipo: "CREADA", aEtapa: primera.nombre, autor: "Carga inicial de la demostración", creadoEn: creada },
+                ...(orden > 1
+                  ? [{ tipo: "MOVIDA", deEtapa: primera.nombre, aEtapa: etapa.nombre, autor: USUARIOS_DEMO[1].nombre, creadoEn: new Date(creada.getTime() + 86_400_000) }]
+                  : []),
               ],
             },
           },
         },
       },
+      include: { postulaciones: true },
     });
+    const documento = await prisma.documento.create({
+      data: { postulanteId: postulante.id, nombreArchivo, mime: "application/pdf", tamano: cv.bytes.length, sha256: cv.sha256, contenido: cv.bytes },
+    });
+    await prisma.postulacion.update({ where: { id: postulante.postulaciones[0].id }, data: { documentoId: documento.id } });
   }
 }

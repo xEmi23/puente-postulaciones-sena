@@ -106,7 +106,7 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
                       <td>
                         <span className="mono">{p.id}</span> · {p.titulo}
                         <div className="p-nota">
-                          {p.area} · {p.ciudad} · {p.total_postulaciones} postulaciones
+                          {p.area} · {p.ciudad} · {p.total_postulaciones} {p.total_postulaciones === 1 ? "postulación" : "postulaciones"}
                         </div>
                       </td>
                       <td>{p.estado === "INICIADO" ? "Iniciado" : "Cerrado"}</td>

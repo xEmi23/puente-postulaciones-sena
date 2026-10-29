@@ -346,3 +346,9 @@
 
 - **Fecha:** 2026-10-29 (F3)
 - **Decisión:** `npm run demo:conectar` (y la preparación de las E2E) hace lo mismo que el administrador en las pantallas, ejecutando en cada app su propio script con su propio `.env` (`scripts/conectar-lib.mjs`): Talentia crea la API Key, Vínculo registra y autoriza la aplicación, el puente guarda y prueba las conexiones y publica 9001 y 9002, y Vínculo registra el webhook. Ninguna app toca el esquema de otra. `demo:reset` del puente borra conexiones y publicaciones; después hay que volver a conectar.
+
+## D-49 · CV ficticios propios de Talentia en la siembra
+
+- **Fecha:** 2026-10-29 (F4)
+- **Decisión:** los 15 postulantes sembrados en Talentia llevan un CV PDF de una página generado con pdf-lib en `apps/talentia/prisma/cv-demo.ts`, con la leyenda «documento ficticio». No se reutiliza el generador de Vínculo: cada sistema es independiente (regla de no importar dominio entre apps). Las fechas del historial coinciden con la fecha de la postulación.
+- **Alternativa descartada:** copiar los PDF de `fixtures/cv/`; sus nombres no coinciden con los postulantes y la ficha se vería incoherente.

@@ -69,7 +69,11 @@ describe("Solicitud sencilla", () => {
   });
 
   it("una vacante con Solicitud sencilla pero sin ATS conectado guarda la postulación sin entrega (descarga manual)", async () => {
-    const v = await prisma.vacante.findFirstOrThrow({ where: { empresa: { slug: "andina-software" }, solicitudSencilla: true, aplicacionId: null } });
+    const u = await candidata();
+    // Una vacante a la que la candidata de prueba aún no se postuló (la siembra le deja historial en otras).
+    const v = await prisma.vacante.findFirstOrThrow({
+      where: { empresa: { slug: "andina-software" }, solicitudSencilla: true, aplicacionId: null, postulaciones: { none: { candidatoId: u.id } } },
+    });
     const r = await solicitar(v.id);
     expect(await prisma.outbox.count({ where: { postulacionId: r.postulacionId } })).toBe(0);
   });

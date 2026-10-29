@@ -81,10 +81,19 @@
   .a-marca {
     padding: 0;
   }
+  /* En el teléfono el menú es una fila que se desplaza sola; no ocupa la pantalla entera. */
   .a-nav {
     display: flex;
     gap: 0.25rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    scrollbar-width: thin;
+  }
+  .a-nav a {
+    white-space: nowrap;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
   }
   .a-nav-seccion {
     display: none;
@@ -201,10 +210,12 @@
   color: #312e81;
 }
 .a-contador {
+  align-self: flex-start;
   background: #fff;
   border-radius: 999px;
-  padding: 0 0.5rem;
+  padding: 0.05rem 0.55rem;
   font-size: 0.78rem;
+  line-height: 1.4;
 }
 .a-tarjetas {
   list-style: none;
@@ -448,6 +459,10 @@
     margin: 0;
     border: 0;
     padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
   .a-nav-grupo,
   .a-nav-deshabilitado {

@@ -129,8 +129,15 @@ export async function sembrarDemo(prisma: PrismaClient) {
   }
 
   // Postulaciones ya recibidas en las vacantes de Andina (quedan en Vínculo: la reclutadora las descarga a mano).
-  for (let i = 0; i < 12; i++) {
-    const candidatoId = candidatos[2 + i];
+  // Las dos primeras cuentas demo tienen historial para que «Mis postulaciones» muestre los tres estados.
+  const historial: { candidato: number; estado: "ENVIADA" | "VISTA" | "CV_DESCARGADO" }[] = [
+    { candidato: 0, estado: "CV_DESCARGADO" },
+    { candidato: 0, estado: "VISTA" },
+    { candidato: 1, estado: "ENVIADA" },
+    ...Array.from({ length: 12 }, (_, i) => ({ candidato: 2 + i, estado: (i % 4 === 0 ? "VISTA" : "ENVIADA") as "VISTA" | "ENVIADA" })),
+  ];
+  for (const [i, h] of historial.entries()) {
+    const candidatoId = candidatos[h.candidato];
     const vacanteId = vacantesAndina[i % vacantesAndina.length];
     const perfil = await prisma.perfil.findUniqueOrThrow({ where: { userId: candidatoId }, include: { cv: true, user: true } });
     const [nombre, ...resto] = perfil.user.name.split(" ");
@@ -148,8 +155,9 @@ export async function sembrarDemo(prisma: PrismaClient) {
         telefono: perfil.telefono,
         ciudad: perfil.ciudad,
         archivoCvId: copia.id,
-        estado: i % 4 === 0 ? "VISTA" : "ENVIADA",
-        vistaEn: i % 4 === 0 ? new Date() : null,
+        estado: h.estado,
+        vistaEn: h.estado === "ENVIADA" ? null : new Date(),
+        cvDescargadoEn: h.estado === "CV_DESCARGADO" ? new Date() : null,
         aplicadaEn: new Date(Date.now() - (i + 1) * 3_600_000 * 7),
         demo: true,
       },

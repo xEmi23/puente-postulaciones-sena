@@ -164,6 +164,6 @@ describe("Idempotency-Key (capacidad del simulador)", () => {
     const a = await api("POST", ruta, llave, formularioCv(cv, sha(cv)), { "Idempotency-Key": "doc-1" });
     const b = await api("POST", ruta, llave, formularioCv(cv, sha(cv)), { "Idempotency-Key": "doc-1" });
     expect(b.body.data.id).toBe(a.body.data.id);
-    expect(await prisma.documento.count()).toBe(1);
+    expect(await prisma.documento.count({ where: { postulanteId: body.data.id } })).toBe(1);
   });
 });
