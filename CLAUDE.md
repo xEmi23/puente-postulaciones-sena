@@ -1,18 +1,17 @@
 # talent-bridge: contexto permanente para Claude Code
 
-> Fusión de `CLAUDE_equipo.md` (contexto original del equipo) con el CLAUDE.md de Claude Code. Actualizado por Claude Code (2026-10-25).
+> Fusión de `CLAUDE_equipo.md` (contexto original del equipo) con el CLAUDE.md de Claude Code. Actualizado por Claude Code (2026-10-29) para la **v2** (tres apps independientes, `docs/v2/`).
 
 ## Qué es
 
 Prototipo académico (reto SENA, Innovación Abierta 2026-2). Reduce el trabajo manual de trasladar postulaciones desde un portal de empleo tipo LinkedIn a un ATS tipo BUK.
 Hoy el reclutador entra a cada vacante en LinkedIn, descarga todos los CV y los sube al ATS; ahí una IA los califica y empieza el proceso por etapas. Este proyecto elimina ese traslado por vacante.
 
-No hay acceso a APIs reales de LinkedIn ni de BUK. Construimos cuatro piezas:
+No hay acceso a APIs reales de LinkedIn ni de BUK. En la v2 son **tres sistemas independientes**:
 
-1. **Origen simulado** (portal de empleo «Vitrina Empleo», `/origen`): vacantes, postulación con CV PDF y envío de eventos con el contrato documentado de Apply Connect.
-2. **Puente** (`/api/puente/*` + worker): recibe, valida, deduplica y transfiere datos y CV al destino. Es el producto real.
-3. **Destino simulado** (ATS «Selecta», `/ats`): procesos de selección por etapas, candidatos y documentos.
-4. **Panel del puente** (`/puente`): operaciones, pasos, errores, reintentos, correspondencias y métricas.
+1. **Vínculo** (`apps/vinculo`, puerto 3001, esquema `vinculo`): red profesional **simulada** (empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y API modelada sobre Apply Connect).
+2. **Talentia** (`apps/talentia`, puerto 3002, esquema `talentia`): ATS **simulado** (procesos por etapas, postulantes, API Keys con permisos de Selección, API v1 y `/apidocs`).
+3. **Puente** (`apps/puente`, puerto 3003, esquema `puente`): **el producto**. Conexiones configurables y cifradas, publicación en Vínculo, recepción del webhook, transferencia a Talentia, aviso «CV descargado», operaciones, rechazos y métricas.
 
 ## Reglas que nunca se rompen
 
@@ -21,60 +20,54 @@ No hay acceso a APIs reales de LinkedIn ni de BUK. Construimos cuatro piezas:
 - Sin *scraping*, sin automatizar sesiones reales, sin llamadas a servicios externos reales.
 - Solo datos y CV ficticios (`@demo.test`). Nunca usar nombres reales de candidatos, tampoco los de capturas de pantalla.
 - **No usar el nombre de la empresa retadora** en código, seeds, UI ni documentos publicables (la ficha exige publicación anonimizada).
-- No inventar endpoints oficiales. Si no está verificado en documentación oficial, es «contrato del simulador» (docs/contratos.md §3). No atribuir a BUK lo que no está verificado.
+- No inventar endpoints oficiales. Si no está verificado en documentación oficial, es «contrato del simulador» (docs/contratos.md §3 y §5–§7). No atribuir a BUK lo que no está verificado.
 - **Etiquetar todo en los documentos** como **Verificado** (con URL y fecha), **Decisión interna** (registrada en `docs/decisiones.md`) o **Supuesto pendiente**.
 - Un acuse de recepción (200) no es una transferencia completada. En el puente, RECIBIDO ≠ COMPLETADO; solo `postulacion_creada` en el ATS cuenta como transferido.
 - No desactivar ni debilitar pruebas para que pasen. Reportar exactamente qué se ejecutó y con qué resultado.
-- No poner secretos en el repositorio: `.env` se genera con `npm run setup` y está ignorado. La ficha del reto (`docs/ficha/`) no se publica.
-- Documentos del equipo en `docs/`: no sobrescribirlos; agregar secciones «Actualizado por Claude Code (fecha)».
+- No poner secretos en el repositorio: los `.env` se generan con `npm run setup` y están ignorados. La ficha del reto (`docs/ficha/`) no se publica.
+- Documentos del equipo en `docs/` (incluido `docs/v2/`): no sobrescribirlos; agregar secciones «Actualizado por Claude Code (fecha)».
 - Textos de la interfaz en español.
+- **v2:** prohibido importar código de dominio entre apps (si algo se comparte, se duplica o va a `packages/` solo si no es dominio). Cada app toca solo su esquema; entre apps solo HTTP.
 
-## Arquitectura (un repositorio, una app Next.js + un worker)
+## Arquitectura (v2: npm workspaces, tres apps Next.js 16)
 
-Tal como está construida. Las diferencias con el plan original del equipo están en la tabla de abajo.
+Detalle y diagramas Mermaid en `docs/arquitectura.md` (sección «v2»).
 
-- `src/app/origen/…` UI del portal simulado · `src/app/api/origen/…` su API (URL privada del CV).
-- `src/app/ats/…` UI del ATS simulado · `src/app/api/ats/v1/…` su API (contrato del simulador).
-- `src/app/puente/…` panel · `src/app/api/puente/…` webhook y estado de vacantes.
-- `src/modules/<origen|puente|ats>/` lógica de cada módulo · `src/modules/contrato-apply-connect.ts` contrato externo (adaptador del formato de LinkedIn).
-- `worker/` proceso aparte (`npm run worker`): despachador del origen y procesador de trabajos persistentes del puente.
-- PostgreSQL con esquemas separados `origen`, `puente` y `ats`. Cada módulo solo toca su esquema.
-- El puente habla con los simuladores **solo por HTTP** (URLs base en variables de entorno), nunca leyendo sus tablas.
-- Modelo interno normalizado en el puente (`puente.Recepcion`); los formatos externos viven solo en el contrato y en el cliente del ATS.
-- Etapas del ATS: configuración editable en `src/modules/ats/etapas.ts`, según `docs/referencia-ats.md`.
-
-| Plan del equipo | Implementado | Motivo |
-|---|---|---|
-| Grupos de rutas `(origen)`, `(ats)`, `(puente)` | Segmentos `/origen`, `/ats`, `/puente` | Cada módulo tiene su propia URL visible en la demo y su propio layout e identidad (D-02) |
-| `domain/application/infrastructure` por módulo | Módulos planos por responsabilidad (`postulacion`, `despachador`, `webhook`, `procesador`, `servicio`…) | Tamaño de prototipo; las fronteras entre sistemas se mantienen por esquema y por HTTP |
-| Documentos en `storage/origen` y `storage/ats` | CV como `bytea` en el esquema de cada módulo (`origen.ArchivoCv`, `ats.Documento`) | Sobrevive a reinicios, viaja en la misma transacción que la postulación y se borra con el reset demo. Nunca en `public/`; separados por módulo |
+- `apps/<app>/src/app/…` UI y rutas de API · `src/modules/…` lógica · `src/lib/…` configuración, base, sesión, cifrado · `prisma/` esquema, migración, siembra · `tests/` Vitest · `worker/` (Vínculo y puente).
+- Cada app: su `package.json`, su `.env` (secretos propios), su esquema (`DB_SCHEMA`, por defecto el nombre de la app; `_prisma_migrations` dentro del esquema) y Better Auth con cookie propia (`vin_sesion`, `tal_sesion`, `pue_sesion`).
+- **Workers dentro del proceso web** con `WORKER_EN_PROCESO=1` (`instrumentation.ts`): despachador de webhooks de Vínculo; procesador, avisos y publicación automática del puente. En E2E corren aparte.
+- **Puente ↔ sistemas:** credenciales en `puente.Conexion` (cifradas, `PUENTE_CLAVE_CIFRADO`), configuradas en `/conexiones` o con `npm run demo:conectar`. Clientes HTTP aislados: `src/modules/vinculo-cliente.ts` (token client credentials, publicación, media, ciclo de vida) y `src/modules/ats-cliente.ts` (API v1 de Talentia, `auth_token`, `Idempotency-Key`). Webhook: `/api/webhooks/vinculo`.
+- Pasos de una recepción: `cv_descargado → postulante_listo → documento_subido → postulacion_creada`. Proceso destino: publicación del puente (`externalJobId` = id del proceso) o correspondencia manual.
+- Etapas de Talentia: `apps/talentia/src/modules/etapas.ts`, según `docs/referencia-ats.md`.
+- Pruebas: Vitest por app contra PostgreSQL real; el puente usa **dobles de contrato** (`apps/puente/tests/dobles.ts`); Playwright arranca las tres apps compiladas y sus workers como procesos reales (`e2e/supervisor.mjs`, puertos 3211–3213).
 
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
-| `npm install` | Instala dependencias (versiones exactas). |
-| `npm run setup` | Crea `.env` con secretos aleatorios, inicializa PostgreSQL local (`.pgdata`, primer puerto libre desde 5433, bases `tb_dev`/`tb_test`/`tb_e2e`), migra y siembra. |
-| `npm run pg:start` / `pg:stop` / `pg:status` | Arranca, detiene o consulta el PostgreSQL local del proyecto. |
-| `npm run dev` | App en http://localhost:3100 (los tres módulos). |
-| `npm start` | App compilada en el puerto 3100 (después de `npm run build`). |
-| `npm run worker` | Worker (despachador del origen y procesador del puente). Necesario para que las postulaciones fluyan. |
-| `npm run lint` | ESLint. |
-| `npm run typecheck` | `prisma generate` + `tsc --noEmit`. |
-| `npm test` | Vitest contra PostgreSQL real (`tb_test`): recorrido completo en proceso, fiabilidad y contratos independientes. |
-| `npm run test:e2e` | `next build` + Playwright, escritorio y móvil (app en :3200 y worker contra `tb_e2e`, gestionados por `e2e/supervisor.mjs`). |
-| `npm run build` | `prisma generate` + `next build`. |
-| `npm run db:migrate` | Aplica migraciones (`prisma migrate deploy`) y genera el cliente. |
-| `npm run db:seed` | Siembra los datos de demostración. |
-| `npm run demo:reset` | Borra y re-siembra solo datos `demo = true`. Se niega si `NODE_ENV=production` o la base no es local. |
+| `npm install` | Instala dependencias de los tres workspaces (versiones exactas). |
+| `npm run setup` | `.env` raíz (PostgreSQL) y `apps/<app>/.env` con secretos aleatorios; PostgreSQL local en `.pgdata` (puerto 5435 o siguiente libre; bases `tb2_dev`/`tb2_test`/`tb2_e2e`); migra y siembra las tres apps. |
+| `npm run pg:start` / `pg:stop` / `pg:status` | PostgreSQL local del proyecto. **No tocar el 5433 (v1).** |
+| `npm run dev` / `npm start` | Las tres apps (3001, 3002, 3003) con sus workers dentro del proceso. |
+| `npm run demo:conectar` | Con las apps encendidas: API Key en Talentia, aplicación autorizada en Vínculo, conexiones del puente probadas, 9001 y 9002 publicadas, webhook validado. |
+| `npm run demo:reset` | Borra y re-siembra solo datos `demo = true` en las tres apps (en el puente también conexiones y publicaciones). Se niega con `NODE_ENV=production` o base no local. |
+| `npm run lint` | ESLint (raíz). |
+| `npm run typecheck` | `prisma generate` + `tsc --noEmit` en cada app. |
+| `npm test` | Vitest de cada app contra `tb2_test`. Una sola app: `npm test -w apps/<app>`. |
+| `npm run test:e2e` | `next build` de las tres + Playwright escritorio y móvil contra `tb2_e2e`. Capturas para revisión: `CAPTURAS=1 npx playwright test e2e/capturas.spec.ts`. |
+| `npm run build` | Compilación de producción de las tres apps. |
+| `npm run db:migrate` / `db:seed` | Migraciones (`prisma migrate deploy`) y siembra de las tres apps. |
 | `npm run cv:generar` | Regenera los CV ficticios en `fixtures/cv/`. |
 
-Docker (alternativa, no probada en esta máquina): `PG_PASSWORD=<la de .env> docker compose up -d` expone PostgreSQL en el 5433 con las mismas bases.
+Docker (alternativa, no probada en esta máquina): `PG_PASSWORD=<la del .env raíz> docker compose up -d` expone PostgreSQL en el 5435 con las mismas bases.
+
+Despliegue: Render, plan gratuito, `render.yaml` (ver `docs/despliegue.md`).
 
 ## Más contexto
 
-- `docs/referencia-ats.md`: cómo luce y funciona el ATS que usa la empresa (base del simulador de destino).
-- `docs/contratos.md`: contratos verificados y contratos del simulador.
-- `docs/decisiones.md`: decisiones con alternativa descartada y motivo.
-- `docs/estado.md`: estado actual, pruebas ejecutadas, riesgos y siguiente paso. Leerlo al empezar cada sesión y actualizarlo al terminar.
-- `docs/arquitectura.md`, `docs/mapeo-datos.md`, `docs/guion-demo.md`, `docs/resultados-pruebas.md`, `docs/uso-ia.md`.
+- `docs/v2/SOLUCION.md` y `docs/v2/ESPECIFICACION.md`: lo que pide el equipo para la v2 (no reescribir).
+- `docs/referencia-ats.md`: cómo luce y funciona el ATS que usa la empresa (base de Talentia).
+- `docs/contratos.md`: contratos verificados y contratos del simulador (v2: §5–§7).
+- `docs/decisiones.md`: decisiones con alternativa descartada y motivo (v2 desde D-20).
+- `docs/estado.md`: estado por fase, pruebas ejecutadas, riesgos y siguiente paso. Leerlo al empezar cada sesión y actualizarlo al terminar.
+- `docs/arquitectura.md`, `docs/mapeo-datos.md`, `docs/seguridad.md`, `docs/despliegue.md`, `docs/guion-demo.md`, `docs/resultados-pruebas.md`, `docs/uso-ia.md`, `docs/manuales/`.

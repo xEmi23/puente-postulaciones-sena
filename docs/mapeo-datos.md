@@ -44,3 +44,45 @@
 | Formato inválido o `mediaUrl` no autorizado | `INPUT_VALIDATION_FAILED` (400) | Rechazos en la entrada |
 | Vacante sin correspondencia | `JOB_POSTING_CLOSED` (422) | Rechazos en la entrada |
 | PDF inválido, grande o enlace expirado (al procesar) | — (ya se respondió 200) | Operación RECHAZADA con explicación |
+
+---
+
+## v2 · Vínculo → Puente → Talentia
+
+> Actualizado por Claude Code (2026-10-29). Las tablas anteriores describen la v1 (origen y ATS dentro de la misma app). En la v2 el puente lee el cuerpo de Apply Connect que envía Vínculo, lo guarda normalizado en `puente.Recepcion` y lo escribe en Talentia por su API v1 (nombres en `snake_case`).
+
+### Postulante
+
+| Vínculo (entrega, F1) | Puente (`Recepcion`) | Talentia (`POST /api/v1/seleccion/postulantes`) |
+|---|---|---|
+| `contactInformationQuestionResponses.firstNameAnswer.value` | `nombre` (sin espacios sobrantes) | `nombre` |
+| `…lastNameAnswer.value` | `apellido` | `apellido` |
+| `…emailAnswer.value` | `correo` (minúsculas) | `correo`. **Una persona = un postulante:** si ya existe ese correo (`GET ?email=`), se actualiza con `PATCH` en lugar de crear otro |
+| `…cellphoneNumberQuestionAnswer` (`countryCode`, `nationalNumber`) | `telefono` (`+` + código + número) | `telefono` |
+| `…locationAnswer.locationCityAnswer.value` (opcional) | `ciudad` | `ciudad` |
+| `jobApplicant` (`urn:li:person:…`) | `jobApplicant` | `referencia_externa` del postulante |
+
+### Hoja de vida
+
+| Vínculo | Puente | Talentia (`POST /postulantes/{id}/documentos`, multipart) |
+|---|---|---|
+| `resumeQuestionResponses.resumeQuestionAnswer.mediaUrl` (descarga con token, 30 días) | Descarga con el access token, comprueba tamaño, `%PDF` y bytes completos; guarda `cvSha256` y el contenido hasta subirlo | `archivo` (PDF con su nombre de archivo), `tipo = "CV"`, `sha256`. Talentia recalcula el SHA-256 y responde 422 si no coincide |
+| `mediaUrn` | `mediaUrn` (trazabilidad) | — |
+
+El contenido del CV se borra del puente al completar o rechazar; queda solo su SHA-256.
+
+### Postulación
+
+| Vínculo | Puente | Talentia (`POST /postulaciones`) |
+|---|---|---|
+| `externalJobId` | Resuelve el proceso: publicación del puente (`externalJobId` = id del proceso) o correspondencia manual (D-44) → `procesoAtsId` | `proceso_id` |
+| — | `atsPostulanteId`, `atsDocumentoId` | `postulante_id`, `documento_id` |
+| `jobApplicationId` | `jobApplicationId` (clave de deduplicación) | `referencia_externa` (y base de cada `Idempotency-Key`) |
+| — | constante | `fuente = "Portal simulado (tipo LinkedIn)"` (D-19) |
+| `appliedAt` | `appliedAt` (regla del cierre, D-17) | La postulación queda en la etapa «Postulantes», «Sin calificar» |
+
+### De vuelta a Vínculo
+
+| Puente | Vínculo |
+|---|---|
+| Al completar: `POST /api/v1/jobApplications/{jobApplicationId}/lifecycle` `{action:"RESUME_DOWNLOADED"}` | La postulación pasa a «CV descargado» en «Mis postulaciones» |

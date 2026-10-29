@@ -56,6 +56,9 @@ export default async function Registro({ searchParams }: { searchParams: Promise
             <input id="clave" name="clave" type="password" autoComplete="new-password" required minLength={8} />
             <p className="v-ayuda">Mínimo 8 caracteres. Se guarda cifrada con hash.</p>
           </div>
+          <p className="v-ayuda">
+            Al crear la cuenta aceptas que Vínculo use tus datos para mostrar tu perfil y enviar tus solicitudes a las empresas que elijas (tratamiento de datos personales, Ley 1581 de 2012). Es un entorno de simulación: usa solo datos ficticios.
+          </p>
           <button type="submit" className="v-boton">
             Crear cuenta
           </button>

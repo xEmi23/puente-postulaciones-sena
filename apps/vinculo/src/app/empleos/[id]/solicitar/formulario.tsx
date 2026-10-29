@@ -153,6 +153,9 @@ export function FormularioSolicitud({ vacanteId, titulo, empresa, maxMb, inicial
             {errores.cv}
           </p>
         )}
+        <p className="v-ayuda">
+          Al enviar, la empresa recibe tus datos de contacto y tu hoja de vida para este proceso de selección (Ley 1581 de 2012). Si la empresa tiene un ATS conectado, se le entregan automáticamente.
+        </p>
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem", flexWrap: "wrap" }}>
           <button type="button" className="v-boton v-boton-borde" onClick={() => setPaso(1)}>
             Atrás

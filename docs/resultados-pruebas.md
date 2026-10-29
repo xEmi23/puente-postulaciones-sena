@@ -74,3 +74,55 @@ Suites agregadas en P5: `tests/p5.test.ts` (cierre y reapertura de vacantes, CV 
 | 2026-10-25 | `0569a40` + tipos confirmados | `npm test` · `npm run test:e2e` · `npm run build` | **78/78** · **24/24** · 0 |
 | 2026-10-25 | `3d0d005` + D-19 | `npm run demo:reset` · `typecheck` · `lint` | 0 · 0 · 0 |
 | 2026-10-25 | `3d0d005` + D-19 | `npm test` · `npm run test:e2e` · `npm run build` | **82/82** (nuevo `tests/procesos.test.ts`) · **26/26** (nuevo `e2e/proceso-encabezado.spec.ts`) · 0 |
+
+---
+
+## v2 · Pruebas de los tres sistemas
+
+> Actualizado por Claude Code (2026-10-29). El detalle por fase (comandos y resultados reales) está en docs/estado.md, secciones F0 a F4.
+
+### Qué cubre cada suite
+
+| Suite | Archivos | Pruebas | Cómo corre |
+|---|---|---|---|
+| Vitest · Vínculo | `apps/vinculo/tests/`: integradores, entrega, seguridad, contrato-openapi | 26 | PostgreSQL real (`tb2_test`, esquema `vinculo`); webhooks dobles en proceso (`fetchSaliente`) |
+| Vitest · Talentia | `apps/talentia/tests/`: api, contrato-openapi, procesos, etapas, sesion, demo | 30 | PostgreSQL real; route handlers de la API v1 llamados en proceso |
+| Vitest · Puente | `apps/puente/tests/`: conexiones, webhook, contrato-puente, fiabilidad, p5, recorrido, firma, zona-horaria | 70 | PostgreSQL real; **dobles de contrato** de Vínculo y Talentia escritos desde docs/contratos.md (`tests/dobles.ts`), sin importar código de las otras apps |
+| Playwright | `e2e/*.spec.ts` (11 archivos de pruebas + capturas) | 37 (escritorio + móvil) | Las **tres apps compiladas y sus workers como procesos reales** (puertos 3211–3213, base `tb2_e2e`), arrancados y matados por `e2e/supervisor.mjs`; la preparación conecta los sistemas como `demo:conectar` |
+
+Las pruebas de contrato de cada simulador (`contrato-openapi.test.ts`) comprueban que los ejemplos del OpenAPI publicado pasan por la implementación real; las del puente, que su cliente cumple el mismo contrato contra los dobles. Así una diferencia entre contrato y código rompe una prueba.
+
+### Resultado (2026-10-29, F4)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | 0 errores |
+| `npm run typecheck` | 0 errores (3 apps + e2e) |
+| `npm test` | Vínculo 26/26 · Talentia 30/30 · Puente 70/70 |
+| `npm run test:e2e` | 37/37 (2,8 min), incluida la auditoría axe WCAG 2.1 A/AA y la de desbordes en móvil |
+
+### Criterios de aceptación y su prueba
+
+| # | Criterio (ESPECIFICACION §7) | Prueba |
+|---|---|---|
+| 1 | Puerto y login propios; la sesión de uno no abre otro | `e2e/panel.spec.ts` (sin sesión; con sesión del puente, Talentia y Vínculo piden ingreso y no hay cookies suyas) |
+| 2 | API Key vista una vez; Lectura sola → 403; revocada → 401 | `apps/talentia/tests/api.test.ts`, `e2e/talentia.spec.ts` |
+| 3 | `/apidocs` y `/developers/docs` coinciden con la implementación | `apps/*/tests/contrato-openapi.test.ts`, `e2e/talentia.spec.ts`, `e2e/vinculo.spec.ts` |
+| 4 | Aplicación de Vínculo, secreto visto una vez, token por client credentials | `apps/vinculo/tests/integradores.test.ts`, `e2e/vinculo.spec.ts` |
+| 5 | «Probar conexión» y desafío del webhook | `apps/puente/tests/conexiones.test.ts`, `e2e/tres-sistemas.spec.ts` |
+| 6 | «Publicar en Vínculo» crea la vacante con Solicitud sencilla | `apps/puente/tests/conexiones.test.ts`, `e2e/tres-sistemas.spec.ts` |
+| 7 | En < 30 s en Postulantes del proceso correcto, mismo SHA-256 | `e2e/tres-sistemas.spec.ts`, `e2e/recorrido.spec.ts`, `e2e/criterios-29oct.spec.ts` (C3–C5) |
+| 8 | «CV descargado» en Mis postulaciones | `e2e/tres-sistemas.spec.ts`, `apps/puente/tests/conexiones.test.ts` |
+| 9 | Reenvío y entregas simultáneas: una sola postulación | `apps/puente/tests/fiabilidad.test.ts`, `e2e/criterios-29oct.spec.ts` (C6) |
+| 10 | Una persona en dos procesos: un postulante, dos postulaciones | `apps/puente/tests/fiabilidad.test.ts` (P2.3) |
+| 11 | Talentia caído, reinicio a mitad, respuesta perdida | `apps/puente/tests/fiabilidad.test.ts` y `p5.test.ts`, `e2e/panel.spec.ts`, `e2e/criterios-29oct.spec.ts` (C8) |
+| 12 | API Key revocada: se detiene con mensaje claro, sin reintentar | `apps/puente/tests/conexiones.test.ts`, `e2e/tres-sistemas.spec.ts`, `e2e/p5.spec.ts` |
+| 13 | Firma inválida, datos incompletos, PDF inválido, vacante cerrada | `apps/puente/tests/webhook.test.ts` y `p5.test.ts`, `e2e/criterios-29oct.spec.ts` (C7) |
+| 14 | WCAG 2.1 AA y sin desbordes | `e2e/accesibilidad.spec.ts`, `e2e/movil.spec.ts` |
+| 15 | Instalación limpia desde el README; `render blueprints validate` | F6 y F7 (ver docs/estado.md) |
+
+### Lo que no se ejecutó
+
+- Pruebas contra LinkedIn o BUK reales: no hay acceso (y no se buscaría).
+- Pruebas de carga: fuera del alcance del prototipo.
+- Docker Compose: no probado en esta máquina.

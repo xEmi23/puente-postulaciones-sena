@@ -35,3 +35,41 @@
 - **¿Por qué no BUK de verdad?** No hay API documentada disponible para el equipo y la empresa no la facilitará (D-01). El destino es reemplazable: el puente habla con el ATS por un cliente HTTP aislado (`ats-cliente.ts`).
 - **¿Esto funcionaría con LinkedIn?** El origen respeta el contrato publicado de Apply Connect (payload, firma, challenge, códigos de error), pero usarlo requiere ser socio certificado (docs/contratos.md F3). La alternativa sin desarrollo es la integración nativa de BUK, que publica la vacante y redirige al formulario de BUK (F5).
 - **¿Qué pasa con datos personales?** Datos ficticios; el puente guarda lo mínimo, borra la copia del CV al terminar y no guarda la autoidentificación voluntaria (D-09).
+
+---
+
+## v2 · Guion de 7 minutos (tres sistemas)
+
+> Actualizado por Claude Code (2026-10-29). Reemplaza al guion anterior para la v2. Cuentas: ver README («Cuentas de demostración»); contraseña `Demo2026!`.
+
+### Antes de empezar
+
+- **Local (10 minutos antes):** `npm run demo:reset`, `npm run build && npm start` (más estable que `dev`) y en otra terminal `npm run demo:conectar`. Abre cuatro pestañas (o ventanas de incógnito, para tener sesiones a la vista): Vínculo `:3001` como `valentina.rios@demo.test`; Vínculo `:3001/developers` como la reclutadora; Talentia `:3002/seleccion/procesos` como `admin@andina.demo.test`; Puente `:3003/operaciones` como `admin@puente.demo.test`.
+- **Render (15 minutos antes):** despierta los tres servicios abriendo `https://<servicio>.onrender.com/api/salud` de cada uno hasta que respondan (el plan gratuito duerme tras 15 minutos sin uso; el primero puede tardar cerca de un minuto). Luego abre el Puente → «Conexiones» y pulsa «Probar conexión» en Vínculo y en Talentia (ver docs/despliegue.md).
+- Ten a mano `fixtures/cv/cv-camila-ejemplo.pdf` y su SHA-256 (`certutil -hashfile fixtures\cv\cv-camila-ejemplo.pdf SHA256`).
+
+### Guion
+
+| Tiempo | Qué se muestra | Qué se dice |
+|---|---|---|
+| 0:00–0:45 | Vínculo (empleos) y Talentia (tablero 9001) | «Hoy el reclutador descarga cada CV de la red profesional y lo sube al ATS. Son dos sistemas **simulados**, cada uno con su login, su base y su API, modelados sobre lo que documentan LinkedIn y BUK. El producto es el tercero: el puente.» |
+| 0:45–1:45 | Talentia → API Keys (llave con Lectura y Modificación); Vínculo → Desarrolladores (aplicación, Client ID); Puente → **Conexiones**: las tres marcas, «Probar conexión» | **Criterios 2, 4 y 5.** «El puente no tiene nada quemado: estas credenciales se pegan aquí, se guardan cifradas y se prueban contra los dos sistemas. El webhook pasó el desafío firmado.» |
+| 1:45–2:30 | Puente → **Procesos** → «Publicar en Vínculo» el 9003 → «Ver en Vínculo» | **Criterio 6.** «Desde el ATS se publica la vacante con Solicitud sencilla; su id externo es el id del proceso, así que nadie tiene que vincular nada a mano.» |
+| 2:30–3:30 | Vínculo como Valentina → la vacante → Solicitud sencilla (2 pasos) con el PDF | **Criterio 7.** «Dos pasos, datos del perfil y el PDF.» (Opcional: mostrar el rechazo de un archivo que no es PDF.) |
+| 3:30–4:15 | Puente → Operaciones: **Completado** con los 4 pasos y su hora; Talentia → proceso 9003: la tarjeta en **Postulantes**, «Sin calificar», fuente «Portal simulado (tipo LinkedIn)» | «Recibido no es transferido: solo cuenta cuando Talentia confirma la postulación. Llegó en segundos al proceso correcto.» |
+| 4:15–4:45 | Talentia → ficha → descargar el CV y comparar su SHA-256 | «El archivo es idéntico byte a byte.» |
+| 4:45–5:15 | Vínculo → Mis postulaciones: **CV descargado** | **Criterio 8.** «El puente le avisa a la red profesional y el candidato ve que su hoja de vida llegó.» |
+| 5:15–6:00 | Vínculo → Desarrolladores → la aplicación → «Reenviar evento» → `DUPLICADO`; consola: firma inválida → 401 | **Criterios 9 y 13.** «Reenvíos sin duplicados; entradas inválidas rechazadas con el código documentado y cero escrituras.» |
+| 6:00–6:45 | Talentia → revocar la llave → postular otra vez → Puente: «Fallido (reintentable) · detenido» con «La API Key de Talentia fue revocada…» → llave nueva en Conexiones → «Reintentar» → Completado | **Criterio 12.** «Con una llave mala no insiste: se detiene, explica qué hacer y retoma sin duplicar.» |
+| 6:45–7:00 | Puente → Métricas | «Métricas medidas: recibidas, completadas, duplicados evitados y tiempo de recepción a completado.» |
+
+### Plan B
+
+- **Un servicio de Render no despierta:** seguir con la demo local (mismo guion).
+- **La conexión falla en vivo:** `npm run demo:conectar` la rehace en segundos (local).
+- **No hay tiempo para el paso de la llave revocada:** mostrar el video o el reporte de `e2e/tres-sistemas.spec.ts` (`npm run test:e2e` deja `playwright-report/`), que recorre exactamente este guion con los tres sistemas reales.
+
+### Preguntas probables (v2)
+
+- **¿Esto se conecta a LinkedIn o a BUK?** No. Vínculo y Talentia son simulados; reproducen lo verificado de cada uno (firma, desafío, cuerpo de Apply Connect; API Key con permisos de Selección de BUK) y lo demás es contrato del simulador, marcado así en docs/contratos.md. Cambiar de sistema real sería cambiar las conexiones y, donde el contrato real difiera, los dos clientes del puente (`vinculo-cliente.ts`, `ats-cliente.ts`).
+- **¿Qué pasa si Talentia está caído?** El puente reintenta solo (hasta 10 veces, unos 13 minutos) y retoma desde el último paso. Si la respuesta se pierde a mitad, ofrece «Reconciliar con Talentia».

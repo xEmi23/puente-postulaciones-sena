@@ -98,3 +98,47 @@ Base: `ATS_BASE_URL` (por defecto `http://localhost:3100/api/ats/v1`). Autentica
 - **Verificado** (F6): todo proceso tiene **«Postulantes»** como primera etapa y **«Contratados»** como última. Las etapas intermedias son configurables.
 - **Verificado** (F7): los postulantes aparecen en la columna «Postulantes»; existe la etapa «Descartados»; «Nueva postulación» permite agregar un postulante nuevo, un colaborador, uno existente o importar postulantes.
 - **No encontrado:** documentación pública de una API REST de Selección para terceros. No se inventan rutas.
+
+---
+
+## 5. v2: Vínculo frente a Apply Connect
+
+> Actualizado por Claude Code (2026-10-29). En la v2 el origen es **Vínculo** (app aparte, puerto 3001) y el destino es **Talentia** (puerto 3002). Las secciones 1 a 4 siguen valiendo como fuentes; aquí se dice qué reproduce cada sistema y con qué etiqueta. Documentación ejecutable: `http://localhost:3001/developers/docs` y `http://localhost:3002/apidocs` (OpenAPI 3.1 generado desde los mismos esquemas Zod que valida el código; pruebas `apps/*/tests/contrato-openapi.test.ts`).
+
+| Punto | Vínculo (simulador) | Etiqueta |
+|---|---|---|
+| Cuerpo de la entrega (`EXPORT_JOB_APPLICATION`, `externalJobId`, `jobApplicationId`, `jobApplicant`, `appliedAt`, `questionResponses`) | Igual a F1 | **Verificado** (F1) |
+| Firma `X-LI-Signature` = hex(HMAC-SHA256(`"hmacsha256=" + cuerpo`, clientSecret)) | Igual a F2 (D-04) | **Verificado** (F2) |
+| Desafío `GET ?challengeCode=` → `{challengeCode, challengeResponse}` | Al registrar el webhook en `/developers` y antes de publicar con Solicitud sencilla | **Verificado** (F2); el momento es **Decisión interna** (D-33) |
+| Revalidación cada 2 h y bloqueo tras 3 fallos | No se simula | **Decisión interna** (D-33) |
+| Reintentos de entrega | 6 intentos, espera exponencial desde 30 s (~15 min) | **Verificado** el número (F1); la espera es **Decisión interna** (D-36) |
+| Códigos de error que no se reintentan | `SIGNATURE_MISMATCH` y los de validación; se reintentan `TRANSIENT_ERROR`, `TOO_MANY_REQUESTS`, `OTHER` y 5xx | **Verificado** (F1) |
+| `mediaUrl` con `Authorization: Bearer`, válido 30 días | `GET /api/v1/media/{id}`; solo la aplicación dueña (403 otra, 410 vencido) | **Verificado** (F1); 403/410 **Decisión interna** (D-38) |
+| Token | `POST /oauth/v2/accessToken`, `grant_type=client_credentials`, 3600 s | **Contrato del simulador** modelado sobre OAuth 2.0 client credentials (D-32) |
+| Publicar / cerrar vacante | `POST /api/v1/jobPostings` (idempotente por `externalJobId`), `POST /api/v1/jobPostings/{externalJobId}/close`; respuesta con `applyMethod` `ONSITE_APPLY` o `COMPANY_SITE` | **Contrato del simulador** (D-33). No son rutas de LinkedIn |
+| Empresas que autorizaron | `GET /api/v1/autorizaciones` | **Contrato del simulador** (D-33) |
+| Ciclo de vida | `POST /api/v1/jobApplications/{id}/lifecycle` con `VIEWED`, `RESUME_DOWNLOADED`, `REJECTED` (monótono) | **Contrato del simulador** (D-33) |
+| Errores de la API | `{ status, code, message, details? }` | **Contrato del simulador** |
+| Fallback cuando falla el desafío | La vacante queda como «postulación en el sitio de la empresa» | **Verificado** el comportamiento análogo (F1); implementación **Decisión interna** |
+| HTTPS obligatorio | En local se permite `http://localhost`; en despliegue público, solo https y sin redes privadas (SSRF) | **Verificado** (F2) el requisito; **Decisión interna** (D-37) |
+| Requisito comercial (socio certificado, licencia Recruiter) | No aplica: Vínculo es ficticio | **Verificado** (F3) que Apply Connect no es accesible al equipo |
+
+## 6. v2: Talentia frente a BUK
+
+| Punto | Talentia (simulador) | Etiqueta |
+|---|---|---|
+| API Key creada en Administración con permisos de Selección «Lectura» y «Modificación» | `/admin/api-keys`; se ve una sola vez; se guarda como SHA-256 con prefijo visible; revocable | **Verificado** (artículo BUK «Integración del módulo de Selección por API», https://supportcenter.buk.co/hc/es-419/articles/49474572553755, consultado 2026-10-28) |
+| Recursos Postulantes, Postulación y Procesos de Selección | `/api/v1/seleccion/postulantes`, `/postulaciones`, `/procesos` | **Verificado** que existen esos recursos y métodos (mismo artículo); las rutas exactas son **contrato del simulador** |
+| Documentación en `/apidocs` | `http://localhost:3002/apidocs` (Swagger UI) | **Verificado** que BUK la ofrece en `<empresa>.buk.cl/apidocs`; el contenido es nuestro |
+| Encabezado de la llave | `auth_token` | **Supuesto pendiente** (D-26): el artículo no nombra el encabezado |
+| 401 sin llave o revocada; 403 sin el permiso | `{error:{codigo:"NO_AUTORIZADO" \| "PERMISO_INSUFICIENTE", mensaje}}` | **Contrato del simulador** (D-29) |
+| Límite 120 solicitudes por minuto por llave → 429 con `Retry-After` | Ventana fija en PostgreSQL | **Contrato del simulador** (D-29) |
+| `Idempotency-Key` en POST y PATCH | La misma clave repite la respuesta guardada | **Contrato del simulador**: no se atribuye a BUK |
+| Subida del CV | `POST /postulantes/{id}/documentos` multipart con `sha256`; 422 si no coincide | **Contrato del simulador** |
+| Postulación nueva en la primera etapa «Postulantes», «Sin calificar» | Igual | **Verificado** (F6, F7) |
+| Etapas del proceso | Configuración de `apps/talentia/src/modules/etapas.ts` según `docs/referencia-ats.md` | **Verificado** (F6) «Postulantes» primera y «Contratados» última; el resto, referencia del equipo |
+
+## 7. v2: lo que expone el puente
+
+- Webhook `GET|POST /api/webhooks/vinculo`: desafío y entregas con el Client Secret guardado en «Conexiones»; 200 al aceptar (RECIBIDO, que **no** es transferencia completada); 401 `SIGNATURE_MISMATCH`; 400 `MISSING_REQUIRED_RESPONSE` / `INPUT_VALIDATION_FAILED`; 422 `JOB_POSTING_CLOSED` (vacante cerrada o sin proceso); 200 `{"estado":"DUPLICADO"}` sin escrituras para un `jobApplicationId` ya recibido (D-06); 503 `TRANSIENT_ERROR` sin conexión configurada (D-43). Códigos **Verificados** (F1); la forma de decidir cada uno es **Decisión interna**.
+- `GET /api/salud` en las tres apps (para despertar los servicios en Render). **Decisión interna.**

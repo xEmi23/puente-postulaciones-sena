@@ -30,7 +30,8 @@ describe("conexiones · secretos cifrados y enmascarados", () => {
   });
 
   it("rechaza URLs que no son http(s) y datos incompletos", async () => {
-    expect((await guardarVinculo({ urlBase: "file:///etc/passwd", clientId: "x", clientSecret: "y".repeat(20) })).ok).toBe(false);
+    expect(await guardarVinculo({ urlBase: "file:///etc/passwd", clientId: "vin_x", clientSecret: "y".repeat(20) })).toMatchObject({ ok: false, error: expect.stringMatching(/http/) });
+    expect(await guardarVinculo({ urlBase: "ftp://vinculo.test", clientId: "vin_x", clientSecret: "y".repeat(20) })).toMatchObject({ ok: false });
     expect((await guardarVinculo({ urlBase: "http://vinculo.test", clientId: "", clientSecret: "" })).ok).toBe(false);
   });
 });

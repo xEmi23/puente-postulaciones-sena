@@ -358,7 +358,7 @@ Problemas encontrados y corregidos: la redirección de `/` del puente ocurría e
 - **6 · Cumple.** `tests/conexiones.test.ts` (publicación, idempotencia, proceso no iniciado, automática) y `e2e/tres-sistemas.spec.ts` (proceso nuevo publicado desde `/procesos`).
 - **7 · Cumple.** `e2e/tres-sistemas.spec.ts` (Postulantes en < 30 s, SHA-256 igual) y `e2e/recorrido.spec.ts`.
 - **8 · Cumple.** `e2e/tres-sistemas.spec.ts` («CV descargado» en Mis postulaciones) y `tests/conexiones.test.ts` (aviso con reintentos).
-- **9 y 10 · Cumplen.** `tests/fiabilidad.test.ts`, `tests/recorrido.test.ts` y `e2e/criterios-29oct.spec.ts` (C6).
+- **9 y 10 · Cumplen.** `tests/fiabilidad.test.ts` (P2.2 entregas simultáneas, P2.3 misma persona en dos vacantes) y `e2e/criterios-29oct.spec.ts` (C6).
 - **11 · Cumple.** `tests/fiabilidad.test.ts`, `tests/p5.test.ts`, `e2e/panel.spec.ts` y `e2e/criterios-29oct.spec.ts` (C8).
 - **12 · Cumple.** `tests/conexiones.test.ts` y `e2e/tres-sistemas.spec.ts` (llave revocada en Talentia → detenido con «La API Key de Talentia fue revocada o no es válida.»; llave nueva + «Reintentar» completa).
 - **13 · Cumple.** `tests/webhook.test.ts`, `tests/p5.test.ts` (vacante cerrada), `e2e/criterios-29oct.spec.ts` (C7) y la prueba de PDF inválido en Vínculo.
@@ -396,3 +396,30 @@ Problemas encontrados y corregidos: la redirección de `/` del puente ocurría e
 
 - **PENDIENTE (equipo):** revisar a ojo las capturas de `capturas/` y la lista de nombres generados (D-39).
 - Siguiente paso: F5 (documentación).
+
+## F5 · Documentación (2026-10-29)
+
+> Actualizado por Claude Code (2026-10-29).
+
+### Qué se hizo
+
+- **README.md** reescrito para la v2 (lo había escrito Claude Code en la v1): instalación, arranque, `demo:conectar`, cuentas demo, demo en 7 pasos, comandos, Docker, despliegue y problemas frecuentes.
+- **Plantillas de entorno:** `.env.example` (raíz, solo PostgreSQL) y `apps/<app>/.env.example`, sin valores reales. La plantilla raíz de la v1 quedó reemplazada.
+- **Secciones v2 agregadas** (sin borrar lo de la v1) en `docs/arquitectura.md` (componentes, secuencia y estados en Mermaid), `docs/contratos.md` (§5 Vínculo frente a Apply Connect, §6 Talentia frente a BUK, §7 lo que expone el puente, cada punto etiquetado), `docs/mapeo-datos.md`, `docs/guion-demo.md` (7 minutos, local y Render, plan B), `docs/resultados-pruebas.md` (suites y prueba de cada criterio) y `docs/uso-ia.md`.
+- **Nuevos:** `docs/manuales/` (índice y 7 manuales: candidato, reclutador de Vínculo, desarrollador, admin y reclutador de Talentia, admin y operador del puente) y `docs/seguridad.md` (llaves, cifrado, sesiones, integraciones, Ley 1581 como Supuesto pendiente, retención y borrado).
+- **CLAUDE.md** actualizado: reglas del equipo sin cambios (más la regla de no importar dominio entre apps), arquitectura v2 y comandos reales.
+- **Ajustes de código encontrados al documentar:** aviso de tratamiento de datos en `/registro` y en el paso 2 de la Solicitud sencilla de Vínculo; las URL de «Conexiones» del puente aceptan solo http/https (antes `z.url()` admitía cualquier esquema; prueba ampliada en `tests/conexiones.test.ts`).
+- `docs/despliegue.md` se escribe en F7 junto con `render.yaml`. `docs/v2/` no se modificó.
+
+### Comandos ejecutados y resultado real (2026-10-29)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` / `npm run typecheck` | exit 0 / exit 0 |
+| `npm test` | Vínculo 26/26 · Talentia 30/30 · Puente 70/70 |
+| `npm run test:e2e` | 37/37 (2,9 min) |
+
+### Pendientes
+
+- **PENDIENTE (equipo):** la lista de revisión de `docs/uso-ia.md` (v2).
+- Siguiente paso: F6 (auditoría, doble ejecución e instalación limpia).

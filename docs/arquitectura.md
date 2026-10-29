@@ -107,3 +107,100 @@ worker/             proceso del worker
 prisma/             esquema (3 esquemas), migraciones, datos de demo
 tests/  e2e/        Vitest (PostgreSQL real) · Playwright (app + worker reales vía supervisor)
 ```
+
+---
+
+## v2 · Tres sistemas independientes
+
+> Actualizado por Claude Code (2026-10-29). Las secciones anteriores describen la v1 (una sola app con `/origen`, `/puente` y `/ats`); esta sección describe lo construido en la v2.
+
+### Componentes
+
+```mermaid
+flowchart LR
+  subgraph V["Vínculo :3001 (simulado)"]
+    VUI["UI: empleos, perfiles,<br/>Solicitud sencilla, reclutador,<br/>portal de desarrolladores"]
+    VAPI["API: /oauth/v2/accessToken<br/>/api/v1/jobPostings · /close<br/>/api/v1/media/{id} · /lifecycle"]
+    VW["Despachador (outbox)<br/>firma X-LI-Signature"]
+  end
+  subgraph P["Puente :3003 (producto)"]
+    PUI["UI: conexiones, procesos,<br/>operaciones, rechazos, métricas"]
+    PWH["/api/webhooks/vinculo"]
+    PW["Worker: procesador,<br/>avisos, publicación automática"]
+  end
+  subgraph T["Talentia :3002 (simulado)"]
+    TUI["UI: procesos por etapas,<br/>postulantes, API Keys"]
+    TAPI["API v1 Selección<br/>(auth_token, 120/min,<br/>Idempotency-Key)"]
+  end
+  DB[("PostgreSQL<br/>esquemas vinculo · talentia · puente")]
+  VW -- "POST firmado<br/>EXPORT_JOB_APPLICATION" --> PWH
+  PW -- "token + GET mediaUrl" --> VAPI
+  PW -- "POST postulantes · documentos · postulaciones" --> TAPI
+  PW -- "RESUME_DOWNLOADED" --> VAPI
+  PUI -- "Publicar en Vínculo" --> VAPI
+  PUI -- "lista procesos" --> TAPI
+  V --- DB
+  P --- DB
+  T --- DB
+```
+
+- **Fronteras:** cada app tiene su `package.json`, su `.env`, su esquema y su autenticación (Better Auth con cookie propia: `vin_sesion`, `tal_sesion`, `pue_sesion`). No se importa código de dominio entre apps (D-20 a D-22); el puente solo conoce a los otros dos por sus URL y credenciales guardadas en «Conexiones» (D-41).
+- **Workers:** en local y en Render corren dentro del proceso web (`WORKER_EN_PROCESO=1`, `instrumentation.ts`); en las pruebas E2E corren como procesos aparte para poder matarlos.
+
+### Secuencia: de la «Solicitud sencilla» a Postulantes
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor C as Candidata
+  participant V as Vínculo
+  participant P as Puente
+  participant T as Talentia
+  Note over P,V: Antes: el admin del puente «Publica en Vínculo» el proceso 9001<br/>(externalJobId = 9001, webhook del puente validado por desafío)
+  C->>V: Solicitud sencilla (datos + PDF)
+  V->>V: Guarda postulación, copia del CV (mediaUrn, 30 días) y fila en outbox
+  V->>P: POST /api/webhooks/vinculo (X-LI-Signature)
+  P->>P: Verifica firma, valida, deduplica por jobApplicationId
+  P-->>V: 200 (RECIBIDO: aún no es transferencia)
+  P->>V: POST /oauth/v2/accessToken (client credentials)
+  P->>V: GET mediaUrl (Bearer) → PDF + SHA-256
+  P->>T: POST /postulantes (Idempotency-Key …:postulante)
+  P->>T: POST /postulantes/{id}/documentos (…:documento, sha256)
+  P->>T: POST /postulaciones (…:postulacion) → etapa Postulantes
+  P->>P: COMPLETADO (solo con postulacion_creada)
+  P->>V: POST /jobApplications/{id}/lifecycle RESUME_DOWNLOADED
+  C->>V: «Mis postulaciones» → CV descargado
+```
+
+### Estados de una recepción en el puente
+
+```mermaid
+stateDiagram-v2
+  [*] --> RECIBIDO: firma y datos válidos
+  RECIBIDO --> PROCESANDO: el worker reclama el trabajo
+  PROCESANDO --> COMPLETADO: postulacion_creada
+  PROCESANDO --> FALLIDO_REINTENTABLE: Talentia/Vínculo caídos, 429, timeout
+  FALLIDO_REINTENTABLE --> PROCESANDO: reintento automático (hasta 10)
+  PROCESANDO --> FALLIDO_REINTENTABLE: 401/403 o sin conexión → detenido
+  FALLIDO_REINTENTABLE --> PROCESANDO: «Reintentar» tras corregir
+  PROCESANDO --> REQUIERE_VERIFICACION: respuesta perdida al crear la postulación
+  REQUIERE_VERIFICACION --> COMPLETADO: «Reconciliar con Talentia»
+  PROCESANDO --> RECHAZADO: CV inválido, vencido o demasiado grande
+  COMPLETADO --> [*]
+```
+
+Las entregas inválidas en la entrada (firma, datos incompletos, mediaUrl no autorizada, vacante cerrada o sin proceso) no crean recepción: responden 4xx con el código de Apply Connect, quedan en `EntregaRechazada` (pantalla «Rechazos») y no escriben nada en Talentia.
+
+Pasos dentro de PROCESANDO, cada uno guardado y con su Idempotency-Key: `cv_descargado → postulante_listo → documento_subido → postulacion_creada`. Una caída a mitad retoma desde el último paso guardado. El aviso `RESUME_DOWNLOADED` tiene su propio estado (`PENDIENTE → ENVIADO | FALLIDO`) y no altera el COMPLETADO (D-47).
+
+### Estructura del código (v2)
+
+```
+apps/
+  vinculo/   src/app (UI y API) · src/modules (vacantes, postulacion, despachador, aplicaciones, api/) · prisma/ · worker/ · tests/
+  talentia/  src/app (UI, /api/v1, /apidocs) · src/modules (seleccion, etapas, procesos, api/) · prisma/ · tests/
+  puente/    src/app (UI, /api/webhooks/vinculo) · src/modules (conexiones, webhook, procesador, avisos, publicacion,
+             vinculo-cliente, ats-cliente, destino) · prisma/ · worker/ · tests/ (dobles de contrato)
+e2e/         Playwright con los tres sistemas reales (supervisor.mjs los arranca y los mata)
+scripts/     setup, PostgreSQL local, dev, demo:conectar
+```

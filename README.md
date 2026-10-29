@@ -1,12 +1,15 @@
-# talent-bridge
+# Puente de postulaciones (v2)
 
-Prototipo para el **Reto #1 SENA · Innovación Abierta 2026-2**: llevar automáticamente las postulaciones de un portal de empleo a un ATS, sin descargar hojas de vida ni volver a digitar datos.
+Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: llevar automáticamente las postulaciones de una red profesional a un ATS, sin descargar hojas de vida ni volver a digitar datos.
 
-> **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK. El portal de origen y el ATS están **simulados**; el **puente** es el componente que se propone. Todos los datos son ficticios.
+> **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK, ni certificación o compatibilidad comprobada con ellos. **Vínculo** (red profesional) y **Talentia** (ATS) son **simulados**; el **Puente** es el producto que se propone. Todos los datos son ficticios (`@demo.test`).
+
+Son **tres aplicaciones independientes** (Next.js), cada una con su puerto, su inicio de sesión, su esquema de PostgreSQL y su API. Solo se hablan por HTTP:
 
 ```
-Portal de origen ──POST firmado (contrato Apply Connect)──▶ Puente ──HTTP (contrato del simulador)──▶ ATS
- /origen                                              /puente  (worker)                     /ats
+Vínculo :3001 ──webhook firmado (modelado sobre Apply Connect)──▶ Puente :3003 ──API Key (modelada sobre la API de BUK)──▶ Talentia :3002
+   ▲  publica vacantes, descarga CV con token, avisa «CV descargado»  │
+   └───────────────────────────────────────────────────────────────────┘
 ```
 
 Más detalle en [docs/arquitectura.md](docs/arquitectura.md).
@@ -14,100 +17,120 @@ Más detalle en [docs/arquitectura.md](docs/arquitectura.md).
 ## Requisitos
 
 - **Node.js 22 o superior** (probado con 24.2.0) y npm.
-- **PostgreSQL 16 o 17** instalado (solo se usan sus programas `initdb`, `pg_ctl`, `psql`, `createdb`; el proyecto crea su propio servidor en una carpeta local). En Windows se detecta en `C:\Program Files\PostgreSQL\16\bin`; en otro sistema, o si está en otra ruta, define `PG_BIN` con esa carpeta.
-  - Alternativa con Docker: ver [Docker](#alternativa-con-docker).
-- Para las pruebas E2E: el navegador de Playwright (`npx playwright install chromium`).
+- **PostgreSQL 16 o 17** instalado: solo se usan sus programas (`initdb`, `pg_ctl`, `psql`, `createdb`); el proyecto crea su propio servidor en `.pgdata/`. En Windows se detecta en `C:\Program Files\PostgreSQL\16\bin` (o 17); si está en otra ruta, define `PG_BIN` con esa carpeta. Alternativa: [Docker](#alternativa-con-docker).
+- Para las pruebas E2E: `npx playwright install chromium`.
 
 ## Instalación desde cero
 
 ```bash
-npm install                      # dependencias con versiones exactas
-npm run setup                    # crea .env con secretos aleatorios, inicia PostgreSQL local, migra y siembra
+npm install          # dependencias con versiones exactas (npm workspaces)
+npm run setup        # .env con secretos aleatorios, PostgreSQL local, migraciones y datos demo de las 3 apps
 ```
 
 `npm run setup` deja:
 
-- `.env` (no se versiona) con contraseñas y claves aleatorias. Ahí están el usuario y la contraseña de la demo (`DEMO_ADMIN_USER`, `DEMO_ADMIN_PASSWORD`).
-- Un PostgreSQL propio en `.pgdata/`, en el primer puerto libre desde el **5433**, con las bases `tb_dev`, `tb_test` y `tb_e2e`.
-- Datos de demostración: procesos **9001** y **9002** en el ATS; vacantes **RT-2026-101 → 9001**, **RT-2026-102 → 9002** y **RT-2026-103** publicada pero sin vincular.
+- `.env` en la raíz (solo PostgreSQL: `PG_PORT`, `PG_USER`, `PG_PASSWORD`) y un `.env` por app (`apps/<app>/.env`) con **sus propios** secretos. Ninguno se versiona ni se comparte entre apps. Plantillas: `.env.example` y `apps/<app>/.env.example`.
+- Un PostgreSQL propio en `.pgdata/`, en el **5435** (o el siguiente libre), con las bases `tb2_dev`, `tb2_test` y `tb2_e2e`. Cada app usa su esquema: `vinculo`, `talentia`, `puente`.
+- Datos de demostración en las tres apps (ver [Cuentas de demostración](#cuentas-de-demostración)).
 
-Si reinicias el equipo, vuelve a encender la base con `npm run pg:start`.
+Si reinicias el equipo, `npm run dev` vuelve a encender la base (o `npm run pg:start`).
 
 ## Ejecutar
 
-En dos terminales:
-
 ```bash
-npm run dev      # app en http://localhost:3100 (los tres módulos)
-npm run worker   # entrega las postulaciones y las procesa (sin esto no fluye nada)
+npm run dev            # las tres apps a la vez, cada una con su worker dentro del proceso
 ```
 
-| Módulo | URL | Acceso |
+En otra terminal, **una vez**, conecta los sistemas (equivale a hacerlo a mano en las pantallas, ver la demo):
+
+```bash
+npm run demo:conectar  # API Key en Talentia → app en Vínculo autorizada por Andina → conexiones del puente → publica 9001 y 9002
+```
+
+| Sistema | URL | Qué es |
 |---|---|---|
-| Portal de origen («Vitrina Empleo») | http://localhost:3100/origen | público |
-| Administración del simulador de origen | http://localhost:3100/origen/admin | sesión de demo |
-| Panel del puente | http://localhost:3100/puente | sesión de demo |
-| ATS simulado («Selecta») | http://localhost:3100/ats | sesión de demo |
+| **Vínculo** | http://localhost:3001 | Red profesional simulada: empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y su API |
+| **Talentia** | http://localhost:3002 | ATS simulado: procesos por etapas, postulantes, API Keys, API v1 y `/apidocs` |
+| **Puente** | http://localhost:3003 | El producto: conexiones, publicación, operaciones, rechazos y métricas |
 
-La sesión de demo usa `DEMO_ADMIN_USER` y `DEMO_ADMIN_PASSWORD` de tu `.env`. Por seguridad solo funciona cuando la app se sirve desde `localhost`.
+Versión compilada: `npm run build` y luego `npm start`.
 
-Para la demo con versión compilada: `npm run build` y luego `npm start` (en lugar de `npm run dev`).
+## Cuentas de demostración
 
-## Demo en 6 pasos
+Contraseña de todas: **`Demo2026!`** (también se muestran en cada pantalla de ingreso).
 
-Guion completo con tiempos: [docs/guion-demo.md](docs/guion-demo.md).
+| Sistema | Correo | Rol |
+|---|---|---|
+| Vínculo | `valentina.rios@demo.test` | Candidata (con historial) |
+| Vínculo | `santiago.mejia@demo.test` | Candidato |
+| Vínculo | `reclutadora@andina.demo.test` | Reclutadora de Andina Software S.A.S. (ficticia) |
+| Talentia | `admin@andina.demo.test` | Administradora (API Keys, actividad de la API) |
+| Talentia | `reclutador@andina.demo.test` | Reclutador |
+| Puente | `admin@puente.demo.test` | Administrador (conexiones, publicación, correspondencias) |
+| Puente | `operador@puente.demo.test` | Operador (supervisa y reintenta) |
 
-1. **Restablecer:** `npm run demo:reset`.
-2. **Postular:** abre `/origen`, entra a «Desarrollador/a Backend Java», completa el formulario con datos ficticios y adjunta `fixtures/cv/cv-camila-ejemplo.pdf`.
-3. **Ver la transferencia:** la confirmación cambia sola a «Entregada a la empresa». En `/puente`, la operación pasa a **Completado** con sus cuatro pasos.
-4. **Ver en el ATS:** en `/ats/procesos/9001` aparece la tarjeta en **Postulantes**, «Sin calificar», fuente «Portal simulado (tipo LinkedIn)», con el aviso «1 postulante nuevo fue agregado al proceso».
-5. **Descargar el CV:** en el detalle del candidato, el SHA-256 mostrado coincide con el del archivo original (`certutil -hashfile fixtures\cv\cv-camila-ejemplo.pdf SHA256` en Windows, `sha256sum` en Linux/macOS).
-6. **Fiabilidad:** en `/origen/admin` pulsa «Reenviar evento»: responde `HTTP 200 · DUPLICADO` y el ATS sigue con una sola tarjeta. La consola (`/origen/admin/consola`) muestra los rechazos controlados.
+## Demo en 7 pasos
+
+Guion completo con tiempos y plan B: [docs/guion-demo.md](docs/guion-demo.md).
+
+1. **Restablecer:** `npm run demo:reset` y luego `npm run demo:conectar` (con `npm run dev` corriendo).
+2. **Conexiones:** en el Puente → «Conexiones», las tres marcas en verde; «Probar conexión» contra Vínculo y Talentia.
+3. **Publicar:** en el Puente → «Procesos», «Publicar en Vínculo» un proceso de Talentia (por ejemplo 9003).
+4. **Postular:** en Vínculo, con `valentina.rios@demo.test`, busca la vacante, «Solicitud sencilla» en dos pasos y un PDF (`fixtures/cv/cv-camila-ejemplo.pdf`).
+5. **Ver la transferencia:** en el Puente → «Operaciones», la postulación pasa a **Completado** con sus cuatro pasos.
+6. **Ver en Talentia:** en el proceso, la tarjeta aparece en **Postulantes**; el CV descargado tiene el mismo SHA-256 que el original (`certutil -hashfile <archivo> SHA256` en Windows, `sha256sum` en Linux/macOS).
+7. **Cerrar el ciclo:** en Vínculo → «Mis postulaciones», la solicitud muestra **«CV descargado»**.
 
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
-| `npm run setup` | Primera instalación (ver arriba). Es seguro repetirlo: no sobrescribe `.env`. |
+| `npm run setup` | Primera instalación. Se puede repetir: no sobrescribe ningún `.env`. |
 | `npm run pg:start` / `pg:stop` / `pg:status` | Enciende, apaga o consulta el PostgreSQL local. |
-| `npm run dev` / `npm start` | App en modo desarrollo o compilada (puerto 3100). |
-| `npm run worker` | Despachador del origen y procesador del puente. |
+| `npm run dev` / `npm start` | Las tres apps en desarrollo o compiladas (3001, 3002, 3003). |
+| `npm run demo:conectar` | Conecta los tres sistemas y publica 9001 y 9002 (requiere las apps encendidas). |
+| `npm run demo:reset` | Borra y vuelve a sembrar **solo** datos demo en las tres apps (en el puente también borra las conexiones). Se niega con `NODE_ENV=production` o con una base no local. |
 | `npm run lint` | ESLint. |
-| `npm run typecheck` | Genera el cliente Prisma y ejecuta `tsc --noEmit`. |
-| `npm test` | Vitest contra PostgreSQL real (`tb_test`). |
-| `npm run test:e2e` | Compila y ejecuta Playwright (escritorio y móvil) contra `tb_e2e` en el puerto 3200. Requiere `npx playwright install chromium`. |
-| `npm run build` | Compilación de producción. |
-| `npm run db:migrate` / `db:seed` | Migraciones y datos de demostración. |
-| `npm run demo:reset` | Borra y vuelve a sembrar **solo** datos marcados como demo. Se niega con `NODE_ENV=production` o con una base que no sea local. |
+| `npm run typecheck` | Cliente Prisma y `tsc --noEmit` en cada app. |
+| `npm test` | Vitest de cada app contra PostgreSQL real (`tb2_test`). |
+| `npm run test:e2e` | Compila y ejecuta Playwright (escritorio y móvil) con los tres sistemas reales en 3211–3213 contra `tb2_e2e`. |
+| `npm run build` | Compilación de producción de las tres apps. |
+| `npm run db:migrate` / `db:seed` | Migraciones y datos demo de las tres apps. |
+| `npm run cv:generar` | Regenera los CV ficticios de `fixtures/cv/`. |
+
+Cada app también tiene sus propios scripts: `npm run <script> -w apps/<vinculo|talentia|puente>`.
 
 ## Alternativa con Docker
 
+No probada en la máquina de desarrollo.
+
 ```bash
 npm install
-node scripts/setup-env.mjs                     # genera .env
-# toma la contraseña de DATABASE_URL en .env y expórtala:
-export PG_PASSWORD=<contraseña>                 # PowerShell: $env:PG_PASSWORD="<contraseña>"
-docker compose up -d                            # PostgreSQL 16 en el puerto 5433 con tb_dev, tb_test, tb_e2e
+npm run setup                                   # si falla al iniciar PostgreSQL local, ya dejó los .env
+export PG_PASSWORD=<PG_PASSWORD del .env raíz>  # PowerShell: $env:PG_PASSWORD="..."
+docker compose up -d                            # PostgreSQL 16 en el 5435 con tb2_dev, tb2_test y tb2_e2e
 npm run db:migrate && npm run db:seed
 ```
 
-Si `setup-env` eligió un puerto distinto de 5433 (porque estaba ocupado), ajusta el puerto en `docker-compose.yml` o en `.env`.
+## Despliegue
+
+Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/despliegue.md](docs/despliegue.md).
 
 ## Documentación
 
-- [docs/contratos.md](docs/contratos.md): contratos verificados (LinkedIn Apply Connect, webhooks, BUK) y contrato del simulador.
-- [docs/decisiones.md](docs/decisiones.md): registro de decisiones.
-- [docs/arquitectura.md](docs/arquitectura.md): componentes, flujo y diagrama.
-- [docs/mapeo-datos.md](docs/mapeo-datos.md): campo de origen → modelo interno → campo del ATS.
-- [docs/guion-demo.md](docs/guion-demo.md): demostración de 5 a 7 minutos.
-- [docs/resultados-pruebas.md](docs/resultados-pruebas.md): resultados de las pruebas.
-- [docs/uso-ia.md](docs/uso-ia.md): qué hizo la IA y qué revisó el equipo.
-- [docs/estado.md](docs/estado.md): estado por fase y pendientes.
+- [docs/arquitectura.md](docs/arquitectura.md): los tres sistemas, secuencia y estados (Mermaid).
+- [docs/contratos.md](docs/contratos.md): Vínculo frente a Apply Connect y Talentia frente a BUK, cada punto etiquetado.
+- [docs/mapeo-datos.md](docs/mapeo-datos.md): Vínculo → Puente → Talentia.
+- [docs/decisiones.md](docs/decisiones.md): decisiones con alternativa descartada y motivo.
+- [docs/manuales/](docs/manuales/): un manual por rol.
+- [docs/seguridad.md](docs/seguridad.md): llaves, cifrado, sesiones, datos personales.
+- [docs/despliegue.md](docs/despliegue.md), [docs/guion-demo.md](docs/guion-demo.md), [docs/resultados-pruebas.md](docs/resultados-pruebas.md), [docs/estado.md](docs/estado.md), [docs/uso-ia.md](docs/uso-ia.md).
 
 ## Problemas frecuentes
 
-- **«Configuración inválida o incompleta en .env»**: falta `.env`. Ejecuta `npm run setup`.
-- **`ECONNREFUSED` al puerto de la base**: la base está apagada. Ejecuta `npm run pg:start`.
-- **No se encuentra `pg_ctl`**: define `PG_BIN` con la carpeta `bin` de PostgreSQL.
-- **Las postulaciones se quedan en «Enviando a la empresa…»**: el worker no está corriendo (`npm run worker`).
-- **El puerto 3100 está ocupado**: `npx next dev -p 3110` y ajusta `APP_BASE_URL`, `ORIGEN_BASE_URL`, `PUENTE_WEBHOOK_URL` y `ATS_BASE_URL` en `.env` a ese puerto.
+- **«Configuración inválida o incompleta»** al arrancar: falta el `.env` de esa app. Ejecuta `npm run setup`.
+- **`ECONNREFUSED` al puerto de la base:** la base está apagada (`npm run pg:start`).
+- **No se encuentra `pg_ctl`:** define `PG_BIN` con la carpeta `bin` de PostgreSQL.
+- **El Puente dice «Configura primero la conexión»:** ejecuta `npm run demo:conectar` (o configura «Conexiones» a mano). Después de `demo:reset` hay que volver a conectar.
+- **La postulación no llega al Puente:** la vacante debe estar publicada por el Puente (o tener correspondencia) y el webhook validado en Vínculo → Desarrolladores.
+- **Un puerto está ocupado:** cambia el puerto en `apps/<app>/package.json` y `APP_BASE_URL` en su `.env`, y vuelve a conectar.

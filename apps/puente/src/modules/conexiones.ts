@@ -35,7 +35,7 @@ export async function conexionTalentia(): Promise<ConexionTalentia | null> {
   return { urlBase: c.urlBase, apiKey: descifrar(c.secretoCifrado) };
 }
 
-const url = z.string().trim().min(1, "Escribe la URL base.").pipe(z.url("Escribe una URL válida, por ejemplo https://vinculo.onrender.com."));
+const url = z.string().trim().min(1, "Escribe la URL base.").pipe(z.url({ protocol: /^https?$/, error: "Escribe una URL http(s) válida, por ejemplo https://vinculo.onrender.com." }));
 
 const esquemaVinculo = z.object({
   urlBase: url,
