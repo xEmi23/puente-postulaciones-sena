@@ -1,5 +1,10 @@
 # talent-bridge: contexto permanente para Claude Code
 
+## ⚠ Versión vigente: V4 (desde el 02/11/2026)
+
+Antes de cualquier tarea lee **`docs/v4/CONTEXTO_V4.md`** (historia, hechos y forma de trabajo) y **`docs/v4/ESPECIFICACION_V4.md`** (fuente de verdad, incluida su sección R de reglas comunes). Los prompts por fase están en `PROMPTS_V4.md` (F0 → F5); se ejecuta **una fase por prompt** y luego te detienes. `docs/v3/` es historia: no se construye.
+Excepción acotada a la regla «sin automatizar sesiones reales»: solo el adaptador experimental `apps/bot-linkedin` de la fase F4 y solo si `docs/v4/PUERTA0.md` dice «Bot = sí». Claude Code nunca abre LinkedIn real.
+
 > Fusión de `CLAUDE_equipo.md` (contexto original del equipo) con el CLAUDE.md de Claude Code. Actualizado por Claude Code (2026-10-29) para la **v2** (tres apps independientes, `docs/v2/`).
 
 ## Qué es

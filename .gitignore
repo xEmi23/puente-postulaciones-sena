@@ -33,3 +33,7 @@ docs/ficha/
 
 # Copia temporal para probar la instalación limpia desde el README (F6)
 .instalacion-limpia/
+
+# V4: páginas reales de LinkedIn y sesión del bot (nunca versionar)
+fixtures/linkedin/originales/
+.bot-perfil/

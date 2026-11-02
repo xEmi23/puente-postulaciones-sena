@@ -547,3 +547,14 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Ensayar la demo en Render despertando los servicios 15 minutos antes (docs/despliegue.md) y usar otro proceso (p. ej. 9003): 9001 ya tiene postulaciones de prueba.
 - La base gratuita vence el **2026-11-28**: para una presentación posterior, recrearla y volver a conectar.
 - Siguen los pendientes del equipo: D-26, D-39, Ley 1581, lista de `docs/uso-ia.md`.
+
+---
+
+# V4 (desde el 2026-11-02)
+
+> Actualizado por Claude Code (2026-11-02). Especificación: `docs/v4/ESPECIFICACION_V4.md`. Rama `v4` (desde `v2` `f1b7c4c`). Modo nocturno autónomo (PROMPT_NOCHE_V4.md): F0 → F1 → F2 → F3 → F5 (solo documentación). F4 (bot) no se hace: la Puerta 0 está pendiente.
+
+## V4 F0 · Auditoría (2026-11-02)
+
+- Línea base: lint 0 · typecheck 0 · Vitest 129/129 · Playwright 37/37 (**166**). Informe: `docs/v4/INFORME_F0.md`; reporte: `docs/v4/REPORTE_F0.md`.
+- Siguiente paso: F1 (contrato canónico, `registrarRecepcion`, `ConectorATS`).
