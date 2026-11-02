@@ -364,3 +364,39 @@
 - **Fecha:** 2026-10-29 (F7)
 - **Decisión:** el plan gratuito permite una base PostgreSQL; los tres servicios la comparten con `DB_SCHEMA` distinto (cada uno con su `_prisma_migrations`). El `startCommand` migra y siembra con `--si-vacio` (no siembra si ya hay usuarios), porque la siembra normal borra y recrea los datos demo y en Render se ejecutaría en cada arranque o despertar. Las conexiones entre sistemas se configuran en las pantallas tras el primer despliegue (no hay forma segura de pasar secretos entre servicios en el Blueprint sin compartirlos).
 - **Alternativa descartada:** tres bases (el plan gratuito no lo permite) y ejecutar `demo:conectar` en el despliegue (exigiría que un servicio conozca los secretos de otro).
+
+---
+
+# V4 (desde el 2026-11-02)
+
+> Actualizado por Claude Code (2026-11-02). Especificación vigente: `docs/v4/ESPECIFICACION_V4.md`.
+
+## D-52 · Estados V4 derivados de los estados v2 (sin cambiar las pruebas existentes)
+
+- **Fecha:** 2026-11-02 (F1)
+- **Decisión:** la base conserva los estados de la v2 (`RECIBIDO, PROCESANDO, COMPLETADO, RECHAZADO, FALLIDO_REINTENTABLE, REQUIERE_VERIFICACION`) y el paso `cv_descargado`, porque las pruebas existentes los afirman y R.2 prohíbe cambiar sus aserciones. La interfaz y la API nueva muestran el **estado V4**, derivado: `RECIBIDO→RECIBIDA`, `PROCESANDO→EN_PROCESO`, `COMPLETADO→COMPLETADA`, `RECHAZADO→FALLIDA_DEFINITIVA`, `FALLIDO_REINTENTABLE` con el trabajo detenido → `FALLIDA_DEFINITIVA`, si no → `FALLIDA_REINTENTABLE`. `REQUIERE_REVISION` se agrega como estado nuevo (F2). `REQUIERE_VERIFICACION` (respuesta perdida del ATS, v2) se conserva. `cv_descargado` equivale a `cv_verificado` («CV obtenido y verificado»). `DUPLICADA` es una respuesta, no una fila: la clave única impide guardar la segunda llegada.
+- **Alternativa descartada:** renombrar el enum (rompería 20+ aserciones existentes).
+
+## D-53 · Ubicación de la estructura V4 en el código real
+
+- **Fecha:** 2026-11-02 (F1)
+- **Decisión:** `apps/puente/src/nucleo/{contrato,recepcion,errores,fuentes}`, `src/entradas/{apply-connect,generica,importador}`, `src/salidas/{conector-ats.ts,talentia,buk,index.ts}`. `src/modules/procesador.ts` y `src/modules/webhook.ts` se quedan donde estaban (las pruebas los importan); el procesador ya no conoce Talentia ni Vínculo y el webhook es el adaptador HTTP de Apply Connect que delega en `registrarRecepcion()`. `src/modules/ats-cliente.ts` se trasladó a `src/salidas/talentia/` y se eliminó. Una regla de ESLint (`no-restricted-imports`) y una prueba impiden importar un adaptador concreto fuera de `src/salidas/`.
+- **Alternativa descartada:** mover todo `src/modules` a la estructura de la §5 (más riesgo de regresión sin beneficio visible).
+
+## D-54 · ConectorATS con parámetros opcionales para conservar el comportamiento de la v2
+
+- **Fecha:** 2026-11-02 (F1)
+- **Decisión:** la interfaz tiene exactamente los métodos y capacidades de la §9, con dos ajustes compatibles: `crearPostulante` y `crearPostulacion` aceptan un `extra` opcional (referencia externa, documento vinculado y texto de la fuente) y `adjuntarCV` puede devolver `{ idDocumento }`. Sin eso, Talentia dejaría de vincular el documento a la postulación y de mostrar la fuente. `crearPostulante` busca por correo y actualiza si la persona existe (un postulante por persona, como en la v2). La reconciliación usa `consultarPostulacion(postulante, proceso)` (en Talentia, `GET /postulaciones?proceso_id=`), en lugar de la búsqueda por referencia de la v2. Los errores de cualquier adaptador son `ErrorConectorATS`.
+- **Alternativa descartada:** una interfaz sin `extra` (perdía comportamiento visible en Talentia) o métodos propios de Talentia en la interfaz.
+
+## D-55 · ATS_DESTINO y salud del Puente
+
+- **Fecha:** 2026-11-02 (F1)
+- **Decisión:** `ATS_DESTINO=talentia` (por defecto) o `buk`. Con un adaptador sin implementar (hoy `buk`), el worker no arranca el ciclo del procesador y `/api/salud` responde **503** con `«ATS buk no implementado»`; las postulaciones se siguen recibiendo y esperan. El adaptador de BUK no contiene rutas, encabezados ni formatos: `verificarConexion` responde «no configurado» y el resto lanza «no implementado: pendiente de la documentación oficial de /apidocs».
+- **Alternativa descartada:** responder 200 en salud con BUK (podría «parecer» conectado).
+
+## D-56 · Teléfono a E.164 con +57 por defecto en todas las fuentes
+
+- **Fecha:** 2026-11-02 (F1)
+- **Decisión:** la normalización del contrato canónico (§6) se aplica también a Apply Connect: un teléfono sin indicativo recibe +57 (en la v2 quedaba `+<número>`). Un teléfono que no se puede llevar a E.164 hace inválida la canónica.
+- **Alternativa descartada:** descartar en silencio el teléfono inválido (se perdería un dato sin aviso).

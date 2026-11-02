@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import * as ats from "./ats-cliente";
+import { conectorATS } from "@/salidas";
 import { autorizaciones, obtenerToken } from "./vinculo-cliente";
 import { marcarPrueba } from "./conexiones";
 
@@ -28,18 +28,12 @@ export async function probarVinculo(fetchImpl?: typeof fetch): Promise<Resultado
   }
 }
 
-/** Talentia: consulta la llave (permisos) y lista los procesos. */
+/** ATS (Talentia en la demo): «verificarConexion» del ConectorATS (en Talentia, permisos de la llave y procesos visibles). */
 export async function probarTalentia(fetchImpl?: typeof fetch): Promise<ResultadoPrueba> {
   try {
-    const llave = await ats.llaveActual({ fetchImpl });
-    const procesos = await ats.listarProcesos({ fetchImpl });
-    const { lectura, modificacion } = llave.permisos.seleccion;
-    const faltan = !lectura || !modificacion;
-    const detalle = `Llave «${llave.nombre}» (${llave.prefijo}…): Lectura ${lectura ? "sí" : "no"}, Modificación ${modificacion ? "sí" : "no"}. ${procesos.length} procesos visibles.${
-      faltan ? " El puente necesita ambos permisos de Selección." : ""
-    }`;
-    await marcarPrueba("TALENTIA", !faltan, detalle, { permisoLectura: lectura, permisoEscritura: modificacion });
-    return { ok: !faltan, detalle };
+    const r = await conectorATS({ fetchImpl }).verificarConexion();
+    await marcarPrueba("TALENTIA", r.ok, r.detalle, r.extra ?? {});
+    return { ok: r.ok, detalle: r.detalle };
   } catch (e) {
     const detalle = e instanceof Error ? e.message : String(e);
     await marcarPrueba("TALENTIA", false, detalle);

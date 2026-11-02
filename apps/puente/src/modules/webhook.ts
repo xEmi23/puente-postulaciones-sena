@@ -1,8 +1,9 @@
-import { prisma, esViolacionUnica } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { firmaValida, respuestaDesafio } from "@/lib/firma";
 import { sha256Hex } from "@/lib/archivos";
 import { cuerpoError, esquemaPayload, type CodigoError } from "@/modules/contrato-apply-connect";
-import { resolverDestino } from "./destino";
+import { registrarRecepcion } from "@/nucleo/recepcion/registrar";
+import { FUENTE_APPLY_CONNECT, mapearEntrega } from "@/entradas/apply-connect/mapeo";
 import { conexionVinculo } from "./conexiones";
 
 export interface RespuestaHttp {
@@ -45,9 +46,9 @@ function respuestasFaltantes(json: unknown): string[] {
 }
 
 /**
- * POST del webhook. Verifica la firma sobre el cuerpo crudo, valida el contrato, guarda la recepción
- * y crea el trabajo persistente en una misma transacción, y responde de inmediato.
- * El procesamiento (descarga del CV, llamadas al ATS) lo hace el worker.
+ * POST del webhook (adaptador Apply Connect). Verifica la firma sobre el cuerpo crudo y el formato de Apply Connect,
+ * lo convierte a la PostulacionCanonica v1 y la entrega al núcleo con registrarRecepcion(), que deduplica, resuelve el
+ * proceso, guarda y encola. El procesamiento (descarga del CV, llamadas al ATS) lo hace el worker.
  */
 export async function recibirPostulacion(cuerpoCrudo: string, firma: string | null): Promise<RespuestaHttp> {
   const c = await conexionVinculo();
@@ -126,61 +127,36 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
     };
   }
 
-  // Duplicado: si ya existe, se responde 200 sin crear nada (decisión D-06) y se cuenta como duplicado evitado.
-  const existente = await prisma.recepcion.findUnique({ where: { jobApplicationId: p.jobApplicationId } });
-  if (existente) return await responderDuplicado(existente.id, p.jobApplicationId);
-
-  const destino = await resolverDestino(p.externalJobId, new Date(p.appliedAt));
-  if (!destino.ok) {
-    await registrarRechazo("JOB_POSTING_CLOSED", destino.motivo, extra);
-    return { status: 422, body: cuerpoError("JOB_POSTING_CLOSED", { otherErrorDetails: destino.motivo }) };
-  }
-
-  const telefono = contacto.cellphoneNumberQuestionAnswer
-    ? `+${contacto.cellphoneNumberQuestionAnswer.countryCode ?? ""}${contacto.cellphoneNumberQuestionAnswer.nationalNumber}`.replace(/^\+$/, "")
-    : null;
-
+  const { canonica, cvRemoto } = mapearEntrega(p);
+  let r2;
   try {
-    const recepcion = await prisma.recepcion.create({
-      data: {
-        jobApplicationId: p.jobApplicationId,
-        jobApplicant: p.jobApplicant,
-        externalJobId: p.externalJobId,
-        appliedAt: new Date(p.appliedAt),
-        payloadSha256: sha256Hex(Buffer.from(cuerpoCrudo, "utf8")),
-        nombre: contacto.firstNameAnswer.value.trim(),
-        apellido: contacto.lastNameAnswer.value.trim(),
-        correo,
-        telefono,
-        ciudad: contacto.locationAnswer?.locationCityAnswer?.value ?? null,
-        mediaUrl: cv.mediaUrl,
-        mediaUrn: cv.mediaUrn,
-        trabajo: { create: {} },
-        eventos: { create: { tipo: "RECIBIDO", detalle: "Postulación recibida y firma verificada." } },
-      },
+    r2 = await registrarRecepcion(canonica, { tipo: "remoto", ...cvRemoto }, { tipo: "fuente", id: FUENTE_APPLY_CONNECT }, {
+      detalleRecibido: "Postulación recibida y firma verificada.",
+      detalleDuplicado: "Se recibió de nuevo el mismo jobApplicationId; no se creó nada.",
+      payloadSha256: sha256Hex(Buffer.from(cuerpoCrudo, "utf8")),
     });
-    return { status: 200, body: { estado: "RECIBIDO", referencia: recepcion.id } };
   } catch (e) {
-    // Dos entregas simultáneas del mismo evento: la restricción única deja pasar solo una.
-    if (esViolacionUnica(e)) {
-      const otra = await prisma.recepcion.findUnique({ where: { jobApplicationId: p.jobApplicationId } });
-      if (otra) return await responderDuplicado(otra.id, p.jobApplicationId);
-    }
     // Solo la primera línea del mensaje: sin la consulta completa ni datos personales.
     console.error("[puente] Error guardando la recepción:", e instanceof Error ? e.message.split("\n")[0] : "desconocido");
     return { status: 500, body: cuerpoError("TRANSIENT_ERROR") };
   }
-}
-
-async function responderDuplicado(recepcionId: string, jobApplicationId: string): Promise<RespuestaHttp> {
-  await prisma.recepcion.update({
-    where: { id: recepcionId },
-    data: {
-      duplicadosEvitados: { increment: 1 },
-      eventos: { create: { tipo: "DUPLICADO", detalle: "Se recibió de nuevo el mismo jobApplicationId; no se creó nada." } },
-    },
-  });
-  return { status: 200, body: { estado: "DUPLICADO", referencia: recepcionId, jobApplicationId } };
+  switch (r2.resultado) {
+    case "RECIBIDA":
+      return { status: 200, body: { estado: "RECIBIDO", referencia: r2.recepcionId } };
+    case "DUPLICADA":
+      // Duplicado: se responde 200 sin crear nada (D-06) y se cuenta como duplicado evitado.
+      return { status: 200, body: { estado: "DUPLICADO", referencia: r2.recepcionId, jobApplicationId: p.jobApplicationId } };
+    case "SIN_CORRESPONDENCIA":
+      await registrarRechazo("JOB_POSTING_CLOSED", r2.motivo, extra);
+      return { status: 422, body: cuerpoError("JOB_POSTING_CLOSED", { otherErrorDetails: r2.motivo }) };
+    case "INVALIDA": {
+      const detalles = r2.errores.map((e) => ({ partnerQuestionIdentifier: e.campo, validationHint: e.mensaje }));
+      await registrarRechazo("INPUT_VALIDATION_FAILED", `Formato inválido en: ${detalles.map((d) => d.partnerQuestionIdentifier).join(", ")}.`, extra);
+      return { status: 400, body: cuerpoError("INPUT_VALIDATION_FAILED", { inputValidationErrorDetails: { invalidInputQuestionIdentifierDetails: detalles } }) };
+    }
+    default:
+      return { status: 500, body: cuerpoError("TRANSIENT_ERROR") };
+  }
 }
 
 /** Solo se descargan CV desde la URL base configurada de Vínculo y su ruta de medios, nunca de un host arbitrario. */

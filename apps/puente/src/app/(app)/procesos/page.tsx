@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
 import { exigirUsuario, exigirUsuarioAccion } from "@/lib/sesion-servidor";
-import { listarProcesos, type ProcesoTalentia } from "@/modules/ats-cliente";
+import { conectorATS } from "@/salidas";
+import type { ProcesoATS } from "@/salidas/conector-ats";
 import { cerrarPublicacion, publicarProceso, sondearProcesosNuevos } from "@/modules/publicacion";
 import { ActualizarCada } from "@/components/actualizar-cada";
 
@@ -41,10 +42,10 @@ const ESTADO_PUB: Record<string, string> = { PUBLICADA: "Publicada", CERRADA: "C
 export default async function Procesos({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
   const u = await exigirUsuario("/procesos");
   const { ok, error } = await searchParams;
-  let procesos: ProcesoTalentia[] | null = null;
+  let procesos: ProcesoATS[] | null = null;
   let errorTalentia = "";
   try {
-    procesos = await listarProcesos();
+    procesos = await conectorATS().listarProcesos();
   } catch (e) {
     errorTalentia = e instanceof Error ? e.message : String(e);
   }
@@ -100,13 +101,13 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
               </thead>
               <tbody>
                 {procesos.map((p) => {
-                  const pb = pub.get(p.id);
+                  const pb = pub.get(Number(p.id));
                   return (
                     <tr key={p.id} data-testid="fila-proceso" data-proceso={p.id}>
                       <td>
                         <span className="mono">{p.id}</span> · {p.titulo}
                         <div className="p-nota">
-                          {p.area} · {p.ciudad} · {p.total_postulaciones} {p.total_postulaciones === 1 ? "postulación" : "postulaciones"}
+                          {p.area} · {p.ciudad} · {p.totalPostulaciones ?? 0} {p.totalPostulaciones === 1 ? "postulación" : "postulaciones"}
                         </div>
                       </td>
                       <td>{p.estado === "INICIADO" ? "Iniciado" : "Cerrado"}</td>

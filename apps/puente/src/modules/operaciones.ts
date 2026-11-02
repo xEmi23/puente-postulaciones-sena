@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { completar } from "./procesador";
-import * as ats from "./ats-cliente";
+import { conectorATS } from "@/salidas";
 
 // Acciones manuales del panel. Cada una valida que sea segura antes de actuar.
 
@@ -25,19 +25,22 @@ export async function reintentar(recepcionId: string): Promise<ResultadoAccion> 
 }
 
 /**
- * Reconciliación: pregunta al ATS si la postulación existe por su referencia externa (jobApplicationId).
+ * Reconciliación: pregunta al ATS (por ConectorATS) si la postulación de esa persona en ese proceso ya existe.
  * - Existe → se marca COMPLETADO sin escribir nada.
  * - No existe → es seguro volver a crearla: queda FALLIDO_REINTENTABLE y se programa.
  * - No se puede consultar → sigue en REQUIERE_VERIFICACION.
  */
-export async function reconciliar(recepcionId: string, opciones: ats.OpcionesCliente = {}): Promise<ResultadoAccion> {
+export async function reconciliar(recepcionId: string, opciones: { fetchImpl?: typeof fetch } = {}): Promise<ResultadoAccion> {
   const rec = await prisma.recepcion.findUnique({ where: { id: recepcionId }, include: { trabajo: true } });
   if (!rec || !rec.trabajo) return { ok: false, mensaje: "La operación no existe." };
   if (rec.estado !== "REQUIERE_VERIFICACION") return { ok: false, mensaje: "Solo se reconcilian operaciones que requieren verificación." };
 
-  let existente: Awaited<ReturnType<typeof ats.buscarPostulacionPorReferencia>>;
+  let existente: { id: string } | null;
   try {
-    existente = await ats.buscarPostulacionPorReferencia(rec.jobApplicationId, opciones);
+    existente =
+      rec.atsPostulanteId && rec.procesoAtsId !== null
+        ? await conectorATS(opciones).consultarPostulacion(rec.atsPostulanteId, String(rec.procesoAtsId))
+        : null;
   } catch (e) {
     const detalle = e instanceof Error ? e.message : String(e);
     await prisma.eventoRecepcion.create({ data: { recepcionId, tipo: "RECONCILIACION", detalle: `No se pudo consultar el ATS: ${detalle}` } });

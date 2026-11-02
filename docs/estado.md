@@ -558,3 +558,9 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 
 - Línea base: lint 0 · typecheck 0 · Vitest 129/129 · Playwright 37/37 (**166**). Informe: `docs/v4/INFORME_F0.md`; reporte: `docs/v4/REPORTE_F0.md`.
 - Siguiente paso: F1 (contrato canónico, `registrarRecepcion`, `ConectorATS`).
+
+## V4 F1 · Núcleo y ConectorATS (2026-11-02)
+
+- Contrato canónico v1, `registrarRecepcion()`, `ConectorATS` (Talentia activo y simulado; BUK deshabilitado), `ATS_DESTINO`, webhook de Vínculo mapeado a la canónica, procesador sin conocer la fuente ni el ATS. Migración `20261102120000_v4_f1_fuente`. Decisiones D-52 a D-56. Reporte: `docs/v4/REPORTE_F1.md`.
+- Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 110 · Playwright 37/37 (**203**).
+- Siguiente paso: F2 (entrada genérica, fuentes y tokens, revisión, auditoría, retención).

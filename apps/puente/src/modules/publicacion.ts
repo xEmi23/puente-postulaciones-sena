@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { urlWebhook } from "@/lib/config";
-import * as ats from "./ats-cliente";
+import { conectorATS } from "@/salidas";
+import type { ProcesoATS } from "@/salidas/conector-ats";
 import { cerrarVacante, publicarVacante } from "./vinculo-cliente";
 import { conexionVinculo } from "./conexiones";
 
@@ -16,18 +17,19 @@ export async function publicarProceso(procesoId: number, opciones: { automatica?
   const v = await conexionVinculo();
   if (!v) return { ok: false, mensaje: "Configura primero la conexión con Vínculo." };
   if (!v.empresaId) return { ok: false, mensaje: "Prueba la conexión con Vínculo para identificar la empresa que autorizó al puente." };
-  let p: ats.ProcesoTalentia;
+  let p: ProcesoATS | undefined;
   try {
-    p = await ats.obtenerProceso(procesoId, { fetchImpl: opciones.fetchImpl });
+    p = (await conectorATS({ fetchImpl: opciones.fetchImpl }).listarProcesos()).find((x) => x.id === String(procesoId));
   } catch (e) {
     return { ok: false, mensaje: `No se pudo leer el proceso en Talentia: ${e instanceof Error ? e.message : e}` };
   }
+  if (!p) return { ok: false, mensaje: `No se pudo leer el proceso en Talentia: el proceso ${procesoId} no existe.` };
   if (p.estado !== "INICIADO") return { ok: false, mensaje: `El proceso ${procesoId} no está «Iniciado» en Talentia.` };
   const descripcion =
-    p.descripcion && p.descripcion.length >= 10 ? p.descripcion : `${p.titulo} en ${v.empresaNombre ?? "la empresa"} (${p.area}, ${p.ciudad}). Vacante ficticia publicada desde el ATS por el puente.`;
+    p.descripcion && p.descripcion.length >= 10 ? p.descripcion : `${p.titulo} en ${v.empresaNombre ?? "la empresa"} (${p.area ?? ""}, ${p.ciudad ?? ""}). Vacante ficticia publicada desde el ATS por el puente.`;
   try {
     const r = await publicarVacante(
-      { externalJobId: String(p.id), companyId: v.empresaId, title: p.titulo, description: descripcion, location: p.ciudad, workplaceType: MODALIDAD(p.ciudad), webhookUrl: urlWebhook() },
+      { externalJobId: String(p.id), companyId: v.empresaId, title: p.titulo, description: descripcion, location: p.ciudad ?? "", workplaceType: MODALIDAD(p.ciudad ?? ""), webhookUrl: urlWebhook() },
       opciones.fetchImpl,
     );
     const datos = {
@@ -85,10 +87,10 @@ export async function sondearProcesosNuevos(opciones: { fetchImpl?: typeof fetch
   let publicados = 0;
   let resultado = "";
   try {
-    const procesos = await ats.listarProcesos({ fetchImpl: opciones.fetchImpl });
+    const procesos = await conectorATS({ fetchImpl: opciones.fetchImpl }).listarProcesos();
     const ya = new Set((await prisma.publicacion.findMany({ select: { procesoId: true } })).map((p) => p.procesoId));
-    for (const p of procesos.filter((x) => x.estado === "INICIADO" && !ya.has(x.id))) {
-      const r = await publicarProceso(p.id, { automatica: true, fetchImpl: opciones.fetchImpl });
+    for (const p of procesos.filter((x) => x.estado === "INICIADO" && !ya.has(Number(x.id)))) {
+      const r = await publicarProceso(Number(p.id), { automatica: true, fetchImpl: opciones.fetchImpl });
       if (r.ok) publicados++;
     }
     resultado = publicados ? `Se publicaron ${publicados} procesos nuevos.` : "Sin procesos nuevos.";

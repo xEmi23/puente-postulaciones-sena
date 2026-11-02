@@ -231,8 +231,11 @@ export class TalentiaDoble {
         return json(200, { data: [...this.candidatos.values()].filter((c) => c.correo === email), paginacion: { pagina: 1, por_pagina: 25, total: 0 } });
       }
       if (ruta === "/postulaciones") {
+        // Filtros de la API v1 de Talentia: referencia_externa y proceso_id (este último lo usa la reconciliación V4).
         const ref = url.searchParams.get("referencia_externa");
-        return json(200, { data: this.postulaciones.filter((p) => p.referenciaExterna === ref).map(this.vistaPostulacion) });
+        const proceso = url.searchParams.get("proceso_id");
+        const filas = this.postulaciones.filter((p) => (ref === null || p.referenciaExterna === ref) && (proceso === null || p.procesoId === Number(proceso)));
+        return json(200, { data: filas.map(this.vistaPostulacion) });
       }
       return errorTal(404, "NO_ENCONTRADO", "Ruta inexistente.");
     }

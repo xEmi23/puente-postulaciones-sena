@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
 import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
-import { listarProcesos } from "@/modules/ats-cliente";
+import { conectorATS } from "@/salidas";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Correspondencias" };
@@ -20,9 +20,9 @@ async function guardar(formData: FormData) {
   if (!r.success) redirect(`/correspondencias?error=${encodeURIComponent(r.error.issues[0].message)}`);
   const { externalJobId, procesoAtsId } = r.data;
   // El proceso se valida contra el ATS por HTTP: el puente no lee las tablas del ATS.
-  const procesos = await listarProcesos().catch(() => null);
+  const procesos = await conectorATS().listarProcesos().catch(() => null);
   if (!procesos) redirect(`/correspondencias?error=${encodeURIComponent("No se pudo consultar el ATS para validar el proceso.")}`);
-  if (!procesos.some((p) => p.id === procesoAtsId)) redirect(`/correspondencias?error=${encodeURIComponent(`El proceso ${procesoAtsId} no existe en el ATS.`)}`);
+  if (!procesos.some((p) => p.id === String(procesoAtsId))) redirect(`/correspondencias?error=${encodeURIComponent(`El proceso ${procesoAtsId} no existe en el ATS.`)}`);
   await prisma.correspondencia.upsert({
     where: { externalJobId },
     create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
@@ -48,7 +48,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
   const { ok, error } = await searchParams;
   const [lista, procesos] = await Promise.all([
     prisma.correspondencia.findMany({ orderBy: { externalJobId: "asc" } }),
-    listarProcesos().catch(() => null),
+    conectorATS().listarProcesos().catch(() => null),
   ]);
   const nombre = new Map((procesos ?? []).map((p) => [p.id, p.titulo]));
 
@@ -117,7 +117,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
                   <tr key={c.id} data-testid="fila-correspondencia">
                     <td className="mono">{c.externalJobId}</td>
                     <td>
-                      {c.procesoAtsId} · {nombre.get(c.procesoAtsId) ?? "proceso no encontrado en el ATS"}
+                      {c.procesoAtsId} · {nombre.get(String(c.procesoAtsId)) ?? "proceso no encontrado en el ATS"}
                     </td>
                     <td>
                       <span className={`p-estado ${c.activa ? "p-estado-COMPLETADO" : "p-estado-RECHAZADO"}`}>

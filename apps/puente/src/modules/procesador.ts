@@ -1,39 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
-import { config } from "@/lib/config";
-import { conexionVinculo } from "./conexiones";
 import { resolverDestino } from "./destino";
-import { pareceUnPdf, sha256Hex, nombreArchivoSeguro } from "@/lib/archivos";
 import type { PasoRecepcion, Recepcion } from "@/generated/prisma/client";
-import { urlDeMediaPermitida } from "./webhook";
-import * as ats from "./ats-cliente";
-import { conFalloSimulado } from "./fallos";
-import * as vinculo from "./vinculo-cliente";
+import { conectorATS, ErrorConectorATS } from "@/salidas";
+import { obtenerCvRemoto } from "@/entradas";
+import { ErrorProcesamiento } from "@/nucleo/errores";
+import { etiquetaFuente } from "@/nucleo/fuentes";
 
-// Procesador del puente (corre en el worker). Cada trabajo avanza por pasos confirmados:
+export { ErrorProcesamiento } from "@/nucleo/errores";
+export { descargarCv } from "@/entradas/apply-connect/cv";
+
+// Procesador del puente (corre en el worker). No conoce la fuente ni el ATS: obtiene el CV por el adaptador de la
+// fuente (src/entradas) y escribe en el ATS por la interfaz ConectorATS (src/salidas). Cada trabajo avanza por pasos:
 //   cv_descargado → postulante_listo → documento_subido → postulacion_creada
 // Cada paso se guarda en cuanto termina, así un reinicio retoma desde el último paso confirmado.
 // Las escrituras en el ATS llevan Idempotency-Key derivada de la recepción.
 
-// Texto visible de la fuente en el ATS. El contrato técnico sigue el de LinkedIn (F1 pide marcar «LinkedIn Easy Apply»),
-// pero ningún texto visible lo dice: el prototipo no está conectado a LinkedIn (CLAUDE.md, D-19).
-export const FUENTE_ATS = "Portal simulado (tipo LinkedIn)";
-
-/** Cómo debe terminar un intento fallido. */
-type Modo = "rechazar" | "reintentar" | "detener";
-
-export class ErrorProcesamiento extends Error {
-  constructor(
-    public codigo: string,
-    message: string,
-    public modo: Modo,
-    /** Espera mínima antes del próximo intento (p. ej., Retry-After de un 429). */
-    public esperaMinimaMs = 0,
-  ) {
-    super(message);
-    this.name = "ErrorProcesamiento";
-  }
-}
+// Texto visible de la fuente de Apply Connect en el ATS (D-19). Las demás fuentes: src/nucleo/fuentes.ts.
+export const FUENTE_ATS = etiquetaFuente("apply-connect");
 
 /** Solo para pruebas: simula que el proceso muere justo después de confirmar un paso. */
 export class CaidaSimulada extends Error {
@@ -107,12 +91,14 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
   const caida = (paso: PasoRecepcion) => {
     if (opciones.simularCaidaDespuesDe === paso) throw new CaidaSimulada(paso);
   };
-  const o = { fetchImpl: opciones.fetchImpl };
+  const conector = conectorATS({ fetchImpl: opciones.fetchImpl });
+  const ats = conector.nombre === "talentia" ? "Talentia" : conector.nombre.toUpperCase();
 
   rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { estado: "PROCESANDO" } });
   try {
     if (!rec.paso) {
-      const cv = await descargarCv(rec, opciones.fetchImpl);
+      // El CV no llegó en bytes: lo obtiene el adaptador de la fuente (hoy, Apply Connect por mediaUrl).
+      const cv = await obtenerCvRemoto(rec, opciones.fetchImpl);
       rec = await prisma.recepcion.update({
         where: { id: rec.id },
         data: { paso: "cv_descargado", cvContenido: Buffer.from(cv.bytes), cvSha256: cv.sha256, cvTamano: cv.bytes.length, cvNombreArchivo: cv.nombre },
@@ -128,33 +114,40 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
     }
 
     if (rec.paso === "cv_descargado") {
-      const postulante = await ats.crearOBuscarPostulante(
-        { nombre: rec.nombre, apellido: rec.apellido, correo: rec.correo, telefono: rec.telefono, ciudad: rec.ciudad, referenciaExterna: rec.jobApplicant },
+      const postulante = await conector.crearPostulante(
+        { nombres: rec.nombre, apellidos: rec.apellido, correo: rec.correo, telefono: rec.telefono ?? undefined, ciudad: rec.ciudad ?? undefined },
         `${rec.jobApplicationId}:postulante`,
-        o,
+        { referenciaExterna: rec.jobApplicant },
       );
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "postulante_listo", atsPostulanteId: postulante.id } });
-      await evento(rec.id, "PASO", postulante.existente ? "Postulante existente actualizado en Talentia (mismo correo)." : "Postulante creado en Talentia.", "postulante_listo");
+      await evento(rec.id, "PASO", postulante.existente ? `Postulante existente actualizado en ${ats} (mismo correo).` : `Postulante creado en ${ats}.`, "postulante_listo");
       caida("postulante_listo");
     }
 
     if (rec.paso === "postulante_listo") {
-      if (!rec.cvContenido || !rec.cvSha256) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "Se perdió la copia temporal del CV.", "detener");
-      const doc = await ats.subirDocumento(
-        rec.atsPostulanteId!,
-        { nombreArchivo: rec.cvNombreArchivo ?? "cv.pdf", tipo: "CV", bytes: new Uint8Array(rec.cvContenido), sha256: rec.cvSha256 },
-        `${rec.jobApplicationId}:documento`,
-        o,
-      );
-      rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: doc.id } });
-      await evento(rec.id, "PASO", "CV subido a Talentia; Talentia confirmó el mismo SHA-256.", "documento_subido");
+      if (!conector.capacidades.adjuntarCV) {
+        // El ATS no admite el CV por API (riesgo R4 en BUK): se omite el paso y la recepción completa con advertencia.
+        // El CV queda en el Puente hasta su retención.
+        const advertencia = "CV no enviado: el ATS no lo admite por API";
+        rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: null, advertencia } });
+        await evento(rec.id, "PASO", `${advertencia}. El CV queda disponible en el Puente.`, "documento_subido");
+      } else {
+        if (!rec.cvContenido || !rec.cvSha256) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "Se perdió la copia temporal del CV.", "detener");
+        const doc = await conector.adjuntarCV(
+          rec.atsPostulanteId!,
+          { nombreArchivo: rec.cvNombreArchivo ?? "cv.pdf", tipo: "application/pdf", bytes: new Uint8Array(rec.cvContenido), sha256: rec.cvSha256 },
+          `${rec.jobApplicationId}:documento`,
+        );
+        rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: doc?.idDocumento ?? null } });
+        await evento(rec.id, "PASO", `CV subido a ${ats}; ${ats} confirmó el mismo SHA-256.`, "documento_subido");
+      }
       caida("documento_subido");
     }
 
     if (rec.paso === "documento_subido") {
       // Si el intento anterior se quedó sin respuesta, primero se pregunta al ATS antes de escribir de nuevo.
       if (rec.errorCodigo === "ATS_SIN_RESPUESTA") {
-        const existente = await ats.buscarPostulacionPorReferencia(rec.jobApplicationId, o);
+        const existente = await conector.consultarPostulacion(rec.atsPostulanteId!, String(rec.procesoAtsId));
         if (existente) {
           await completar(rec, existente.id, "Reconciliado: el ATS ya tenía la postulación creada en el intento anterior.");
           return;
@@ -162,16 +155,16 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
         await evento(rec.id, "RECONCILIACION", "El ATS confirma que la postulación no existe; se crea de nuevo.");
       }
       let postulacionId: string;
-      let detalle = "Postulación creada en la etapa Postulantes de Talentia.";
+      let detalle = `Postulación creada en la etapa Postulantes de ${ats}.`;
       try {
-        const post = await ats.crearPostulacion(
-          { procesoId: rec.procesoAtsId!, postulanteId: rec.atsPostulanteId!, documentoId: rec.atsDocumentoId!, fuente: FUENTE_ATS, referenciaExterna: rec.jobApplicationId },
-          `${rec.jobApplicationId}:postulacion`,
-          o,
-        );
+        const post = await conector.crearPostulacion(rec.atsPostulanteId!, String(rec.procesoAtsId), `${rec.jobApplicationId}:postulacion`, {
+          idDocumento: rec.atsDocumentoId ?? undefined,
+          fuente: etiquetaFuente(rec.fuente),
+          referenciaExterna: rec.jobApplicationId,
+        });
         postulacionId = post.id;
       } catch (e) {
-        const existente = e instanceof ats.ErrorAts && e.tipo === "conflicto" ? (e.detalle?.postulacion_id as string | undefined) : undefined;
+        const existente = e instanceof ErrorConectorATS && e.tipo === "conflicto" ? (e.detalle?.postulacion_id as string | undefined) : undefined;
         if (!existente) throw e;
         postulacionId = existente;
         detalle = "La persona ya tenía una postulación en este proceso; se vinculó la existente sin duplicar.";
@@ -193,7 +186,8 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
         paso: "postulacion_creada",
         atsPostulacionId,
         completadaEn: new Date(),
-        cvContenido: null,
+        // Si el ATS no admitió el CV, el binario se conserva en el Puente hasta su retención.
+        ...(rec.advertencia ? {} : { cvContenido: null }),
         errorCodigo: null,
         errorDetalle: null,
         // Aviso RESUME_DOWNLOADED a Vínculo: se envía aparte y no bloquea el COMPLETADO (§4.3, paso 7).
@@ -208,9 +202,10 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
 
 function clasificar(e: unknown, rec: Recepcion): ErrorProcesamiento {
   if (e instanceof ErrorProcesamiento) return e;
-  if (e instanceof ats.ErrorAts) {
+  if (e instanceof ErrorConectorATS) {
     const codigoAts = e.codigo;
     if (e.tipo === "sin_conexion") return new ErrorProcesamiento("PUENTE_SIN_CONEXION", e.message, "detener");
+    if (e.tipo === "no_implementado") return new ErrorProcesamiento("ATS_NO_IMPLEMENTADO", e.message, "detener");
     if (e.tipo === "autenticacion") return new ErrorProcesamiento("ATS_AUTENTICACION", e.message, "detener");
     if (e.tipo === "permiso") return new ErrorProcesamiento("ATS_PERMISO", e.message, "detener");
     if (e.status === 429) return new ErrorProcesamiento("ATS_LIMITE", e.message, "reintentar", (e.reintentarEn ?? 60) * 1000);
@@ -264,87 +259,4 @@ async function manejarFallo(trabajoId: string, rec: Recepcion, e: unknown, opcio
       },
     }),
   ]);
-}
-
-interface CvDescargado {
-  bytes: Uint8Array;
-  sha256: string;
-  nombre: string;
-}
-
-/** Descarga el CV del mediaUrl con Bearer, solo desde el origen configurado, con límite de tamaño y validación de PDF. */
-export async function descargarCv(rec: Pick<Recepcion, "mediaUrl">, fetchImpl: typeof fetch = fetch): Promise<CvDescargado> {
-  const cfg = config();
-  const c = await conexionVinculo();
-  if (!c) throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", "El puente no tiene configurada la conexión con Vínculo.", "detener");
-  if (!urlDeMediaPermitida(rec.mediaUrl, c.urlBase)) {
-    throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El enlace del CV no pertenece al origen autorizado.", "rechazar");
-  }
-  let r: Response | null = null;
-  // Si Vínculo rechaza el token (vencido o invalidado al regenerar el secreto), se pide uno nuevo una sola vez.
-  for (let intento = 0; intento < 2; intento++) {
-    let token: string;
-    try {
-      token = await vinculo.obtenerToken(fetchImpl, { forzar: intento > 0 });
-    } catch (e) {
-      if (e instanceof vinculo.ErrorVinculo && e.tipo === "credenciales") throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", e.message, "detener");
-      if (e instanceof vinculo.ErrorVinculo && e.tipo === "sin_conexion") throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", e.message, "detener");
-      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "Vínculo no está disponible.", "reintentar");
-    }
-    try {
-      const senal = AbortSignal.timeout(Number(process.env.PUENTE_TIMEOUT_MS ?? 0) || 75_000);
-      r = await conFalloSimulado("media", senal, () =>
-        fetchImpl(rec.mediaUrl, {
-          headers: { Authorization: `Bearer ${token}` },
-          redirect: "manual",
-          signal: senal,
-        }),
-      );
-    } catch {
-      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
-    }
-    if (r.status !== 401) break;
-  }
-  if (!r) throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", "No fue posible descargar el CV del origen.", "reintentar");
-  if (r.status >= 300 && r.status < 400) throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El origen intentó redirigir la descarga del CV.", "rechazar");
-  if (r.status === 401 || r.status === 403) {
-    vinculo.olvidarToken();
-    throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "Vínculo rechazó el token del puente al descargar el CV.", "detener");
-  }
-  if (r.status === 404 || r.status === 410) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "El enlace del CV expiró o no existe.", "rechazar");
-  if (!r.ok) throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", `El origen respondió ${r.status} al descargar el CV.`, "reintentar");
-
-  const max = cfg.CV_MAX_BYTES;
-  const declarado = Number(r.headers.get("content-length") ?? "NaN");
-  if (Number.isFinite(declarado) && declarado > max) {
-    throw new ErrorProcesamiento("CV_DEMASIADO_GRANDE", `El CV supera el máximo de ${max} bytes.`, "rechazar");
-  }
-  const partes: Uint8Array[] = [];
-  let total = 0;
-  try {
-    const lector = r.body?.getReader();
-    if (!lector) throw new Error("sin cuerpo");
-    for (;;) {
-      const { done, value } = await lector.read();
-      if (done) break;
-      total += value.length;
-      if (total > max) {
-        await lector.cancel();
-        throw new ErrorProcesamiento("CV_DEMASIADO_GRANDE", `El CV supera el máximo de ${max} bytes.`, "rechazar");
-      }
-      partes.push(value);
-    }
-  } catch (e) {
-    if (e instanceof ErrorProcesamiento) throw e;
-    throw new ErrorProcesamiento("CV_TRANSFERENCIA_INCOMPLETA", "La descarga del CV se interrumpió.", "reintentar");
-  }
-  const bytes = Buffer.concat(partes);
-  if (Number.isFinite(declarado) && declarado !== bytes.length) {
-    throw new ErrorProcesamiento("CV_TRANSFERENCIA_INCOMPLETA", `Se recibieron ${bytes.length} de ${declarado} bytes del CV.`, "reintentar");
-  }
-  if (!pareceUnPdf(bytes)) throw new ErrorProcesamiento("CV_INVALIDO", "El archivo descargado no es un PDF válido.", "rechazar");
-
-  const disposicion = r.headers.get("content-disposition") ?? "";
-  const nombre = /filename="?([^";]+)"?/i.exec(disposicion)?.[1] ?? "cv.pdf";
-  return { bytes, sha256: sha256Hex(bytes), nombre: nombreArchivoSeguro(decodeURIComponent(nombre)) };
 }

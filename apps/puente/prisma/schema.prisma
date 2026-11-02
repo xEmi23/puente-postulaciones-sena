@@ -1,5 +1,5 @@
 // Puente: el producto. Esquema "puente" (DB_SCHEMA).
-// Modelo interno normalizado (Recepcion); los formatos externos viven solo en los conectores (vinculo-cliente, ats-cliente).
+// Modelo interno normalizado (Recepcion); los formatos externos viven solo en los adaptadores (src/entradas, src/salidas).
 // `demo = true` marca filas que `npm run demo:reset` puede borrar y re-sembrar.
 
 generator client {
@@ -158,6 +158,13 @@ enum EstadoTrabajo {
 
 model Recepcion {
   id                 String            @id @default(uuid()) @db.Uuid
+  // V4: de qué fuente vino (la fija el token o el adaptador) y sus identificadores en ella. UNIQUE(fuente, idExterno)
+  // es la deduplicación dura. Para Apply Connect, idExterno = jobApplicationId y vacanteExterna = externalJobId.
+  fuente             String            @default("apply-connect")
+  idExterno          String
+  vacanteExterna     String
+  // Referencia global de la recepción (Idempotency-Key y referencia_externa en el ATS). En Apply Connect es el
+  // jobApplicationId de la entrega; en las demás fuentes, "<fuente>:<idExterno>".
   jobApplicationId   String            @unique
   jobApplicant       String
   externalJobId      String
@@ -184,6 +191,8 @@ model Recepcion {
   atsPostulacionId   String?
   errorCodigo        String?
   errorDetalle       String?
+  // V4: se completó, pero con una salvedad visible (p. ej., «CV no enviado: el ATS no lo admite por API»).
+  advertencia        String?
   duplicadosEvitados Int               @default(0)
   recibidaEn         DateTime          @default(now()) @db.Timestamptz(3)
   completadaEn       DateTime?         @db.Timestamptz(3)
@@ -197,6 +206,7 @@ model Recepcion {
   trabajo            Trabajo?
   eventos            EventoRecepcion[]
 
+  @@unique([fuente, idExterno])
   @@index([estado])
   @@index([recibidaEn])
   @@index([avisoEstado, avisoProximoEn])
