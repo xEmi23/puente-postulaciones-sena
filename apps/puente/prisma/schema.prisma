@@ -306,3 +306,41 @@ model FalloSimulado {
   restantes Int      @default(1) // cuántas solicitudes afecta; -1 = indefinido
   creadoEn  DateTime @default(now()) @db.Timestamptz(3)
 }
+
+// ───────────── V4 F3 · Importador manual ─────────────
+
+// Un lote de CV subidos por una persona: espera en esta tabla (con los PDF) hasta que la persona revisa la tabla y
+// confirma. Al confirmar, cada fila entra por registrarRecepcion() (fuente = importador) y se borran los bytes de aquí.
+model LoteImportacion {
+  id           String               @id @default(uuid()) @db.Uuid
+  usuarioId    String
+  procesoAtsId Int
+  creadoEn     DateTime             @default(now()) @db.Timestamptz(3)
+  confirmadoEn DateTime?            @db.Timestamptz(3)
+  archivos     ArchivoImportacion[]
+
+  @@index([creadoEn])
+}
+
+model ArchivoImportacion {
+  id            String          @id @default(uuid()) @db.Uuid
+  loteId        String          @db.Uuid
+  lote          LoteImportacion @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  orden         Int
+  nombreArchivo String
+  contenido     Bytes? // se borra al confirmar
+  sha256        String?         @db.Char(64)
+  tamano        Int
+  // Lo que se pudo leer del PDF y lo que sugiere el Puente (sin IA); la persona lo corrige antes de confirmar.
+  textoLeido    Boolean         @default(false)
+  nombres       String          @default("")
+  apellidos     String          @default("")
+  correo        String          @default("")
+  telefono      String          @default("")
+  origenNombre  String          @default("archivo") // csv | archivo
+  error         String? // archivo rechazado (no es PDF, demasiado grande)
+  resultado     String? // RECIBIDA | REQUIERE_REVISION | DUPLICADA | ERROR (tras confirmar)
+  recepcionId   String?         @db.Uuid
+
+  @@index([loteId, orden])
+}

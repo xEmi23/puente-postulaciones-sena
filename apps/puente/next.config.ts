@@ -10,7 +10,8 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "8mb" },
   },
-  serverExternalPackages: ["pg"],
+  // unpdf (lector de PDF del importador) se carga desde node_modules, sin empaquetar.
+  serverExternalPackages: ["pg", "unpdf"],
   poweredByHeader: false,
   // La portada es la lista de operaciones. Redirección HTTP (no en la página) para que no ocurra en pleno streaming.
   redirects: async () => [{ source: "/", destination: "/operaciones", permanent: false }],

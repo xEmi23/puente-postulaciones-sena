@@ -570,3 +570,9 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Fuentes con token (pantalla Fuentes), `POST /api/entradas/v1/postulaciones` y `GET /api/entradas/v1/vacantes`, correspondencias por fuente, `REQUIERE_REVISION` (sin correo, sin CV, datos sin confirmar, posible duplicado), acciones de revisión, borrar datos del candidato, `EventoAuditoria`, retención, logs con `idRecepcion` y correos enmascarados, métricas por fuente, 5 intentos. Migración `20261102180000_v4_f2_entrada_generica`. Decisiones D-57 a D-61. Reporte: `docs/v4/REPORTE_F2.md`.
 - Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 129 · Playwright 41/41 (**226**).
 - Siguiente paso: F3 (importador manual).
+
+## V4 F3 · Importador manual (2026-11-02)
+
+- Página Importar (proceso o correspondencia, hasta 20 PDF y CSV opcional), lectura de texto con unpdf 1.9.0, sugerencia de correo y teléfono sin IA, tabla de revisión y confirmación por `registrarRecepcion()` (fuente `importador`, `idExterno = <proceso>:<sha256>`), lotes temporales borrados a las 24 h. Migración `20261103000000_v4_f3_importador`. Decisiones D-62 a D-64. Manual `docs/manuales/importador.md`. Reporte: `docs/v4/REPORTE_F3.md`.
+- Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 142 · Playwright 45/45 (**243**).
+- Siguiente paso: F5 (solo documentación esta noche; sin despliegue).

@@ -26,6 +26,11 @@ export async function sembrarDemo(prisma: PrismaClient) {
     create: { nombre: "apply-connect", descripcion: "Apply Connect (Vínculo, simulado): webhook firmado con HMAC", sistema: true },
     update: { sistema: true, activa: true },
   });
+  await prisma.fuente.upsert({
+    where: { nombre: "importador" },
+    create: { nombre: "importador", descripcion: "Importador manual del panel (sin token: actúa la persona con sesión)", sistema: true },
+    update: { sistema: true, activa: true },
+  });
   await prisma.configuracion.upsert({ where: { id: 1 }, create: { id: 1 }, update: { publicacionAutomatica: false, ultimoSondeoEn: null, resultadoSondeo: null } });
   const hash = await hashPassword(CLAVE_DEMO);
   for (const u of USUARIOS_DEMO) {

@@ -430,3 +430,21 @@
 - **Fecha:** 2026-11-02 (F2)
 - **Decisión:** una recepción sin correo, sin CV, con datos extraídos sin confirmar o con posible duplicado se guarda en `REQUIERE_REVISION` (con su motivo) y su trabajo queda **detenido**: el worker no la toma. Completar (correo o CV) no aprueba sola; aprobar exige correo y CV y devuelve el trabajo a la cola; descartar no envía nada y borra el CV. Posible duplicado = el mismo correo normalizado en el mismo **proceso del ATS** desde otra fuente (las vacantes de cada fuente tienen ids distintos; el proceso es lo que comparten). Se compara contra recepciones ya asociadas a ese proceso (las de Apply Connect lo reciben al procesarse). En Apply Connect, una entrega válida que cae en revisión responde 200 a Vínculo (no debe reintentarla).
 - **Alternativa descartada:** fusionar automáticamente (la §2.5 lo prohíbe).
+
+## D-62 · Librería para leer el texto de los PDF: unpdf 1.9.0
+
+- **Fecha:** 2026-11-02 (F3)
+- **Decisión:** `unpdf` **1.9.0** (MIT, sin dependencias; incluye pdf.js; JavaScript puro, funciona en Node y en Render sin binarios nativos), publicada el 2026-10-15. Se marca en `serverExternalPackages` de Next. Si el PDF no tiene texto (escaneado) o no se puede leer, el importador no lanza: la fila queda sin sugerencias y, sin correo, la recepción va a revisión.
+- **Alternativas descartadas:** `pdf-parse` (sin mantenimiento, pdf.js antiguo), `pdfjs-dist` directo (más configuración del worker en servidor), `unpdf` 2.x (publicada hace menos de dos semanas).
+
+## D-63 · El importador acepta CSV, no XLSX
+
+- **Fecha:** 2026-11-02 (F3)
+- **Decisión:** solo CSV (separador «,» o «;», comillas dobles, columnas `archivo, nombres, apellidos, correo, telefono` con alias `nombre`, `email`, `teléfono`). La exportación de Recruiter se guarda como CSV desde Excel.
+- **Alternativa descartada:** XLSX. `xlsx` (SheetJS) en npm está desactualizado y con avisos de seguridad (la versión mantenida se distribuye fuera de npm) y `exceljs` agrega muchas dependencias para un caso opcional.
+
+## D-64 · Importación en dos pasos con lote temporal
+
+- **Fecha:** 2026-11-02 (F3)
+- **Decisión:** la subida va a `POST /api/importador/lotes` (ruta con verificación de sesión, porque 20 PDF de 5 MB superan el límite de las acciones de servidor) y guarda un `LoteImportacion` con los PDF y lo sugerido. La persona revisa y confirma en `/importar/<lote>`; cada fila confirmada entra por `registrarRecepcion()` con `fuente = importador`, `idExterno = <proceso>:<sha256>`, `vacanteExterna = <proceso>`, el proceso elegido y `origenDatos = confirmado-por-persona`. Los bytes del lote se borran al confirmar; los lotes sin confirmar se borran a las 24 h (ciclo de retención). La fuente `importador` es del sistema (sin token: actúa la persona con sesión). En el ATS la fuente visible es «Importador manual del Puente».
+- **Alternativa descartada:** mantener los archivos en el navegador y reenviarlos al confirmar (doble subida y sin trazabilidad del lote).

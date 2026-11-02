@@ -3,6 +3,7 @@ import { procesarAvisos } from "@/modules/avisos";
 import { sondearProcesosNuevos } from "@/modules/publicacion";
 import { estadoDestino } from "@/salidas";
 import { aplicarRetencion } from "@/modules/retencion";
+import { borrarLotesVencidos } from "@/entradas/importador/servicio";
 
 // Worker del puente con tres ciclos independientes; todo el estado vive en PostgreSQL y si el proceso muere,
 // al volver retoma lo pendiente:
@@ -63,7 +64,8 @@ export function iniciarWorker(): Worker {
     ciclo("avisos", () => procesarAvisos({ baseBackoffMs: Number(process.env.PUENTE_AVISO_BACKOFF_MS ?? 5000) }), intervalo),
     ciclo("publicacion", () => sondearProcesosNuevos(), 15_000),
     // Retención de CV (V4): revisa cada hora; si borró algo, vuelve a mirar enseguida.
-    ciclo("retencion", () => aplicarRetencion(), Number(process.env.PUENTE_RETENCION_INTERVALO_MS ?? 3_600_000)),
+    // También borra las importaciones que nadie confirmó en 24 h (contienen CV y datos personales).
+    ciclo("retencion", async () => (await aplicarRetencion()) + (await borrarLotesVencidos()), Number(process.env.PUENTE_RETENCION_INTERVALO_MS ?? 3_600_000)),
   ];
   console.log(`[puente:worker] iniciado (pid ${process.pid}); intervalo ${intervalo} ms`);
   return {
