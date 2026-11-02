@@ -48,3 +48,24 @@
 ## Registros
 
 - Los registros del worker y de la actividad de la API no incluyen secretos ni el contenido del CV; la actividad de la API guarda la ruta como plantilla (sin datos personales en la URL). Revisado en F6 (ver docs/estado.md).
+
+---
+
+## V4 · Fuentes, revisión, auditoría y retención
+
+> Actualizado por Claude Code (2026-11-02). Especificación §11. **Esto no es asesoría jurídica** y no se afirma cumplimiento de ninguna norma.
+
+| Control | Implementación V4 | Etiqueta |
+|---|---|---|
+| Tokens de fuente | Se muestran una vez; se guarda solo su SHA-256 y un prefijo; comparación en tiempo constante; rotar invalida el anterior; revocar desactiva la fuente (D-59) | Verificado (`tests/entrada-generica.test.ts`) |
+| Quién administra | Solo ADMIN crea fuentes, genera o revoca tokens y borra datos del candidato; OPERADOR importa, revisa, aprueba, descarta y reintenta | Verificado (`e2e/entrada-generica.spec.ts`) |
+| Límites de entrada | PDF (`%PDF`), 5 MB, 20 PDF por importación, 60 peticiones/min por token (en memoria, D-59) | Verificado |
+| Datos mínimos | Solo los campos del contrato canónico; sin fotos ni perfil completo | Decisión interna |
+| Revisión humana | Lo incompleto o el posible duplicado espera a una persona; nunca se fusiona solo (D-61) | Verificado |
+| Auditoría | `EventoAuditoria`: actor (usuario, fuente o sistema), acción, recepción y hora; sin nombres, correos ni teléfonos | Verificado (G-8) |
+| Logs | Una línea por evento con `idRecepcion`; los correos se enmascaran y los nombres no se escriben | Verificado (G-9) |
+| Retención | El Puente borra su copia del CV al completar si el ATS ya lo tiene (v2); lo que conserva se borra a los `RETENCION_CV_DIAS` (30) días; los lotes de importación sin confirmar, a las 24 h (D-58, D-64) | Verificado (G-7) |
+| Supresión a pedido | «Borrar datos del candidato» (ADMIN): borra nombre, correo, teléfono, ciudad y CV del Puente; queda el hash y el evento auditado. La supresión en el ATS la hace el ATS | Verificado (G-7) |
+| Bot de LinkedIn | **No construido** (Puerta 0 pendiente). Si se construye, solo con una cuenta del equipo, ventana visible, sin contraseñas ni evasión (§8.3); la cláusula 8.2 del Acuerdo de Usuario de LinkedIn prohíbe bots | Supuesto pendiente |
+
+**Obligaciones para un uso real (pendientes de la empresa, como responsable del tratamiento):** autorización previa, expresa e informada del candidato; atención de los derechos del titular; contrato de transmisión con el proveedor de servidores en el exterior (Circular Externa 003 de 2025 de la SIC); inscripción en el Registro Nacional de Bases de Datos si aplica; aprobación de su área legal para cualquier uso del bot. Todo esto es **Supuesto pendiente**: el prototipo trata solo datos ficticios.

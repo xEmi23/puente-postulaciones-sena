@@ -86,3 +86,36 @@ Las URL exactas de los servicios las muestra Render en cada servicio (si el nomb
 ## Restablecer los datos en Render
 
 `demo:reset` se niega en producción a propósito. Para volver al estado inicial: en Render, borrar los esquemas (o recrear la base) y reiniciar los servicios; la siembra `--si-vacio` vuelve a cargar los datos demo. Luego repetir el paso 3.
+
+---
+
+## V4 · Cómo desplegar (preparado, NO ejecutado)
+
+> Actualizado por Claude Code (2026-11-02). Esta noche **no** se desplegó, no se hizo merge a `v2` (la rama del Blueprint) y no se aplicaron migraciones en Render: lo aprueba el equipo (PROMPT F5 con la frase «APROBADO PARA DESPLEGAR»). Lo que sigue es exactamente lo que se ejecutaría.
+
+**Qué cambia en Render con la V4:** tres migraciones nuevas del Puente (`20261102120000_v4_f1_fuente`, `20261102180000_v4_f2_entrada_generica`, `20261103000000_v4_f3_importador`) que **no borran datos** (rellenan las filas existentes como `apply-connect`); tres variables nuevas del Puente en `render.yaml` (`ATS_DESTINO=talentia`, `RETENCION_CV_DIAS=30`, `PUENTE_MAX_INTENTOS=5`); la dependencia `unpdf` 1.9.0. Vínculo y Talentia no cambian.
+
+1. **Revisión previa (local):**
+   ```powershell
+   git switch v4; git pull
+   npm ci; npm run db:migrate
+   npm run lint; npm run typecheck; npm test; npm run test:e2e
+   render blueprints validate render.yaml
+   ```
+2. **Llevar la V4 a la rama del Blueprint** (`v2` es un ancestro de `v4`, el merge es directo):
+   ```powershell
+   git switch v2; git pull
+   git merge --ff-only v4
+   git push origin v2
+   ```
+   Render vuelve a desplegar los tres servicios por el push. Alternativa sin tocar `v2`: en Render → Blueprint → Settings → cambiar la rama a `v4` (y anotarlo).
+3. **Migraciones:** las aplica el `startCommand` de cada servicio (`npx prisma migrate deploy`) al arrancar; no hay que hacer nada más. Para verlas: logs del servicio `puente-postulaciones` («All migrations have been successfully applied»). Nueva variable en el Blueprint: si Render no la toma sola, en el servicio → Environment → agregar `ATS_DESTINO=talentia`, `RETENCION_CV_DIAS=30`, `PUENTE_MAX_INTENTOS=5`.
+4. **Verificación:**
+   ```powershell
+   render deploys list srv-dbhinc7f3r2c73d102dg -o json   # puente: estado live
+   curl.exe -s https://puente-postulaciones.onrender.com/api/salud   # {"estado":"ok",…,"ats":{"destino":"talentia","implementado":true,…}}
+   curl.exe -s https://vinculo-simulado.onrender.com/api/salud
+   curl.exe -s https://talentia-simulado.onrender.com/api/salud
+   ```
+   Luego, en el Puente desplegado: **Fuentes** → crear `linkedin-bot` (solo si se construye el bot) y entregar su token al equipo por un canal privado (nunca en archivos); **Importar** → un PDF ficticio en un proceso de Talentia → «Enviada al ATS» → Talentia → Postulantes. Prueba de humo existente: `RENDER_HUMO=1 RENDER_CANDIDATO=santiago npx playwright test -c playwright.render.config.ts -g "(0 ·|6 ·|7 ·|8 ·)"`.
+5. **Reversión (sin reescribir historia):** `git revert` de los commits V4 en `v2` y push; las columnas y tablas nuevas pueden quedarse (la v2 no las usa).

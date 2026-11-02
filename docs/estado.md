@@ -576,3 +576,8 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Página Importar (proceso o correspondencia, hasta 20 PDF y CSV opcional), lectura de texto con unpdf 1.9.0, sugerencia de correo y teléfono sin IA, tabla de revisión y confirmación por `registrarRecepcion()` (fuente `importador`, `idExterno = <proceso>:<sha256>`), lotes temporales borrados a las 24 h. Migración `20261103000000_v4_f3_importador`. Decisiones D-62 a D-64. Manual `docs/manuales/importador.md`. Reporte: `docs/v4/REPORTE_F3.md`.
 - Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 142 · Playwright 45/45 (**243**).
 - Siguiente paso: F5 (solo documentación esta noche; sin despliegue).
+
+## V4 F5 · Documentación (2026-11-02, sin despliegue)
+
+- README, arquitectura (capas V4), seguridad, guion V4, resultados, uso de IA y comandos de despliegue preparados. `render.yaml` con las variables V4 del Puente (validado). **No** se desplegó ni se hizo merge a `v2`. Reporte: `docs/v4/REPORTE_F5.md`. Informe de la noche: `docs/v4/INFORME_NOCHE.md`.
+- Pendientes del equipo: Puerta 0 (`docs/v4/PUERTA0.md`), F4 si «Bot = sí», aprobación del despliegue (PROMPT F5 con «APROBADO PARA DESPLEGAR»).

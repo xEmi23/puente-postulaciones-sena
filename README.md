@@ -1,18 +1,33 @@
-# Puente de postulaciones (v2)
+# Puente de postulaciones (V4)
 
-Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: llevar automáticamente las postulaciones de una red profesional a un ATS, sin descargar hojas de vida ni volver a digitar datos.
+Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: llevar los postulantes a «Postulantes» del proceso correcto del ATS, sin descargar hojas de vida ni volver a digitar datos.
 
-> **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK, ni certificación o compatibilidad comprobada con ellos. **Vínculo** (red profesional) y **Talentia** (ATS) son **simulados**; el **Puente** es el producto que se propone. Todos los datos son ficticios (`@demo.test`).
+> **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK, ni certificación o compatibilidad comprobada con ellos. **Vínculo** (red profesional) y **Talentia** (ATS) son **simulados**; el **Puente** es el producto que se propone. El adaptador de BUK está **deshabilitado** (sin documentación ni llave). Todos los datos son ficticios (`@demo.test`).
 
-Son **tres aplicaciones independientes** (Next.js), cada una con su puerto, su inicio de sesión, su esquema de PostgreSQL y su API. Solo se hablan por HTTP:
+**El producto es el Puente:** un middleware que recibe postulaciones de **cualquier fuente** con un contrato común (`PostulacionCanonica v1`), las valida, evita duplicados, verifica el CV y las registra en el ATS a través de una interfaz (`ConectorATS`), con estados visibles, revisión humana y auditoría. Cambiar de fuente o de ATS no toca el núcleo.
 
 ```
-Vínculo :3001 ──webhook firmado (modelado sobre Apply Connect)──▶ Puente :3003 ──API Key (modelada sobre la API de BUK)──▶ Talentia :3002
-   ▲  publica vacantes, descarga CV con token, avisa «CV descargado»  │
-   └───────────────────────────────────────────────────────────────────┘
+ENTRADAS (adaptadores)                       PUENTE :3003 (el producto)                         SALIDA
+Importador manual (panel) ───────────┐      ┌──────────────────────────────────────┐
+Entrada genérica + token (bots, …) ──┼────▶ │ registrarRecepcion(): canónica v1,   │ ──ConectorATS──▶ Talentia :3002 (simulado, activo)
+Apply Connect (Vínculo :3001, sim.) ─┘      │ dedup, revisión, pasos reanudables,  │ ··············▶ BUK (deshabilitado)
+                                            │ auditoría, retención, métricas       │
+                                            └──────────────────────────────────────┘
 ```
 
-Más detalle en [docs/arquitectura.md](docs/arquitectura.md).
+Más detalle en [docs/arquitectura.md](docs/arquitectura.md) (sección «V4 · capas»). Especificación del equipo: `docs/v4/ESPECIFICACION_V4.md`.
+
+## Cómo probar cada entrada (local)
+
+Con `npm run dev` y `npm run demo:conectar` en marcha (ver abajo):
+
+| Entrada | Cómo | Dónde se ve |
+|---|---|---|
+| **Importador manual** | Puente → **Importar** → elegir proceso → adjuntar PDF (p. ej. `fixtures/cv/*.pdf`) → revisar → **Confirmar e importar** ([manual](docs/manuales/importador.md)) | Puente → Operaciones (fuente `importador`); Talentia → Postulantes |
+| **Entrada genérica** | Puente → **Fuentes** → crear fuente y **Generar token**; **Correspondencias** → fuente, vacante y proceso; luego `POST /api/entradas/v1/postulaciones` (ejemplo en PowerShell en `docs/v4/REPORTE_F2.md`; contrato en `docs/contratos.md` §8) | Operaciones (fuente propia); sin correo o sin CV queda en «Requiere revisión» |
+| **Apply Connect (simulado)** | Vínculo → «Solicitud sencilla» en una vacante publicada por el Puente | Operaciones (fuente `apply-connect`); el candidato ve «CV descargado» |
+
+`ATS_DESTINO=talentia` (por defecto). Con `ATS_DESTINO=buk` el procesador no arranca y `/api/salud` responde 503 «ATS buk no implementado».
 
 ## Requisitos
 
@@ -66,12 +81,12 @@ Contraseña de todas: **`Demo2026!`** (también se muestran en cada pantalla de 
 | Vínculo | `reclutadora@andina.demo.test` | Reclutadora de Andina Software S.A.S. (ficticia) |
 | Talentia | `admin@andina.demo.test` | Administradora (API Keys, actividad de la API) |
 | Talentia | `reclutador@andina.demo.test` | Reclutador |
-| Puente | `admin@puente.demo.test` | Administrador (conexiones, publicación, correspondencias) |
-| Puente | `operador@puente.demo.test` | Operador (supervisa y reintenta) |
+| Puente | `admin@puente.demo.test` | Administrador (conexiones, fuentes y tokens, publicación, correspondencias, borrar datos) |
+| Puente | `operador@puente.demo.test` | Operador (importa, revisa, aprueba, reintenta) |
 
 ## Demo en 7 pasos
 
-Guion completo con tiempos y plan B: [docs/guion-demo.md](docs/guion-demo.md).
+Guion completo con tiempos y plan B: [docs/guion-demo.md](docs/guion-demo.md) (sección «V4», unos 5 minutos: importador, Apply Connect simulado y confiabilidad). Estos 7 pasos muestran la entrada de Apply Connect:
 
 1. **Restablecer:** `npm run demo:reset` y luego `npm run demo:conectar` (con `npm run dev` corriendo).
 2. **Conexiones:** en el Puente → «Conexiones», las tres marcas en verde; «Probar conexión» contra Vínculo y Talentia.
@@ -119,10 +134,11 @@ Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/
 ## Documentación
 
 - [docs/arquitectura.md](docs/arquitectura.md): los tres sistemas, secuencia y estados (Mermaid).
-- [docs/contratos.md](docs/contratos.md): Vínculo frente a Apply Connect y Talentia frente a BUK, cada punto etiquetado.
+- [docs/contratos.md](docs/contratos.md): Vínculo frente a Apply Connect, Talentia frente a BUK, entrada genérica (§8) y ConectorATS (§9), cada punto etiquetado.
 - [docs/mapeo-datos.md](docs/mapeo-datos.md): Vínculo → Puente → Talentia.
 - [docs/decisiones.md](docs/decisiones.md): decisiones con alternativa descartada y motivo.
-- [docs/manuales/](docs/manuales/): un manual por rol.
+- [docs/manuales/](docs/manuales/): un manual por rol, incluido el [importador](docs/manuales/importador.md).
+- [docs/v4/](docs/v4/): especificación V4 del equipo, informe F0 y reportes de cada fase.
 - [docs/seguridad.md](docs/seguridad.md): llaves, cifrado, sesiones, datos personales.
 - [docs/despliegue.md](docs/despliegue.md), [docs/guion-demo.md](docs/guion-demo.md), [docs/resultados-pruebas.md](docs/resultados-pruebas.md), [docs/estado.md](docs/estado.md), [docs/uso-ia.md](docs/uso-ia.md).
 
@@ -133,4 +149,6 @@ Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/
 - **No se encuentra `pg_ctl`:** define `PG_BIN` con la carpeta `bin` de PostgreSQL.
 - **El Puente dice «Configura primero la conexión»:** ejecuta `npm run demo:conectar` (o configura «Conexiones» a mano). Después de `demo:reset` hay que volver a conectar.
 - **La postulación no llega al Puente:** la vacante debe estar publicada por el Puente (o tener correspondencia) y el webhook validado en Vínculo → Desarrolladores.
+- **Una postulación quedó en «Requiere revisión»:** le falta el correo o el CV, los datos vinieron sin confirmar o es un posible duplicado. Ábrela en Operaciones, complétala y apruébala (o descártala).
+- **La entrada genérica responde 422:** vincula la vacante de esa fuente en Correspondencias. **401:** el token se revocó o se rotó (Fuentes).
 - **Un puerto está ocupado:** cambia el puerto en `apps/<app>/package.json` y `APP_BASE_URL` en su `.env`, y vuelve a conectar.

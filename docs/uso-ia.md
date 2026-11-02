@@ -57,3 +57,20 @@ La IA no puede sustituir estas revisiones. Marquen cada una con nombre y fecha c
 - [ ] **Nombres generados** (D-39) y **capturas** de `capturas/` (`CAPTURAS=1 npx playwright test e2e/capturas.spec.ts`).
 - [ ] **Demo:** ensayar el guion v2 (`docs/guion-demo.md`) en local y en Render, despertando los servicios antes.
 - [ ] **Manuales:** `docs/manuales/` contra las pantallas reales.
+
+---
+
+## V4 (02/11/2026, noche)
+
+> Actualizado por Claude Code (2026-11-02).
+
+- **Herramienta:** Claude Code (Claude Opus 5.5), modo autónomo nocturno (`PROMPT_NOCHE_V4.md`), fases F0, F1, F2, F3 y F5 (solo documentación) de `PROMPTS_V4.md` sobre `docs/v4/ESPECIFICACION_V4.md` (documento del equipo, no se reescribió).
+- **Qué hizo:** auditoría del código (`docs/v4/INFORME_F0.md`), contrato canónico, servicio de recepción único, `ConectorATS` con Talentia y BUK deshabilitado, entrada genérica con tokens, revisión humana, auditoría, retención, importador manual con lectura de PDF sin IA, pruebas (77 nuevas) y documentación. Decisiones D-52 a D-64.
+- **Qué NO hizo:** no construyó el bot (Puerta 0 pendiente), no abrió LinkedIn, no escribió rutas de BUK, no desplegó ni hizo merge a la rama de Render.
+- **Errores que cometió y corrigió con las pruebas:** una migración que obligaba a cambiar pruebas existentes (se rehízo sin cambiar la clave única), acciones de servidor que capturaban funciones locales (fallaban en el navegador), una prueba nueva con un fallo temporal que en realidad era ambiguo («requiere verificación»), la retención que sumaba lotes de importación.
+
+### Qué debe revisar el equipo en la V4 (PENDIENTE)
+
+- [ ] Las decisiones D-52 (estados V4 derivados), D-57 (5 intentos), D-58 (CV y retención) y D-61 (posible duplicado por proceso).
+- [ ] Probar el importador con CV reales descargados en la Puerta 0 (¿tienen texto legible?).
+- [ ] Revisar los textos de las pantallas nuevas (Importar, Fuentes, revisión) y `docs/manuales/importador.md`.

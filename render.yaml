@@ -92,6 +92,15 @@ services:
       # Nunca en la demo pública: los controles de prueba (inyección de fallos) quedan apagados.
       - key: PUENTE_MODO_PRUEBAS
         value: "0"
+      # V4: ATS de destino (talentia = simulado; buk está deshabilitado y detendría el procesador).
+      - key: ATS_DESTINO
+        value: talentia
+      # V4: días que el Puente conserva un CV que el ATS no recibió (los entregados se borran al completar).
+      - key: RETENCION_CV_DIAS
+        value: "30"
+      # V4: reintentos por postulación antes de FALLIDA_DEFINITIVA.
+      - key: PUENTE_MAX_INTENTOS
+        value: "5"
 
 databases:
   - name: puente-postulaciones-db

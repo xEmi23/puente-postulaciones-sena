@@ -73,3 +73,23 @@
 
 - **¿Esto se conecta a LinkedIn o a BUK?** No. Vínculo y Talentia son simulados; reproducen lo verificado de cada uno (firma, desafío, cuerpo de Apply Connect; API Key con permisos de Selección de BUK) y lo demás es contrato del simulador, marcado así en docs/contratos.md. Cambiar de sistema real sería cambiar las conexiones y, donde el contrato real difiera, los dos clientes del puente (`vinculo-cliente.ts`, `ats-cliente.ts`).
 - **¿Qué pasa si Talentia está caído?** El puente reintenta solo (hasta 10 veces, unos 13 minutos) y retoma desde el último paso. Si la respuesta se pierde a mitad, ofrece «Reconciliar con Talentia».
+
+---
+
+## V4 · Guion de unos 5 minutos (especificación §15.3)
+
+> Actualizado por Claude Code (2026-11-02). Sin bot: la Puerta 0 está pendiente; si el equipo construye el bot (F4), se agrega el paso 4.
+
+**Antes (local):** `npm run demo:reset`, `npm run build && npm start`, `npm run demo:conectar`. Ten 3 CV ficticios en una carpeta (por ejemplo `fixtures/cv/cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`). Pestañas: Puente → Importar (operador), Talentia → proceso elegido (reclutador), Vínculo (candidata). **En Render:** despertar los tres servicios 15 minutos antes (docs/despliegue.md).
+
+| Tiempo | Qué se muestra | Qué se dice |
+|---|---|---|
+| 0:00–0:30 | Diapositiva del problema | «Por vacante, el reclutador descarga y vuelve a digitar cada CV. No hay API de LinkedIn para nosotros ni llave de BUK.» |
+| 0:30–1:00 | Diagrama de capas (README) | «El producto es el Puente: recibe de cualquier fuente con un contrato común y escribe en el ATS por una interfaz. Talentia simula BUK; BUK real está preparado pero deshabilitado.» |
+| 1:00–2:00 | **Importador:** Importar → proceso → 3 PDF → la tabla con correo y teléfono sugeridos → corregir uno → Confirmar → «3 enviada(s) al ATS» → Talentia → Postulantes | «Sin IA: el Puente lee el PDF y una persona confirma. Cero digitación y cumple los términos de LinkedIn.» Reimportar uno: «Duplicada». |
+| 2:00–2:45 | **Apply Connect simulado:** Vínculo → Solicitud sencilla → llega sola a Talentia → «CV descargado» | «Así sería la integración oficial: mismas piezas, otra fuente.» |
+| 2:45–3:30 | **Confiabilidad:** Operaciones con filtro por fuente; una postulación sin correo en «Requiere revisión» → completar → aprobar; un posible duplicado en revisión; Métricas por fuente | «Nada incompleto llega al ATS y nada se fusiona solo.» |
+| 3:30–4:15 | **Entrada genérica:** Fuentes → token (se ve una vez) → `curl.exe` con un PDF → 202 RECIBIDA | «Un bot o cualquier otra fuente se conecta así, sin tocar el núcleo.» |
+| 4:15–5:00 | **Honestidad:** qué es simulado (Talentia, Vínculo), qué es experimental (el bot, no construido sin la Puerta 0) y qué falta para BUK real (`/apidocs` y API Key de la empresa) | Mensaje central de la §15.3. |
+
+**Plan B:** Render no despierta → demo local. Algo falla en vivo → video del recorrido (grabarlo el 8/11 con la fecha visible). La Puerta 0 falla → el bot se presenta como alternativa evaluada y descartada, con su motivo.

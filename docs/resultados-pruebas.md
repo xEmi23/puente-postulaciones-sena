@@ -151,3 +151,30 @@ Ejecuciones:
 4. Tras la reparación, pasos 0 y 6–8 con `santiago.mejia@demo.test`: **4/4 ✓** (20,4 s).
 
 Los servicios estaban despiertos (recién desplegados). La medición del arranque en frío está en docs/estado.md (F7, «Arranque en frío»).
+
+---
+
+## V4 · Resultados (2026-11-02)
+
+> Actualizado por Claude Code (2026-11-02). Detalle por fase en `docs/v4/REPORTE_F1.md`, `REPORTE_F2.md` y `REPORTE_F3.md`.
+
+| Momento | Vitest (Vínculo · Talentia · Puente) | Playwright | Total |
+|---|---|---|---|
+| Línea base (F0, código v2) | 26 · 30 · 73 | 37 | 166 |
+| F1 | 26 · 30 · 110 | 37 | 203 |
+| F2 | 26 · 30 · 129 | 41 | 226 |
+| F3 | 26 · 30 · 142 | 45 | **243** |
+
+Ninguna aserción de las 166 pruebas anteriores se cambió (R.2). Ajustes de infraestructura de pruebas, registrados en cada reporte: el doble de Talentia acepta el filtro `proceso_id` (la API real ya lo tiene) y las pruebas nuevas limpian sus propias tablas.
+
+| Suite nueva | Archivo | Pruebas |
+|---|---|---|
+| Contrato canónico y estado V4 | `apps/puente/tests/canonica.test.ts` | 17 |
+| Contrato de ConectorATS (Talentia) y BUK deshabilitado | `apps/puente/tests/conector-ats.test.ts` | 11 |
+| Núcleo y salidas (ATS_DESTINO, regla de importación, registrarRecepcion, capacidad de CV) | `apps/puente/tests/nucleo-salidas.test.ts` | 9 |
+| Entrada genérica (G-1 a G-9) | `apps/puente/tests/entrada-generica.test.ts` | 19 |
+| Importador (I-1 a I-6) | `apps/puente/tests/importador.test.ts` | 13 |
+| E2E entrada genérica | `e2e/entrada-generica.spec.ts` | 4 |
+| E2E importador (I-7) | `e2e/importador.spec.ts` | 4 |
+
+No se ejecutó: el bot (no construido; Puerta 0 pendiente), BUK real (sin documentación ni llave) y el despliegue de la V4 en Render (lo aprueba el equipo).

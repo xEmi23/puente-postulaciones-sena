@@ -204,3 +204,65 @@ apps/
 e2e/         Playwright con los tres sistemas reales (supervisor.mjs los arranca y los mata)
 scripts/     setup, PostgreSQL local, dev, demo:conectar
 ```
+
+---
+
+## V4 · Capas: el Puente independiente de la fuente y del ATS
+
+> Actualizado por Claude Code (2026-11-02). Especificación: `docs/v4/ESPECIFICACION_V4.md` §5–§9. Ubicación real en el código: D-53.
+
+```mermaid
+flowchart LR
+  subgraph E["Adaptadores de entrada"]
+    IMP["Importador manual<br/>src/entradas/importador<br/>(PDF + CSV, confirmación humana)"]
+    GEN["Entrada genérica<br/>POST /api/entradas/v1/postulaciones<br/>(token por fuente)"]
+    AC["Apply Connect (Vínculo, simulado)<br/>/api/webhooks/vinculo<br/>src/entradas/apply-connect"]
+    BOT["Bot de LinkedIn (experimental)<br/>NO construido: Puerta 0 pendiente"]
+  end
+  subgraph N["Núcleo (src/nucleo)"]
+    CAN["PostulacionCanonica v1 (Zod)<br/>normalización"]
+    REG["registrarRecepcion()<br/>UNIQUE(fuente, idExterno) · revisión · auditoría"]
+  end
+  subgraph P["Procesamiento (src/modules)"]
+    PROC["procesador: pasos reanudables<br/>cv_descargado → postulante_listo →<br/>documento_subido → postulacion_creada"]
+    REV["revisión, reintentos (5), reconciliación,<br/>retención, métricas por fuente"]
+  end
+  subgraph S["Salida (src/salidas)"]
+    IF["ConectorATS<br/>(capacidades)"]
+    TAL["talentia (simulado, activo)"]
+    BUK["buk (deshabilitado)"]
+  end
+  IMP --> REG
+  GEN --> CAN --> REG
+  AC --> CAN
+  BOT -. "usaría la entrada genérica" .-> GEN
+  REG --> PROC --> IF
+  REV --- PROC
+  IF --> TAL
+  IF -. "ATS_DESTINO=buk: no arranca" .-> BUK
+```
+
+| Capa | Responsabilidad | No hace | Dónde |
+|---|---|---|---|
+| Adaptadores de entrada | Obtener la postulación en su origen y convertirla a la canónica; la fuente la fija el adaptador o el token | Deduplicar, decidir revisiones, hablar con el ATS | `src/entradas/*`, `src/modules/webhook.ts` |
+| Núcleo | Validar el contrato, normalizar, deduplicar, decidir revisión, guardar y encolar | Saber de qué sitio vino | `src/nucleo/*` |
+| Procesamiento | Pasos con reintentos, revisión humana, reconciliación, retención, auditoría, métricas | Conocer rutas del ATS | `src/modules/{procesador,revision,retencion,operaciones}.ts` |
+| Salida | Traducir los pasos a la API de cada ATS | Decidir reintentos o estados | `src/salidas/*` |
+
+**Estados V4** (visibles; derivados de los guardados, D-52): `RECIBIDA`, `REQUIERE_REVISION`, `EN_PROCESO`, `COMPLETADA`, `FALLIDA_REINTENTABLE`, `FALLIDA_DEFINITIVA` (más `REQUIERE_VERIFICACION` de la v2: respuesta perdida del ATS). `DUPLICADA` es una respuesta, no una fila.
+
+```mermaid
+stateDiagram-v2
+  [*] --> RECIBIDA: canónica válida
+  [*] --> REQUIERE_REVISION: sin correo · sin CV · datos sin confirmar · posible duplicado
+  REQUIERE_REVISION --> RECIBIDA: una persona completa y aprueba
+  REQUIERE_REVISION --> FALLIDA_DEFINITIVA: descartada
+  RECIBIDA --> EN_PROCESO
+  EN_PROCESO --> COMPLETADA: postulacion_creada (con advertencia si el ATS no admite el CV)
+  EN_PROCESO --> FALLIDA_REINTENTABLE: red, 5xx, 429
+  FALLIDA_REINTENTABLE --> EN_PROCESO: reintento automático
+  FALLIDA_REINTENTABLE --> FALLIDA_DEFINITIVA: 5 intentos, 401/403 o sin conexión
+  FALLIDA_DEFINITIVA --> EN_PROCESO: «Reintentar» en el panel
+  EN_PROCESO --> REQUIERE_VERIFICACION: respuesta perdida al crear
+  REQUIERE_VERIFICACION --> COMPLETADA: «Reconciliar»
+```
