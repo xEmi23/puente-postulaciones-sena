@@ -6,6 +6,8 @@ import { conectorATS, ErrorConectorATS } from "@/salidas";
 import { obtenerCvRemoto } from "@/entradas";
 import { ErrorProcesamiento } from "@/nucleo/errores";
 import { etiquetaFuente } from "@/nucleo/fuentes";
+import { ACTOR_PROCESADOR, auditar, log } from "@/nucleo/auditoria";
+import { enmascararTexto } from "@/lib/privacidad";
 
 export { ErrorProcesamiento } from "@/nucleo/errores";
 export { descargarCv } from "@/entradas/apply-connect/cv";
@@ -36,9 +38,10 @@ export interface OpcionesProcesador {
   simularCaidaDespuesDe?: PasoRecepcion;
 }
 
-// 10 intentos con espera exponencial desde 2 s y tope de 5 min: unos 13 minutos en total, más que el arranque en frío
-// de un servicio gratuito de Render (§6).
-export const MAX_INTENTOS_TRABAJO = 10;
+// V4 §7: 5 intentos por defecto (configurable con PUENTE_MAX_INTENTOS). Con espera exponencial desde 2 s y hasta 75 s
+// por llamada cuando el ATS lleva tiempo sin responder, cubre el arranque en frío de Render (~90 s). Al agotarlos la
+// recepción queda FALLIDA_DEFINITIVA (D-52) y se recupera con «Reintentar» (D-57, reemplaza los 10 de D-46).
+export const MAX_INTENTOS_TRABAJO = 5;
 
 export function backoffConJitter(intento: number, baseMs: number): number {
   const exponencial = Math.min(baseMs * 2 ** (intento - 1), 5 * 60_000);
@@ -79,6 +82,7 @@ export async function procesarPendientes(opciones: OpcionesProcesador = {}): Pro
 
 async function evento(recepcionId: string, tipo: string, detalle: string, paso?: PasoRecepcion) {
   await prisma.eventoRecepcion.create({ data: { recepcionId, tipo, detalle, paso: paso ?? null } });
+  log(recepcionId, `${tipo}${paso ? ` paso=${paso}` : ""}: ${enmascararTexto(detalle)}`);
 }
 
 export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProcesador = {}): Promise<void> {
@@ -108,14 +112,14 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
     }
 
     if (rec.procesoAtsId === null) {
-      const destino = await resolverDestino(rec.externalJobId, rec.appliedAt);
+      const destino = await resolverDestino(rec.fuente, rec.vacanteExterna, rec.appliedAt);
       if (!destino.ok) throw new ErrorProcesamiento("JOB_POSTING_CLOSED", destino.motivo, "rechazar");
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { procesoAtsId: destino.procesoId } });
     }
 
     if (rec.paso === "cv_descargado") {
       const postulante = await conector.crearPostulante(
-        { nombres: rec.nombre, apellidos: rec.apellido, correo: rec.correo, telefono: rec.telefono ?? undefined, ciudad: rec.ciudad ?? undefined },
+        { nombres: rec.nombre, apellidos: rec.apellido, correo: rec.correo ?? undefined, telefono: rec.telefono ?? undefined, ciudad: rec.ciudad ?? undefined },
         `${rec.jobApplicationId}:postulante`,
         { referenciaExterna: rec.jobApplicant },
       );
@@ -198,6 +202,8 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
     prisma.trabajo.update({ where: { recepcionId: rec.id }, data: { estado: "HECHO", leaseHasta: null, ultimoError: null } }),
     prisma.eventoRecepcion.create({ data: { recepcionId: rec.id, tipo: "COMPLETADO", paso: "postulacion_creada", detalle } }),
   ]);
+  await auditar(ACTOR_PROCESADOR, "recepcion.completada", rec.id);
+  log(rec.id, "COMPLETADA");
 }
 
 function clasificar(e: unknown, rec: Recepcion): ErrorProcesamiento {
@@ -232,6 +238,8 @@ async function manejarFallo(trabajoId: string, rec: Recepcion, e: unknown, opcio
       prisma.trabajo.update({ where: { id: trabajoId }, data: { estado: "HECHO", leaseHasta: null, ultimoError: error.message } }),
       prisma.eventoRecepcion.create({ data: { recepcionId: rec.id, tipo: "RECHAZO", detalle: `${error.codigo}: ${error.message}` } }),
     ]);
+    await auditar(ACTOR_PROCESADOR, "recepcion.fallida_definitiva", rec.id, error.codigo);
+    log(rec.id, `RECHAZADA codigo=${error.codigo}`);
     return;
   }
 
@@ -259,4 +267,6 @@ async function manejarFallo(trabajoId: string, rec: Recepcion, e: unknown, opcio
       },
     }),
   ]);
+  await auditar(ACTOR_PROCESADOR, detener ? (estado === "REQUIERE_VERIFICACION" ? "recepcion.requiere_verificacion" : "recepcion.fallida_definitiva") : "recepcion.fallida_reintentable", rec.id, error.codigo);
+  log(rec.id, `${detener ? "DETENIDA" : "REINTENTO"} codigo=${error.codigo} intento=${trabajo.intentos}`);
 }

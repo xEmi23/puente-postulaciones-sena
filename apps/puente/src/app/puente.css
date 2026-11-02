@@ -189,6 +189,11 @@
   color: #9a3412;
   outline: 2px solid #fb923c;
 }
+.p-estado-REQUIERE_REVISION {
+  background: #ede9fe;
+  color: #5b21b6;
+  outline: 2px solid #a78bfa;
+}
 .p-filtros {
   display: flex;
   gap: 0.4rem;
@@ -452,4 +457,20 @@
 }
 .p-form-conexion + form {
   margin-top: 0.9rem;
+}
+/* V4: token de fuente mostrado una sola vez. */
+.p-token {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  border-radius: 8px;
+  color: #78350f;
+  max-width: 100%;
+}
+.p-token code {
+  display: block;
+  word-break: break-all;
+  font-size: 0.85rem;
+  color: #1f2937;
 }

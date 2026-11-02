@@ -6,6 +6,7 @@ import { enmascararCorreo, referenciaCorta } from "@/lib/privacidad";
 import { ActualizarCada } from "@/components/actualizar-cada";
 import { calcularMetricas } from "@/modules/operaciones";
 import { ETIQUETA_ESTADO, ETIQUETA_PASO } from "@/modules/mensajes";
+import { etiquetaFuente } from "@/nucleo/fuentes";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Operaciones" };
@@ -17,12 +18,18 @@ function segundos(s: number | null): string {
   return s < 60 ? `${s.toFixed(1)} s` : `${(s / 60).toFixed(1)} min`;
 }
 
-export default async function Operaciones({ searchParams }: { searchParams: Promise<{ estado?: string }> }) {
-  const { estado } = await searchParams;
+export default async function Operaciones({ searchParams }: { searchParams: Promise<{ estado?: string; fuente?: string }> }) {
+  const { estado, fuente } = await searchParams;
   const filtro = ESTADOS.includes(estado as EstadoRecepcion) ? (estado as EstadoRecepcion) : undefined;
+  const fuentes = (await prisma.recepcion.groupBy({ by: ["fuente"], orderBy: { fuente: "asc" } })).map((x) => x.fuente);
+  const filtroFuente = fuente && fuentes.includes(fuente) ? fuente : undefined;
+  const enlace = (p: { estado?: string; fuente?: string }) => {
+    const q = new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][]).toString();
+    return q ? `/operaciones?${q}` : "/operaciones";
+  };
   const [m, operaciones, correspondencias] = await Promise.all([
     calcularMetricas(),
-    prisma.recepcion.findMany({ where: filtro ? { estado: filtro } : {}, orderBy: { recibidaEn: "desc" }, take: 100 }),
+    prisma.recepcion.findMany({ where: { ...(filtro ? { estado: filtro } : {}), ...(filtroFuente ? { fuente: filtroFuente } : {}) }, orderBy: { recibidaEn: "desc" }, take: 100 }),
     prisma.correspondencia.findMany(),
   ]);
   const procesoDe = new Map(correspondencias.map((c) => [c.externalJobId, c.procesoAtsId]));
@@ -31,7 +38,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
     <>
       <ActualizarCada ms={3000} />
       <h1>Operaciones del puente</h1>
-      <p className="p-sub">Cada postulación recibida de Vínculo y su avance hasta Talentia. Se actualiza solo.</p>
+      <p className="p-sub">Cada postulación recibida (de Vínculo, de la entrada genérica o del importador) y su avance hasta Talentia. Se actualiza solo.</p>
 
       <section aria-labelledby="t-metricas">
         <h2 id="t-metricas" className="visualmente-oculto">
@@ -78,15 +85,27 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
       <section className="p-tarjeta" aria-labelledby="t-lista">
         <h2 id="t-lista">Operaciones recientes</h2>
         <nav className="p-filtros" aria-label="Filtrar por estado">
-          <Link href="/operaciones" aria-current={!filtro ? "true" : undefined}>
+          <Link href={enlace({ fuente: filtroFuente })} aria-current={!filtro ? "true" : undefined}>
             Todas
           </Link>
           {ESTADOS.map((e) => (
-            <Link key={e} href={`/operaciones?estado=${e}`} aria-current={filtro === e ? "true" : undefined}>
+            <Link key={e} href={enlace({ estado: e, fuente: filtroFuente })} aria-current={filtro === e ? "true" : undefined}>
               {ETIQUETA_ESTADO[e]}
             </Link>
           ))}
         </nav>
+        {fuentes.length > 1 && (
+          <nav className="p-filtros" aria-label="Filtrar por fuente" data-testid="filtro-fuente">
+            <Link href={enlace({ estado: filtro })} aria-current={!filtroFuente ? "true" : undefined}>
+              Todas las fuentes
+            </Link>
+            {fuentes.map((x) => (
+              <Link key={x} href={enlace({ estado: filtro, fuente: x })} aria-current={filtroFuente === x ? "true" : undefined}>
+                {x}
+              </Link>
+            ))}
+          </nav>
+        )}
         {operaciones.length === 0 ? (
           <p className="vacio">
             {filtro ? "No hay operaciones en este estado." : "Aún no llegan postulaciones. Cuando alguien postule con «Solicitud sencilla» en Vínculo, aparecerá aquí."}
@@ -98,6 +117,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
               <thead>
                 <tr>
                   <th scope="col">Referencia</th>
+                  <th scope="col">Fuente</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Último paso</th>
                   <th scope="col">Recibida</th>
@@ -113,6 +133,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
                         {referenciaCorta(o.jobApplicationId)}
                       </Link>
                     </td>
+                    <td title={etiquetaFuente(o.fuente)}>{o.fuente}</td>
                     <td>
                       <span className={`p-estado p-estado-${o.estado}`}>{ETIQUETA_ESTADO[o.estado]}</span>
                     </td>
@@ -122,7 +143,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
                       <span className="mono">{o.externalJobId}</span> → {o.procesoAtsId ?? procesoDe.get(o.externalJobId) ?? "sin proceso"}
                     </td>
                     <td>
-                      {o.nombre} {o.apellido.charAt(0)}. · {enmascararCorreo(o.correo)}
+                      {o.nombre} {o.apellido ? `${o.apellido.charAt(0)}.` : ""} · {enmascararCorreo(o.correo)}
                     </td>
                   </tr>
                 ))}

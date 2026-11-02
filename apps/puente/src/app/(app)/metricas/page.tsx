@@ -39,6 +39,44 @@ export default async function Metricas() {
           </div>
         ))}
       </dl>
+      <section className="p-tarjeta" aria-labelledby="t-por-fuente">
+        <h2 id="t-por-fuente">Por fuente</h2>
+        {m.porFuente.length === 0 ? (
+          <p className="vacio">Aún no hay operaciones.</p>
+        ) : (
+          <div className="p-tabla-contenedor">
+            <table className="p-tabla">
+              <caption className="visualmente-oculto">Operaciones por fuente</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fuente</th>
+                  <th scope="col">Recibidas</th>
+                  <th scope="col">Completadas</th>
+                  <th scope="col">En revisión</th>
+                  <th scope="col">Duplicadas</th>
+                  <th scope="col">Fallidas</th>
+                  <th scope="col">Mediana</th>
+                  <th scope="col">p95</th>
+                </tr>
+              </thead>
+              <tbody>
+                {m.porFuente.map((x) => (
+                  <tr key={x.fuente} data-testid="metrica-fuente" data-fuente={x.fuente}>
+                    <td className="mono">{x.fuente}</td>
+                    <td>{x.recibidas}</td>
+                    <td>{x.completadas}</td>
+                    <td>{x.enRevision}</td>
+                    <td>{x.duplicadas}</td>
+                    <td>{x.fallidas}</td>
+                    <td>{segundos(x.medianaSegundos)}</td>
+                    <td>{segundos(x.p95Segundos)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
       <div className="p-rejilla-2">
         <section className="p-tarjeta" aria-labelledby="t-por-proceso">
           <h2 id="t-por-proceso">Por proceso</h2>

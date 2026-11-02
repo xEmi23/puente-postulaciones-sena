@@ -33,7 +33,7 @@ describe("F1-4 · ATS_DESTINO=buk: el procesador no arranca y /api/salud lo info
     const w = iniciarWorker();
     try {
       expect(w.ciclos).not.toContain("procesador");
-      expect(w.ciclos).toEqual(["avisos", "publicacion"]);
+      expect(w.ciclos).toEqual(["avisos", "publicacion", "retencion"]);
     } finally {
       await w.detener();
     }
@@ -66,7 +66,13 @@ describe("F1-6 · nadie fuera de src/salidas importa el adaptador de Talentia (a
 });
 
 describe("registrarRecepcion · única puerta de entrada al núcleo", () => {
-  beforeEach(reiniciarBd);
+  // V4 F2: las correspondencias son por fuente; estas fuentes de prueba tienen la suya (RT-2026-101 → 9001).
+  beforeEach(async () => {
+    await reiniciarBd();
+    for (const fuente of ["importador", "otra-fuente"]) {
+      await prisma.correspondencia.create({ data: { fuente, vacanteExterna: "RT-2026-101", externalJobId: `${fuente}:RT-2026-101`, procesoAtsId: 9001, descripcion: "prueba" } });
+    }
+  });
 
   const canonica = (fuente: string, idExterno: string) => ({
     version: "1",

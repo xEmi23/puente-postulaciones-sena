@@ -4,31 +4,39 @@ import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
 import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { conectorATS } from "@/salidas";
+import { referenciaCorrespondencia } from "@/modules/destino";
+import { esquemaNombreFuente } from "@/nucleo/contrato/canonica";
+import { asegurarFuenteSistema } from "@/entradas/generica/fuentes";
+import { auditar } from "@/nucleo/auditoria";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Correspondencias" };
 
 const esquema = z.object({
+  fuente: esquemaNombreFuente.default("apply-connect"),
   externalJobId: z.string().trim().min(1, "Indica el código de la vacante.").max(200),
   procesoAtsId: z.coerce.number().int().positive("Elige un proceso del ATS."),
 });
 
 async function guardar(formData: FormData) {
   "use server";
-  await exigirUsuarioAccion("ADMIN");
-  const r = esquema.safeParse({ externalJobId: formData.get("externalJobId"), procesoAtsId: formData.get("procesoAtsId") });
+  const u = await exigirUsuarioAccion("ADMIN");
+  const r = esquema.safeParse({ fuente: formData.get("fuente") || undefined, externalJobId: formData.get("externalJobId"), procesoAtsId: formData.get("procesoAtsId") });
   if (!r.success) redirect(`/correspondencias?error=${encodeURIComponent(r.error.issues[0].message)}`);
-  const { externalJobId, procesoAtsId } = r.data;
+  const { fuente, externalJobId: vacante, procesoAtsId } = r.data;
+  const externalJobId = referenciaCorrespondencia(fuente, vacante);
+  if (!(await prisma.fuente.findUnique({ where: { nombre: fuente } }))) redirect(`/correspondencias?error=${encodeURIComponent(`La fuente «${fuente}» no existe (créala en Fuentes).`)}`);
   // El proceso se valida contra el ATS por HTTP: el puente no lee las tablas del ATS.
   const procesos = await conectorATS().listarProcesos().catch(() => null);
   if (!procesos) redirect(`/correspondencias?error=${encodeURIComponent("No se pudo consultar el ATS para validar el proceso.")}`);
   if (!procesos.some((p) => p.id === String(procesoAtsId))) redirect(`/correspondencias?error=${encodeURIComponent(`El proceso ${procesoAtsId} no existe en el ATS.`)}`);
   await prisma.correspondencia.upsert({
     where: { externalJobId },
-    create: { externalJobId, procesoAtsId, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
-    update: { procesoAtsId, activa: true, cerradaEn: null, descripcion: `${externalJobId} → proceso ${procesoAtsId}` },
+    create: { fuente, vacanteExterna: vacante, externalJobId, procesoAtsId, descripcion: `${vacante} → proceso ${procesoAtsId}` },
+    update: { procesoAtsId, activa: true, cerradaEn: null, descripcion: `${vacante} → proceso ${procesoAtsId}` },
   });
-  redirect(`/correspondencias?ok=${encodeURIComponent(`Vacante ${externalJobId} vinculada al proceso ${procesoAtsId}.`)}`);
+  await auditar({ tipo: "usuario", id: u.id }, "correspondencia.guardada", null, `${fuente}:${vacante}→${procesoAtsId}`);
+  redirect(`/correspondencias?ok=${encodeURIComponent(`Vacante ${vacante} vinculada al proceso ${procesoAtsId}${fuente === "apply-connect" ? "" : ` (fuente ${fuente})`}.`)}`);
 }
 
 async function alternar(formData: FormData) {
@@ -46,9 +54,11 @@ async function alternar(formData: FormData) {
 
 export default async function Correspondencias({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
   const { ok, error } = await searchParams;
-  const [lista, procesos] = await Promise.all([
-    prisma.correspondencia.findMany({ orderBy: { externalJobId: "asc" } }),
+  await asegurarFuenteSistema();
+  const [lista, procesos, fuentes] = await Promise.all([
+    prisma.correspondencia.findMany({ orderBy: [{ fuente: "asc" }, { externalJobId: "asc" }] }),
     conectorATS().listarProcesos().catch(() => null),
+    prisma.fuente.findMany({ where: { activa: true }, orderBy: [{ sistema: "desc" }, { nombre: "asc" }] }),
   ]);
   const nombre = new Map((procesos ?? []).map((p) => [p.id, p.titulo]));
 
@@ -71,7 +81,18 @@ export default async function Correspondencias({ searchParams }: { searchParams:
         ) : (
           <form action={guardar} className="p-form-linea">
             <div className="p-campo">
-              <label htmlFor="externalJobId">Código de la vacante en Vínculo</label>
+              <label htmlFor="fuente">Fuente</label>
+              <select id="fuente" name="fuente" defaultValue="apply-connect">
+                {fuentes.map((x) => (
+                  <option key={x.id} value={x.nombre}>
+                    {x.nombre}
+                    {x.sistema ? " (Vínculo, simulado)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="p-campo">
+              <label htmlFor="externalJobId">Código de la vacante en Vínculo (o en la fuente elegida)</label>
               <input id="externalJobId" name="externalJobId" placeholder="RT-2026-103" required />
             </div>
             <div className="p-campo">
@@ -105,6 +126,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
             <table className="p-tabla">
               <thead>
                 <tr>
+                  <th scope="col">Fuente</th>
                   <th scope="col">Vacante</th>
                   <th scope="col">Proceso ATS</th>
                   <th scope="col">Estado</th>
@@ -115,7 +137,8 @@ export default async function Correspondencias({ searchParams }: { searchParams:
               <tbody>
                 {lista.map((c) => (
                   <tr key={c.id} data-testid="fila-correspondencia">
-                    <td className="mono">{c.externalJobId}</td>
+                    <td className="mono">{c.fuente}</td>
+                    <td className="mono">{c.vacanteExterna ?? c.externalJobId}</td>
                     <td>
                       {c.procesoAtsId} · {nombre.get(String(c.procesoAtsId)) ?? "proceso no encontrado en el ATS"}
                     </td>

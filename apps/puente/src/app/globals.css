@@ -105,6 +105,12 @@ a {
   border-color: #bbf7d0;
   color: var(--exito);
 }
+/* V4: completada con salvedad (p. ej., el ATS no admite el CV). Contraste AA sobre fondo claro. */
+.alerta-aviso {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #78350f;
+}
 
 .vacio {
   text-align: center;

@@ -4,6 +4,7 @@ import type { EstadoRecepcion, PasoRecepcion } from "@/generated/prisma/client";
 
 export const ETIQUETA_ESTADO: Record<EstadoRecepcion, string> = {
   RECIBIDO: "Recibido",
+  REQUIERE_REVISION: "Requiere revisión",
   PROCESANDO: "Procesando",
   COMPLETADO: "Completado",
   RECHAZADO: "Rechazado",

@@ -142,3 +142,53 @@ Base: `ATS_BASE_URL` (por defecto `http://localhost:3100/api/ats/v1`). Autentica
 
 - Webhook `GET|POST /api/webhooks/vinculo`: desafío y entregas con el Client Secret guardado en «Conexiones»; 200 al aceptar (RECIBIDO, que **no** es transferencia completada); 401 `SIGNATURE_MISMATCH`; 400 `MISSING_REQUIRED_RESPONSE` / `INPUT_VALIDATION_FAILED`; 422 `JOB_POSTING_CLOSED` (vacante cerrada o sin proceso); 200 `{"estado":"DUPLICADO"}` sin escrituras para un `jobApplicationId` ya recibido (D-06); 503 `TRANSIENT_ERROR` sin conexión configurada (D-43). Códigos **Verificados** (F1); la forma de decidir cada uno es **Decisión interna**.
 - `GET /api/salud` en las tres apps (para despertar los servicios en Render). **Decisión interna.**
+
+---
+
+## 8. V4 · Entrada genérica del Puente
+
+> Actualizado por Claude Code (2026-11-02). **Decisión interna** (ESPECIFICACION_V4 §6 y §8.1): es el contrato propio del Puente para cualquier fuente; no imita a ningún sistema externo.
+
+**Autenticación:** `Authorization: Bearer <token de la fuente>` (Puente → Fuentes; se ve una vez). La fuente sale del token; si el cuerpo trae `fuente`, se rechaza. Límite: 60 peticiones por minuto por token (429 con `Retry-After`).
+
+### `POST /api/entradas/v1/postulaciones` (multipart/form-data)
+
+| Campo | Contenido |
+|---|---|
+| `datos` | JSON de la `PostulacionCanonica v1` **sin** `fuente` |
+| `cv` | PDF de hasta 5 MB (opcional: sin CV la recepción queda en revisión) |
+
+```json
+{
+  "version": "1",
+  "idExterno": "id de la postulación en la fuente",
+  "vacanteExterna": "id de la vacante en la fuente (vinculada en Correspondencias)",
+  "recibidaEn": "2026-11-05T14:03:00-05:00",
+  "candidato": { "nombres": "Ana", "apellidos": "Ejemplo", "correo": "ana@demo.test", "telefono": "300 123 4567", "ciudad": "Medellín", "titular": "…", "perfilUrl": "…" },
+  "cv": { "nombreArchivo": "cv.pdf", "tipo": "application/pdf", "sha256": "<hex>", "bytes": 123456 },
+  "respuestas": [{ "pregunta": "…", "respuesta": "…" }],
+  "origenDatos": "fuente | extraido-del-cv | confirmado-por-persona"
+}
+```
+
+Obligatorios: `version`, `idExterno`, `vacanteExterna`, `candidato.nombres`. Normalización: correo en minúsculas y sin espacios; teléfono a E.164 con +57 si no trae indicativo; nombres sin espacios sobrantes. Si `cv` (metadatos) viene, su SHA-256 y tamaño deben coincidir con el archivo.
+
+| Respuesta | Cuándo | Cuerpo |
+|---|---|---|
+| 202 | Recibida y en cola | `{"estado":"RECIBIDA","idRecepcion":"…"}` |
+| 202 | Guardada, espera a una persona (sin correo, sin CV, datos sin confirmar, posible duplicado) | `{"estado":"REQUIERE_REVISION","idRecepcion":"…","motivos":["sin_correo"]}` |
+| 200 | Ya existía la misma (fuente, idExterno); no se crea nada | `{"estado":"DUPLICADA","idRecepcion":"…"}` |
+| 400 | No cumple el contrato | `{"estado":"INVALIDA","mensaje":"…","errores":[{"campo","mensaje"}]}` |
+| 401 | Token ausente, inválido o revocado | `{"estado":"NO_AUTORIZADO",…}` |
+| 413 | CV de más de 5 MB | `{"estado":"DEMASIADO_GRANDE",…}` |
+| 415 | El archivo no es PDF (`%PDF` en los primeros bytes) | `{"estado":"NO_ES_PDF",…}` |
+| 422 | La vacante de la fuente no tiene correspondencia | `{"estado":"VACANTE_SIN_CORRESPONDENCIA",…}` |
+| 429 | Más de 60 por minuto | `{"estado":"DEMASIADAS_PETICIONES",…}` + `Retry-After` |
+
+### `GET /api/entradas/v1/vacantes`
+
+`{"fuente":"linkedin-bot","vacantes":[{"vacanteExterna":"…","idProceso":"9001","descripcion":"…"}]}`: solo las correspondencias activas de la fuente del token.
+
+## 9. V4 · ConectorATS
+
+`apps/puente/src/salidas/conector-ats.ts` (§9 de la especificación): `verificarConexion`, `listarProcesos`, `buscarPostulante`, `crearPostulante`, `adjuntarCV`, `crearPostulacion`, `consultarPostulacion` y `capacidades { adjuntarCV, buscarPorCorreo, idempotencia }` (D-54). **Talentia** (simulado) es el único adaptador activo; **BUK** es un esqueleto deshabilitado sin rutas, encabezados ni formatos: nada de BUK se programa sin su `/apidocs` (**Supuesto pendiente**, depende de la empresa). `ATS_DESTINO=buk` deja el procesador detenido y `/api/salud` en 503 «ATS buk no implementado» (D-55).

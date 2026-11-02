@@ -143,6 +143,9 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
   switch (r2.resultado) {
     case "RECIBIDA":
       return { status: 200, body: { estado: "RECIBIDO", referencia: r2.recepcionId } };
+    case "REQUIERE_REVISION":
+      // La entrega es válida (Vínculo no debe reintentarla): queda guardada esperando a una persona (posible duplicado).
+      return { status: 200, body: { estado: "RECIBIDO", referencia: r2.recepcionId, requiereRevision: r2.motivos } };
     case "DUPLICADA":
       // Duplicado: se responde 200 sin crear nada (D-06) y se cuenta como duplicado evitado.
       return { status: 200, body: { estado: "DUPLICADO", referencia: r2.recepcionId, jobApplicationId: p.jobApplicationId } };

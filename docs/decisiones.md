@@ -400,3 +400,33 @@
 - **Fecha:** 2026-11-02 (F1)
 - **Decisión:** la normalización del contrato canónico (§6) se aplica también a Apply Connect: un teléfono sin indicativo recibe +57 (en la v2 quedaba `+<número>`). Un teléfono que no se puede llevar a E.164 hace inválida la canónica.
 - **Alternativa descartada:** descartar en silencio el teléfono inválido (se perdería un dato sin aviso).
+
+## D-57 · 5 intentos por defecto (reemplaza los 10 de D-46)
+
+- **Fecha:** 2026-11-02 (F2)
+- **Decisión:** `MAX_INTENTOS_TRABAJO = 5` y `PUENTE_MAX_INTENTOS` por defecto 5, como dice la §7. Al agotarlos, la recepción queda `FALLIDA_DEFINITIVA` (estado V4 derivado de `FALLIDO_REINTENTABLE` + trabajo detenido, D-52) y se recupera con «Reintentar». El arranque en frío de Render sigue cubierto: cada llamada espera hasta 75 s cuando el otro sistema lleva más de 10 minutos sin responder (D-46), y la medición del 29/10 dio entre 65 y 92 s.
+- **Alternativa descartada:** mantener 10 (contradice la especificación).
+
+## D-58 · El CV se borra al completar cuando el ATS ya lo tiene; la retención aplica a lo que el Puente conserva
+
+- **Fecha:** 2026-11-02 (F2)
+- **Decisión:** como en la v2 (y lo afirma `tests/recorrido.test.ts`), al completar con el CV entregado al ATS el Puente borra su copia: es más estricto que la §7 (minimización de datos). La tarea de retención (`src/modules/retencion.ts`, ciclo «retencion» del worker, `RETENCION_CV_DIAS` = 30) borra el binario que el Puente sí conserva (p. ej., «CV no enviado: el ATS no lo admite por API») 30 días después de completar, deja el SHA-256 y los metadatos, y registra el evento y la auditoría. Descartar y «borrar datos del candidato» lo borran de inmediato.
+- **Alternativa descartada:** conservar todos los CV 30 días (rompería una prueba existente y guarda más datos personales sin necesidad).
+
+## D-59 · Tokens de fuente y límite de frecuencia
+
+- **Fecha:** 2026-11-02 (F2)
+- **Decisión:** token `pf_<prefijo de 10 hex>.<32 bytes base64url>`; se guarda el SHA-256 y el prefijo; se autentica buscando por prefijo y comparando el hash con `timingSafeEqual`. Rotar el token invalida el anterior; revocar desactiva la fuente. Límite de 60 peticiones por minuto por fuente **en memoria** (`src/entradas/generica/limite.ts`): con varias instancias cada una cuenta aparte (en Render gratuito hay una). `apply-connect` es una fuente del sistema sin token (usa la firma HMAC).
+- **Alternativa descartada:** contador en PostgreSQL (más carga; innecesario con una instancia).
+
+## D-60 · Correspondencias genéricas sin cambiar la clave existente
+
+- **Fecha:** 2026-11-02 (F2)
+- **Decisión:** `Correspondencia` suma `fuente` y `vacanteExterna` con `UNIQUE(fuente, vacanteExterna)`, y `externalJobId` sigue siendo único como referencia: la vacante tal cual para `apply-connect` (las pruebas existentes la buscan así) y `<fuente>:<vacante>` para las demás. `vacanteExterna` es opcional: en las filas antiguas de Apply Connect se usa `externalJobId`. La migración pasa las existentes a la fuente `apply-connect`.
+- **Alternativa descartada:** reemplazar la clave única por la pareja (obligaba a cambiar pruebas existentes).
+
+## D-61 · Revisión humana y posible duplicado
+
+- **Fecha:** 2026-11-02 (F2)
+- **Decisión:** una recepción sin correo, sin CV, con datos extraídos sin confirmar o con posible duplicado se guarda en `REQUIERE_REVISION` (con su motivo) y su trabajo queda **detenido**: el worker no la toma. Completar (correo o CV) no aprueba sola; aprobar exige correo y CV y devuelve el trabajo a la cola; descartar no envía nada y borra el CV. Posible duplicado = el mismo correo normalizado en el mismo **proceso del ATS** desde otra fuente (las vacantes de cada fuente tienen ids distintos; el proceso es lo que comparten). Se compara contra recepciones ya asociadas a ese proceso (las de Apply Connect lo reciben al procesarse). En Apply Connect, una entrega válida que cae en revisión responde 200 a Vínculo (no debe reintentarla).
+- **Alternativa descartada:** fusionar automáticamente (la §2.5 lo prohíbe).

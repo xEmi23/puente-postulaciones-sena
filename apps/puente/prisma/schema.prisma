@@ -119,22 +119,61 @@ model Configuracion {
 
 // Vínculos manuales vacante de Vínculo → proceso de Talentia, para vacantes creadas directamente en Vínculo.
 model Correspondencia {
-  id            String    @id @default(uuid()) @db.Uuid
-  externalJobId String    @unique
-  procesoAtsId  Int
-  descripcion   String
-  activa        Boolean   @default(true)
+  id             String    @id @default(uuid()) @db.Uuid
+  // V4: correspondencia genérica (fuente, vacante externa) → proceso del ATS. externalJobId sigue siendo la referencia
+  // única: la vacante de Vínculo en apply-connect (como en la v2) y "<fuente>:<vacante>" en las demás fuentes.
+  fuente         String    @default("apply-connect")
+  vacanteExterna String? // null en filas apply-connect antiguas: se usa externalJobId
+  externalJobId  String    @unique
+  procesoAtsId   Int
+  descripcion    String
+  activa         Boolean   @default(true)
   // Al desvincular se guarda la hora: las postulaciones hechas antes se respetan (D-17).
-  cerradaEn     DateTime? @db.Timestamptz(3)
+  cerradaEn      DateTime? @db.Timestamptz(3)
+  creadaEn       DateTime  @default(now()) @db.Timestamptz(3)
+  actualizadaEn  DateTime  @updatedAt @db.Timestamptz(3)
+  demo           Boolean   @default(true)
+
+  @@unique([fuente, vacanteExterna])
+}
+
+// V4: fuentes de postulaciones (adaptadores de entrada). Cada una tiene su token: se muestra una sola vez y se guarda
+// solo su SHA-256 (con un prefijo visible para reconocerlo). apply-connect es del sistema: usa la firma HMAC, sin token.
+model Fuente {
+  id            String    @id @default(uuid()) @db.Uuid
+  nombre        String    @unique
+  descripcion   String    @default("")
+  sistema       Boolean   @default(false)
+  tokenHash     String?   @db.Char(64)
+  tokenPrefijo  String?
+  activa        Boolean   @default(true)
+  ultimoUsoEn   DateTime? @db.Timestamptz(3)
+  revocadaEn    DateTime? @db.Timestamptz(3)
   creadaEn      DateTime  @default(now()) @db.Timestamptz(3)
   actualizadaEn DateTime  @updatedAt @db.Timestamptz(3)
-  demo          Boolean   @default(true)
+
+  @@index([tokenPrefijo])
+}
+
+// V4: auditoría de cada acción manual y cada cambio de estado (sin datos personales).
+model EventoAuditoria {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorTipo   String // usuario | fuente | sistema
+  actorId     String // id del usuario, nombre de la fuente o nombre del proceso del sistema
+  accion      String
+  recepcionId String?  @db.Uuid
+  detalle     String?
+  creadoEn    DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([recepcionId, creadoEn])
+  @@index([creadoEn])
 }
 
 // ───────────── Operaciones ─────────────
 
 enum EstadoRecepcion {
   RECIBIDO
+  REQUIERE_REVISION // V4: falta correo o CV, datos sin confirmar o posible duplicado; una persona decide
   PROCESANDO
   COMPLETADO
   RECHAZADO
@@ -173,11 +212,11 @@ model Recepcion {
   // Datos normalizados (minimizados) necesarios para crear el postulante en Talentia.
   nombre             String
   apellido           String
-  correo             String
+  correo             String? // V4: puede faltar (queda en revisión)
   telefono           String?
   ciudad             String?
-  mediaUrl           String
-  mediaUrn           String
+  mediaUrl           String? // solo Apply Connect (CV por enlace)
+  mediaUrn           String?
   // Resultado del procesamiento
   estado             EstadoRecepcion   @default(RECIBIDO)
   paso               PasoRecepcion?
@@ -191,6 +230,11 @@ model Recepcion {
   atsPostulacionId   String?
   errorCodigo        String?
   errorDetalle       String?
+  // V4: por qué espera a una persona (sin_correo, sin_cv, datos_sin_confirmar, posible_duplicado; separados por coma).
+  motivoRevision     String?
+  // V4: retención y supresión (los metadatos y el hash se conservan).
+  cvBorradoEn        DateTime?         @db.Timestamptz(3)
+  datosBorradosEn    DateTime?         @db.Timestamptz(3)
   // V4: se completó, pero con una salvedad visible (p. ej., «CV no enviado: el ATS no lo admite por API»).
   advertencia        String?
   duplicadosEvitados Int               @default(0)
@@ -207,6 +251,8 @@ model Recepcion {
   eventos            EventoRecepcion[]
 
   @@unique([fuente, idExterno])
+  @@index([fuente, estado])
+  @@index([procesoAtsId, correo])
   @@index([estado])
   @@index([recibidaEn])
   @@index([avisoEstado, avisoProximoEn])

@@ -564,3 +564,9 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Contrato canónico v1, `registrarRecepcion()`, `ConectorATS` (Talentia activo y simulado; BUK deshabilitado), `ATS_DESTINO`, webhook de Vínculo mapeado a la canónica, procesador sin conocer la fuente ni el ATS. Migración `20261102120000_v4_f1_fuente`. Decisiones D-52 a D-56. Reporte: `docs/v4/REPORTE_F1.md`.
 - Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 110 · Playwright 37/37 (**203**).
 - Siguiente paso: F2 (entrada genérica, fuentes y tokens, revisión, auditoría, retención).
+
+## V4 F2 · Entrada genérica (2026-11-02)
+
+- Fuentes con token (pantalla Fuentes), `POST /api/entradas/v1/postulaciones` y `GET /api/entradas/v1/vacantes`, correspondencias por fuente, `REQUIERE_REVISION` (sin correo, sin CV, datos sin confirmar, posible duplicado), acciones de revisión, borrar datos del candidato, `EventoAuditoria`, retención, logs con `idRecepcion` y correos enmascarados, métricas por fuente, 5 intentos. Migración `20261102180000_v4_f2_entrada_generica`. Decisiones D-57 a D-61. Reporte: `docs/v4/REPORTE_F2.md`.
+- Puerta de calidad: lint 0 · typecheck 0 · Vitest 26 + 30 + 129 · Playwright 41/41 (**226**).
+- Siguiente paso: F3 (importador manual).

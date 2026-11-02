@@ -2,6 +2,7 @@ import { procesarPendientes } from "@/modules/procesador";
 import { procesarAvisos } from "@/modules/avisos";
 import { sondearProcesosNuevos } from "@/modules/publicacion";
 import { estadoDestino } from "@/salidas";
+import { aplicarRetencion } from "@/modules/retencion";
 
 // Worker del puente con tres ciclos independientes; todo el estado vive en PostgreSQL y si el proceso muere,
 // al volver retoma lo pendiente:
@@ -19,7 +20,7 @@ export interface Worker {
 export function iniciarWorker(): Worker {
   const intervalo = Number(process.env.WORKER_INTERVALO_MS ?? 1000);
   const opciones = {
-    maxIntentos: Number(process.env.PUENTE_MAX_INTENTOS ?? 10),
+    maxIntentos: Number(process.env.PUENTE_MAX_INTENTOS ?? 5),
     baseBackoffMs: Number(process.env.PUENTE_BACKOFF_BASE_MS ?? 2000),
     leaseSegundos: Number(process.env.PUENTE_LEASE_S ?? 120),
   };
@@ -56,11 +57,13 @@ export function iniciarWorker(): Worker {
   // y /api/salud lo informa. Las postulaciones se siguen recibiendo y esperan en la cola.
   const ats = estadoDestino();
   if (!ats.implementado) console.error(`[puente:worker] ${ats.mensaje}: el procesador no arranca.`);
-  const nombres = [...(ats.implementado ? ["procesador"] : []), "avisos", "publicacion"];
+  const nombres = [...(ats.implementado ? ["procesador"] : []), "avisos", "publicacion", "retencion"];
   const ciclos = [
     ...(ats.implementado ? [ciclo("procesador", () => procesarPendientes(opciones), intervalo)] : []),
     ciclo("avisos", () => procesarAvisos({ baseBackoffMs: Number(process.env.PUENTE_AVISO_BACKOFF_MS ?? 5000) }), intervalo),
     ciclo("publicacion", () => sondearProcesosNuevos(), 15_000),
+    // Retención de CV (V4): revisa cada hora; si borró algo, vuelve a mirar enseguida.
+    ciclo("retencion", () => aplicarRetencion(), Number(process.env.PUENTE_RETENCION_INTERVALO_MS ?? 3_600_000)),
   ];
   console.log(`[puente:worker] iniciado (pid ${process.pid}); intervalo ${intervalo} ms`);
   return {

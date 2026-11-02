@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { completar } from "./procesador";
 import { conectorATS } from "@/salidas";
+import { auditar, type Actor } from "@/nucleo/auditoria";
+
+const PANEL: Actor = { tipo: "usuario", id: "panel" };
 
 // Acciones manuales del panel. Cada una valida que sea segura antes de actuar.
 
@@ -11,7 +14,7 @@ export type ResultadoAccion = { ok: true; mensaje: string } | { ok: false; mensa
  * Es seguro porque cada escritura en el ATS lleva Idempotency-Key y el candidato se busca por correo.
  * No aplica a REQUIERE_VERIFICACION: ahí primero hay que reconciliar.
  */
-export async function reintentar(recepcionId: string): Promise<ResultadoAccion> {
+export async function reintentar(recepcionId: string, actor: Actor = PANEL): Promise<ResultadoAccion> {
   const rec = await prisma.recepcion.findUnique({ where: { id: recepcionId }, include: { trabajo: true } });
   if (!rec || !rec.trabajo) return { ok: false, mensaje: "La operación no existe." };
   if (rec.estado !== "FALLIDO_REINTENTABLE" || rec.trabajo.estado !== "DETENIDO") {
@@ -21,6 +24,7 @@ export async function reintentar(recepcionId: string): Promise<ResultadoAccion> 
     prisma.trabajo.update({ where: { id: rec.trabajo.id }, data: { estado: "PENDIENTE", intentos: 0, proximoIntentoEn: new Date(), leaseHasta: null } }),
     prisma.eventoRecepcion.create({ data: { recepcionId, tipo: "REINTENTO_MANUAL", detalle: "Reintento manual solicitado desde el panel." } }),
   ]);
+  await auditar(actor, "recepcion.reintento_manual", recepcionId);
   return { ok: true, mensaje: "Reintento programado. El worker lo tomará en segundos." };
 }
 
@@ -30,7 +34,8 @@ export async function reintentar(recepcionId: string): Promise<ResultadoAccion> 
  * - No existe → es seguro volver a crearla: queda FALLIDO_REINTENTABLE y se programa.
  * - No se puede consultar → sigue en REQUIERE_VERIFICACION.
  */
-export async function reconciliar(recepcionId: string, opciones: { fetchImpl?: typeof fetch } = {}): Promise<ResultadoAccion> {
+export async function reconciliar(recepcionId: string, opciones: { fetchImpl?: typeof fetch } = {}, actor: Actor = PANEL): Promise<ResultadoAccion> {
+  await auditar(actor, "recepcion.reconciliacion_solicitada", recepcionId);
   const rec = await prisma.recepcion.findUnique({ where: { id: recepcionId }, include: { trabajo: true } });
   if (!rec || !rec.trabajo) return { ok: false, mensaje: "La operación no existe." };
   if (rec.estado !== "REQUIERE_VERIFICACION") return { ok: false, mensaje: "Solo se reconcilian operaciones que requieren verificación." };
@@ -75,6 +80,17 @@ export interface Metricas {
   muestra: number;
   rechazosPorCodigo: { codigo: string; total: number }[];
   porProceso: { procesoId: number; recibidas: number; completadas: number; medianaSegundos: number | null }[];
+  /** V4 §7: por fuente. */
+  porFuente: {
+    fuente: string;
+    recibidas: number;
+    completadas: number;
+    enRevision: number;
+    duplicadas: number;
+    fallidas: number;
+    medianaSegundos: number | null;
+    p95Segundos: number | null;
+  }[];
 }
 
 /** Métricas medidas sobre los datos reales de la base (no estimadas). */
@@ -114,6 +130,19 @@ export async function calcularMetricas(): Promise<Metricas> {
            percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ("completadaEn" - "recibidaEn")))
              FILTER (WHERE "completadaEn" IS NOT NULL) AS mediana
     FROM "Recepcion" WHERE "procesoAtsId" IS NOT NULL GROUP BY "procesoAtsId" ORDER BY "procesoAtsId"`;
+  const porFuente = await prisma.$queryRaw<
+    { fuente: string; recibidas: bigint; completadas: bigint; revision: bigint; duplicadas: bigint | null; fallidas: bigint; mediana: number | null; p95: number | null }[]
+  >`
+    SELECT fuente, count(*) AS recibidas,
+           count(*) FILTER (WHERE estado = 'COMPLETADO') AS completadas,
+           count(*) FILTER (WHERE estado = 'REQUIERE_REVISION') AS revision,
+           sum("duplicadosEvitados") AS duplicadas,
+           count(*) FILTER (WHERE estado IN ('RECHAZADO', 'FALLIDO_REINTENTABLE')) AS fallidas,
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ("completadaEn" - "recibidaEn")))
+             FILTER (WHERE "completadaEn" IS NOT NULL) AS mediana,
+           percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM ("completadaEn" - "recibidaEn")))
+             FILTER (WHERE "completadaEn" IS NOT NULL) AS p95
+    FROM "Recepcion" GROUP BY fuente ORDER BY fuente`;
   const rechazadasEntrada = porCodigo.reduce((s, c) => s + c._count._all, 0);
   return {
     recibidas: Number(r.recibidas),
@@ -129,6 +158,16 @@ export async function calcularMetricas(): Promise<Metricas> {
     p95Segundos: r.p95 === null ? null : Number(r.p95),
     muestra: Number(r.muestra),
     rechazosPorCodigo: porCodigo.map((c) => ({ codigo: c.codigo, total: c._count._all })),
+    porFuente: porFuente.map((x) => ({
+      fuente: x.fuente,
+      recibidas: Number(x.recibidas),
+      completadas: Number(x.completadas),
+      enRevision: Number(x.revision),
+      duplicadas: Number(x.duplicadas ?? 0),
+      fallidas: Number(x.fallidas),
+      medianaSegundos: x.mediana === null ? null : Number(x.mediana),
+      p95Segundos: x.p95 === null ? null : Number(x.p95),
+    })),
     porProceso: porProceso.map((p) => ({ procesoId: p.proceso, recibidas: Number(p.recibidas), completadas: Number(p.completadas), medianaSegundos: p.mediana === null ? null : Number(p.mediana) })),
   };
 }

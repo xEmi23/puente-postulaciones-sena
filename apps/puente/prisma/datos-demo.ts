@@ -20,6 +20,12 @@ export async function sembrarDemo(prisma: PrismaClient) {
     prisma.falloSimulado.deleteMany({}),
     prisma.user.deleteMany({ where: { demo: true } }),
   ]);
+  // V4: la fuente del sistema de Apply Connect (sin token; usa la firma HMAC del webhook).
+  await prisma.fuente.upsert({
+    where: { nombre: "apply-connect" },
+    create: { nombre: "apply-connect", descripcion: "Apply Connect (Vínculo, simulado): webhook firmado con HMAC", sistema: true },
+    update: { sistema: true, activa: true },
+  });
   await prisma.configuracion.upsert({ where: { id: 1 }, create: { id: 1 }, update: { publicacionAutomatica: false, ultimoSondeoEn: null, resultadoSondeo: null } });
   const hash = await hashPassword(CLAVE_DEMO);
   for (const u of USUARIOS_DEMO) {
