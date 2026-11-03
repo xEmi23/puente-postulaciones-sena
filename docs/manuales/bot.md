@@ -50,7 +50,9 @@ npm run bot -w apps/bot-linkedin -- --vacante VIN-DEMO-BOT
 
 Al terminar imprime, por ejemplo: `Listo: 3 vista(s), 3 enviada(s) → 3 recibida(s), 0 duplicada(s)…`. En Talentia (reclutador, proceso 9005) aparecen los 3 postulantes con su CV. Una segunda corrida da `3 duplicada(s)`.
 
-`npm run demo:bot -- --reiniciar` borra las postulaciones de VIN-DEMO-BOT en Vínculo y vuelve a crear las 3 (para repetir la demo; en el Puente seguirán como duplicadas a menos que también se reinicie con `npm run demo:reset`).
+`npm run demo:bot -- --reiniciar` borra las postulaciones de VIN-DEMO-BOT en Vínculo y vuelve a crear las 3. Son postulaciones nuevas (el Puente las recibe), pero si no hiciste antes `npm run demo:reset`, esas personas ya están en Talentia y no se ven llegar. Para repetir la demo desde cero: `npm run demo:reset`, `npm run demo:bot -- --reiniciar` y otra vez `bot:login`. Sin `--reiniciar`, el bot da «duplicada».
+
+Las opciones funcionan igual en PowerShell, cmd y bash. En PowerShell, npm se queda con `--seco` y `--vacante`, y el bot las lee igual (D-72). Al empezar, el bot confirma «Modo seco: … NO envía nada» o «Solo la vacante «…»».
 
 ### Variables (`apps/bot-linkedin/.env`, lo escribe `demo:bot`)
 
@@ -68,11 +70,29 @@ Al terminar imprime, por ejemplo: `Listo: 3 vista(s), 3 enviada(s) → 3 recibid
 
 | Mensaje | Qué hacer |
 |---|---|
-| «Se requiere intervención humana: … pantalla de ingreso» o «… panel del reclutador completo» | La sesión venció (siempre pasa después de `npm run demo:reset`, que vuelve a crear las cuentas): `npm run bot:login -w apps/bot-linkedin` y vuelve a correr. |
+| «Se requiere intervención humana: … pantalla de ingreso» o «… panel del reclutador completo» | La sesión venció (siempre pasa después de `npm run demo:reset`, que vuelve a crear las cuentas) o hay otra ventana del bot abierta: ciérrala, `npm run bot:login -w apps/bot-linkedin` y vuelve a correr. |
+| «Vínculo muestra «Algo salió mal»» | Error del sitio: mira la ventana de `npm run dev`. Si es la base de datos, `npm run pg:start`. |
 | «Falta PUENTE_BOT_TOKEN» | Ejecuta `npm run demo:bot`. |
 | «El Puente rechazó el token de la fuente (401)» | El token fue rotado: `npm run demo:bot` genera uno nuevo. |
 | «El Puente no tiene vacantes vinculadas a esta fuente» | Falta la correspondencia en el Puente (la crea `demo:bot`, o Puente → Correspondencias con la fuente «vinculo-bot»). |
 | Los postulantes no llegan a Talentia | Revisa Puente → Conexiones (Talentia) y Operaciones. |
+
+## Si algo falla en la demo
+
+> Actualizado por Claude Code (2026-11-03, auditoría F4-V). Casos ensayados en local; en cada uno el bot termina con un mensaje en español. Lo ya enviado queda en el Puente y, al repetir, sale como «duplicada» (no se duplica en Talentia).
+
+| Qué pasa | Qué muestra | Qué hacer |
+|---|---|---|
+| Se cierra la ventana del bot a mitad de la corrida | «Se cerró la ventana del bot antes de terminar…» | Vuelve a ejecutar `npm run bot -w apps/bot-linkedin`. Lo enviado sale «duplicada» y sigue con lo que faltaba. |
+| Quedó abierta la ventana de `bot:login`, o hay otra corrida con el mismo perfil | «Se requiere intervención humana: … (si hay otra ventana del bot abierta, ciérrala primero)» o «El perfil del bot ya está abierto en otra ventana…» | Cierra la otra ventana del bot y vuelve a ejecutar. Dos corridas a la vez no duplican nada en Talentia (probado). |
+| Otra pestaña de Vínculo abierta con la misma cuenta, en tu navegador normal | Nada: es otro navegador y otra sesión | Puedes dejarla abierta para mostrar la vacante. No cierres sesión en ella durante la demo (no se ensayó si afecta la sesión del bot). |
+| La sesión del bot venció (por ejemplo, después de `demo:reset`) | «Se requiere intervención humana: Vínculo muestra la pantalla de ingreso…» | `npm run bot:login -w apps/bot-linkedin`, inicia sesión a mano y cierra la ventana. |
+| Los puertos 3001, 3002 o 3003 están ocupados al hacer `npm run dev` | «✖ El puerto 3001 (vinculo) ya está en uso…» | Ya hay otra ventana con `npm run dev` o `npm start`: úsala, o ciérrala con Ctrl+C. Para ver qué programa es: `netstat -ano | findstr :3001`. |
+| PostgreSQL apagado | `npm run dev` lo enciende solo. `demo:bot` dice «PostgreSQL no responde…»; el sitio muestra «Algo salió mal» y el bot se detiene diciendo qué revisar | `npm run pg:start` y repite el paso. |
+| Las apps están apagadas | Bot: «El sitio no responde (http://localhost:3001)…»; `demo:bot`: «Vínculo no responde en …» | Abre la ventana 1 con `npm run dev` y espera a que diga las tres URL. |
+| El Puente está apagado mientras corre el bot | «… el Puente no responde; reintento en 2 s…» (hasta unos 2 minutos) y luego «No se pudo contactar al Puente…» | Ctrl+C, enciende las apps y vuelve a ejecutar. |
+| El computador entró en suspensión y volvió (no ensayado) | `npm run dev` y PostgreSQL siguen corriendo; si una página se quedó a medias, «El sitio tardó demasiado…» | Recarga las pestañas; si algo no responde, Ctrl+C en la ventana 1 y `npm run dev` otra vez. Repite `bot:login` solo si el bot lo pide. |
+| Falta Chromium de Playwright (otro computador) | «Falta el navegador Chromium de Playwright…» | `npx playwright install chromium` (necesita internet). |
 
 ## La API de Vínculo y el bot
 

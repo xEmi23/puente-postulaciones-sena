@@ -19,13 +19,14 @@ Más detalle en [docs/arquitectura.md](docs/arquitectura.md) (sección «V4 · c
 
 ## Cómo probar cada entrada (local)
 
-Con `npm run dev` y `npm run demo:conectar` en marcha (ver abajo):
+Con `npm run dev` en marcha y `npm run demo:bot -- --reiniciar` (conecta el Puente con Talentia; ver abajo). Apply Connect necesita además la API de Vínculo prendida (`npm run vinculo:api -- on`, reiniciar y `npm run demo:conectar`):
 
 | Entrada | Cómo | Dónde se ve |
 |---|---|---|
 | **Importador manual** | Puente → **Importar** → elegir proceso → adjuntar PDF (p. ej. `fixtures/cv/*.pdf`) → revisar → **Confirmar e importar** ([manual](docs/manuales/importador.md)) | Puente → Operaciones (fuente `importador`); Talentia → Postulantes |
 | **Entrada genérica** | Puente → **Fuentes** → crear fuente y **Generar token**; **Correspondencias** → fuente, vacante y proceso; luego `POST /api/entradas/v1/postulaciones` (ejemplo en PowerShell en `docs/v4/REPORTE_F2.md`; contrato en `docs/contratos.md` §8) | Operaciones (fuente propia); sin correo o sin CV queda en «Requiere revisión» |
-| **Apply Connect (simulado)** | Vínculo → «Solicitud sencilla» en una vacante publicada por el Puente | Operaciones (fuente `apply-connect`); el candidato ve «CV descargado» |
+| **Bot asistido (experimental, solo Vínculo)** | `npm run bot:login -w apps/bot-linkedin` y `npm run bot -w apps/bot-linkedin` ([manual](docs/manuales/bot.md)) | Operaciones (fuente `vinculo-bot`); Talentia 9005 → Postulantes |
+| **Apply Connect (simulado, solo con la API prendida)** | Vínculo → «Solicitud sencilla» en una vacante publicada por el Puente | Operaciones (fuente `apply-connect`); el candidato ve «CV descargado» |
 
 `ATS_DESTINO=talentia` (por defecto). Con `ATS_DESTINO=buk` el procesador no arranca y `/api/salud` responde 503 «ATS buk no implementado».
 
@@ -66,7 +67,7 @@ npm run demo:conectar  # API Key en Talentia → app en Vínculo autorizada por 
 
 | Sistema | URL | Qué es |
 |---|---|---|
-| **Vínculo** | http://localhost:3001 | Red profesional simulada: empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y su API |
+| **Vínculo** | http://localhost:3001 | Red profesional simulada: empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y su API (apagados por defecto: `npm run vinculo:api -- on`, D-68) |
 | **Talentia** | http://localhost:3002 | ATS simulado: procesos por etapas, postulantes, API Keys, API v1 y `/apidocs` |
 | **Puente** | http://localhost:3003 | El producto: conexiones, publicación, operaciones, rechazos y métricas |
 

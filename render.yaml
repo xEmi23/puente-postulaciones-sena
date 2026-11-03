@@ -37,6 +37,9 @@ services:
       # Arranque en frío del puente en el plan gratuito: hasta 75 s por intento de entrega.
       - key: VINCULO_TIMEOUT_ENTREGA_MS
         value: "75000"
+      # D-68: sin API tipo Apply Connect, igual que en local (como el LinkedIn real para la empresa). "true" la prende.
+      - key: VINCULO_API_HABILITADA
+        value: "false"
 
   - type: web
     name: talentia-simulado

@@ -79,18 +79,20 @@
 ## V4 · Guion de unos 5 minutos (especificación §15.3)
 
 > Actualizado por Claude Code (2026-11-02). Sin bot: la Puerta 0 está pendiente; si el equipo construye el bot (F4), se agrega el paso 4.
+>
+> Actualizado por Claude Code (2026-11-03, auditoría F4-V). El bot ya funciona **contra Vínculo** (bloque siguiente) y Vínculo arranca **sin API** (D-68). Por eso la preparación usa `npm run demo:bot -- --reiniciar` (conecta el Puente con Talentia) en lugar de `demo:conectar`, y el paso de Apply Connect es **opcional** y solo con la API prendida. El orden recomendado para mañana está en «V4 · Guion final para PowerShell», al final de este archivo.
 
-**Antes (local):** `npm run demo:reset`, `npm run build && npm start`, `npm run demo:conectar`. Ten 3 CV ficticios en una carpeta (por ejemplo `fixtures/cv/cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`). Pestañas: Puente → Importar (operador), Talentia → proceso elegido (reclutador), Vínculo (candidata). **En Render:** despertar los tres servicios 15 minutos antes (docs/despliegue.md).
+**Antes (local):** `npm run demo:reset`, `npm run dev` (o `npm run build && npm start`), `npm run demo:bot -- --reiniciar`. Ten 3 CV ficticios en una carpeta (por ejemplo `fixtures/cv/cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`). Pestañas: Puente → Importar (operador), Talentia → proceso elegido (reclutador), Vínculo (candidata). **En Render:** despertar los tres servicios 15 minutos antes (docs/despliegue.md).
 
 | Tiempo | Qué se muestra | Qué se dice |
 |---|---|---|
 | 0:00–0:30 | Diapositiva del problema | «Por vacante, el reclutador descarga y vuelve a digitar cada CV. No hay API de LinkedIn para nosotros ni llave de BUK.» |
 | 0:30–1:00 | Diagrama de capas (README) | «El producto es el Puente: recibe de cualquier fuente con un contrato común y escribe en el ATS por una interfaz. Talentia simula BUK; BUK real está preparado pero deshabilitado.» |
-| 1:00–2:00 | **Importador:** Importar → proceso → 3 PDF → la tabla con correo y teléfono sugeridos → corregir uno → Confirmar → «3 enviada(s) al ATS» → Talentia → Postulantes | «Sin IA: el Puente lee el PDF y una persona confirma. Cero digitación y cumple los términos de LinkedIn.» Reimportar uno: «Duplicada». |
-| 2:00–2:45 | **Apply Connect simulado:** Vínculo → Solicitud sencilla → llega sola a Talentia → «CV descargado» | «Así sería la integración oficial: mismas piezas, otra fuente.» |
-| 2:45–3:30 | **Confiabilidad:** Operaciones con filtro por fuente; una postulación sin correo en «Requiere revisión» → completar → aprobar; un posible duplicado en revisión; Métricas por fuente | «Nada incompleto llega al ATS y nada se fusiona solo.» |
+| 1:00–2:00 | **Importador:** Importar → proceso → 3 PDF → la tabla con correo y teléfono sugeridos → corregir uno → Confirmar → «3 enviada(s) al ATS» → Talentia → Postulantes | «Sin IA: el Puente lee el PDF y una persona confirma. Cero digitación, y no automatiza nada en LinkedIn.» Reimportar uno: «Duplicada». |
+| 2:00–2:45 | **Opcional, solo con la API prendida** (`npm run vinculo:api -- on`, reiniciar, `npm run demo:conectar`). **Apply Connect simulado:** Vínculo → Solicitud sencilla → llega sola a Talentia → «CV descargado» | «Así sería la integración por API, si algún día se habilita para la empresa: mismas piezas, otra fuente.» |
+| 2:45–3:30 | **Confiabilidad:** Operaciones con filtro por fuente (las del bot aparecen como «vinculo-bot», «Completado», «Postulación creada»); requiere haber preparado antes una postulación sin correo en «Requiere revisión» → completar → aprobar; un posible duplicado en revisión; Métricas por fuente | «Nada incompleto llega al ATS y nada se fusiona solo.» |
 | 3:30–4:15 | **Entrada genérica:** Fuentes → token (se ve una vez) → `curl.exe` con un PDF → 202 RECIBIDA | «Un bot o cualquier otra fuente se conecta así, sin tocar el núcleo.» |
-| 4:15–5:00 | **Honestidad:** qué es simulado (Talentia, Vínculo), qué es experimental (el bot, no construido sin la Puerta 0) y qué falta para BUK real (`/apidocs` y API Key de la empresa) | Mensaje central de la §15.3. |
+| 4:15–5:00 | **Honestidad:** qué es simulado (Talentia, Vínculo), qué es experimental (el bot: funciona contra Vínculo; LinkedIn real espera la Puerta 0) y qué falta para BUK real (`/apidocs` y API Key de la empresa) | Mensaje central de la §15.3. |
 
 **Plan B:** Render no despierta → demo local. Algo falla en vivo → video del recorrido (grabarlo el 8/11 con la fecha visible). La Puerta 0 falla → el bot se presenta como alternativa evaluada y descartada, con su motivo.
 
@@ -106,5 +108,56 @@
 | 0:20–1:10 | `npm run bot -w apps/bot-linkedin` con la ventana visible: el bot abre la vacante y cada ficha, con pausas; la consola dice «3 recibida(s)» | «Lo ejecuta una persona, con su sesión; no guarda contraseñas, se detiene ante cualquier verificación y tiene un tope de 25.» |
 | 1:10–1:40 | Talentia → proceso 9005 → Postulantes: las 3 tarjetas, cada una con su CV | «Mismo archivo, byte a byte; entra por la misma puerta que el importador.» |
 | 1:40–2:00 | Segunda corrida: «3 duplicada(s)»; Talentia sigue con 3 | «Idempotente: correrlo dos veces no duplica.» |
+| 2:00–2:20 | Puente (operador) → Operaciones → filtro «vinculo-bot»: 3 filas «Completado», último paso «Postulación creada», vacante «VIN-DEMO-BOT → 9005» y el correo enmascarado | «Recibido no es transferido: solo cuenta cuando el ATS confirma la postulación.» |
 
-**Si sale «Se requiere intervención humana»:** la sesión venció → `npm run bot:login -w apps/bot-linkedin` y repetir. **Si piden ver la vía oficial:** `npm run vinculo:api -- on`, reiniciar `npm run dev` y `npm run demo:conectar`; se ve el portal de desarrolladores y Apply Connect simulado.
+**Si sale «Se requiere intervención humana»:** la sesión venció (o hay otra ventana del bot abierta) → ciérrala, `npm run bot:login -w apps/bot-linkedin` y repetir. Más casos: `docs/manuales/bot.md`, «Si algo falla en la demo». **Si piden ver la vía oficial:** `npm run vinculo:api -- on`, reiniciar `npm run dev` y `npm run demo:conectar`; se ve el portal de desarrolladores y Apply Connect simulado.
+
+## V4 · Guion final para PowerShell (demo del bot y del importador)
+
+> Actualizado por Claude Code (2026-11-03, auditoría F4-V). Ensayado completo en PowerShell 7.6 contra la base de desarrollo, salvo el inicio de sesión manual: en el ensayo se usó la sesión de pruebas. Cada comando del bot tardó de 11 a 13 s. Todo es simulado: Vínculo no es LinkedIn y Talentia no es BUK.
+
+**Ventana 1** (dejarla abierta toda la demo):
+
+```powershell
+cd "$HOME\Desktop\talent-bridge-v2"
+npm run dev
+```
+
+Si dice «El puerto 3001 … ya está en uso», ya hay otra ventana con `npm run dev`: usa esa o ciérrala (Ctrl+C).
+
+**Ventana 2:**
+
+```powershell
+cd "$HOME\Desktop\talent-bridge-v2"
+npm run demo:reset
+npm run demo:bot -- --reiniciar
+npm run bot:login -w apps/bot-linkedin
+```
+
+En la ventana que abre `bot:login`: correo `reclutadora@andina.demo.test`, contraseña `Demo2026!`. Cuando veas el panel del reclutador, **cierra esa ventana**.
+
+**En el navegador, antes de correr el bot:** abre http://localhost:3001 → Ingresar (`reclutadora@andina.demo.test` / `Demo2026!`) → Panel de reclutador → «Analista de Integraciones (demo del bot)»: 3 postulantes; abre «Ver ficha» de uno. El menú no tiene «Desarrolladores»: no hay API.
+
+**El bot (ventana visible):**
+
+```powershell
+npm run bot -w apps/bot-linkedin -- --seco    # opcional: muestra lo que haría, NO envía
+npm run bot -w apps/bot-linkedin              # «3 recibida(s)»
+```
+
+**En Talentia:** http://localhost:3002 → `reclutador@andina.demo.test` / `Demo2026!` → proceso 9005 → Postulantes: 3 tarjetas, cada una con su CV.
+
+**Otra vez, para mostrar que no duplica:**
+
+```powershell
+npm run bot -w apps/bot-linkedin              # «3 duplicada(s)»; Talentia sigue con 3
+```
+
+**En el Puente:** http://localhost:3003 → `operador@puente.demo.test` / `Demo2026!` → Operaciones → filtro «vinculo-bot»: 3 filas «Completado», último paso «Postulación creada».
+
+**Importador (segunda entrada):** Puente → Importar → proceso **9001** → «Hojas de vida»: los 3 PDF de `C:\Users\<tu usuario>\Desktop\talent-bridge-v2\fixtures\cv\` (`cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`) → «Leer y sugerir datos» → revisa la tabla → «Confirmar e importar»: «Enviada al ATS» ×3. Talentia → proceso 9001 → Postulantes.
+
+**Notas:**
+- Para repetir la demo el mismo día, vuelve a empezar desde `npm run demo:reset` y **repite `bot:login`**: `demo:reset` crea de nuevo las cuentas y la sesión del bot deja de valer. Sin `demo:reset`, el bot dará «duplicada» (ya se enviaron); con `--reiniciar` y sin `demo:reset`, las personas ya estarán en Talentia antes de correr el bot.
+- Las opciones del bot (`-- --seco`, `-- --vacante VIN-DEMO-BOT`) y de `demo:bot` (`-- --reiniciar`) funcionan en PowerShell tal como están escritas.
+- Para mostrar la API como «vía oficial futura» (opcional): `npm run vinculo:api -- on`, reinicia la ventana 1 y ejecuta `npm run demo:conectar`. Para apagarla: `npm run vinculo:api -- off` y reinicia.

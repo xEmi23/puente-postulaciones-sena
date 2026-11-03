@@ -19,6 +19,13 @@ describe("VINCULO_API_HABILITADA", () => {
     expect(apiHabilitada()).toBe(false);
     process.env.VINCULO_API_HABILITADA = "false";
     expect(apiHabilitada()).toBe(false);
+    // Un valor inválido o vacío cuenta como apagada (auditoría F4-V).
+    for (const v of ["", "  ", "yes", "prendida", "verdadero", "on", "2"]) {
+      process.env.VINCULO_API_HABILITADA = v;
+      expect(apiHabilitada(), JSON.stringify(v)).toBe(false);
+    }
+    process.env.VINCULO_API_HABILITADA = " TRUE ";
+    expect(apiHabilitada()).toBe(true);
     process.env.VINCULO_API_HABILITADA = "1";
     expect(apiHabilitada()).toBe(true);
     process.env.VINCULO_API_HABILITADA = "true";

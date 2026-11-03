@@ -61,6 +61,8 @@
 ## Riesgos y pendientes
 
 - `npm audit`: 16 avisos moderados de `minimatch` en las herramientas de ESLint (solo desarrollo). No se forzó la corrección.
-- `render.yaml` no define `VINCULO_API_HABILITADA`. Un despliegue nuevo quedaría sin API: hay que decidirlo antes de desplegar.
+- `render.yaml` declara `VINCULO_API_HABILITADA="false"` (D-71, auditoría).
 - En Talentia, la fuente del bot se ve como «Puente · fuente «vinculo-bot»». Si se quiere un texto propio, se agrega en `apps/puente/src/nucleo/fuentes.ts`.
 - LinkedIn real sigue bloqueado por la Puerta 0 (`docs/manuales/bot.md`, «Qué falta»).
+
+> Actualizado por Claude Code (2026-11-03): la auditoría final (`docs/v4/AUDITORIA_F4V.md`) corrigió cinco defectos y dejó la puerta en **284** pruebas (Vitest 231, Playwright 53), sin pruebas inestables.

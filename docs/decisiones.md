@@ -473,7 +473,7 @@
 
 - **Fecha:** 2026-11-02 (F4-V, ajuste pedido por el equipo)
 - **Decisión:** para la empresa, el LinkedIn real no tiene API; el simulador debe comportarse igual. Vínculo lee `VINCULO_API_HABILITADA` (por defecto **false**; `true` o `1` la prenden). Apagada: no aparecen «Desarrolladores», «API para integradores» ni «Integraciones»; `/developers` y `/reclutador/integraciones` responden 404 (también sus acciones; `src/proxy.ts` asegura el estado HTTP 404, porque con `loading.tsx` la página sale en streaming con 200); OAuth (`/oauth/v2/accessToken`), `/api/v1/*` y `/api/openapi.json` responden 404; no se crean entregas de webhook al postular, el despachador no envía nada y la vacante no ofrece «Entregar a un ATS conectado». Prendida: todo como antes. El código de la API y sus pruebas se conservan: Vitest de Vínculo y Playwright la prenden explícitamente, y `tests/api-apagada.test.ts` verifica el caso apagado. El adaptador Apply Connect del Puente no cambia (es la vía oficial futura). `npm run demo:bot` la deja apagada (además conecta solo Talentia en el Puente) y `npm run vinculo:api -- on|off|estado` la cambia en `apps/vinculo/.env` (hay que reiniciar las apps).
-- **Consecuencia:** con la API apagada, `npm run demo:conectar` falla en el paso de Vínculo (404): primero `npm run vinculo:api -- on` y reiniciar. `render.yaml` no define la variable, así que un despliegue nuevo quedaría sin API (decidirlo antes de desplegar).
+- **Consecuencia:** con la API apagada, `npm run demo:conectar` falla en el paso de Vínculo (404): primero `npm run vinculo:api -- on` y reiniciar. `render.yaml` la declara en `false` (D-71).
 - **Alternativa descartada:** borrar la API de Vínculo (se pierde la demostración de la vía oficial y sus pruebas de contrato).
 
 ## D-69 · Scripts de base de datos con --if-present
@@ -487,3 +487,23 @@
 - **Fecha:** 2026-11-02 (F4-V)
 - **Decisión:** Vínculo envía sus páginas en streaming y, con la sesión vencida (por ejemplo, después de `demo:reset`, que vuelve a crear las cuentas), redirige al ingreso desde el cliente. El navegador del bot espera, además de `load`, a que la red quede quieta (máximo 15 s) antes de leer la página. Y el perfil de Vínculo trata como bloqueo `pagina_inesperada` cualquier página bajo `/reclutador` sin el menú del panel: el bot se detiene con «Se requiere intervención humana» en lugar de informar «0 vacantes». Se encontró en el ensayo de la demo en local.
 - **Alternativa descartada:** esperas fijas (lentas y frágiles) o aceptar el panel vacío (oculta una sesión vencida).
+
+> Actualizado por Claude Code (2026-11-03, auditoría F4-V).
+
+## D-71 · render.yaml declara VINCULO_API_HABILITADA=false
+
+- **Fecha:** 2026-11-03 (auditoría F4-V)
+- **Decisión:** `render.yaml` declara `VINCULO_API_HABILITADA="false"` en el servicio de Vínculo, para que lo desplegado sea igual que en local (sin API, como el LinkedIn real para la empresa). No se desplegó. Ojo: al redesplegar, `demo:conectar` contra Render deja de funcionar hasta poner `"true"` en ese servicio.
+- **Alternativa descartada:** no declararla. Daba el mismo resultado (por defecto es false), pero de forma implícita.
+
+## D-72 · Opciones de los comandos que sobreviven a PowerShell
+
+- **Fecha:** 2026-11-03 (auditoría F4-V)
+- **Decisión:** en PowerShell, el envoltorio `npm.ps1` quita el `--` y npm se queda con las opciones `--seco`, `--vacante`, `--reiniciar`, `--proceso` y `--publicar` (las exporta como `npm_config_<nombre>`). Se comprobó que `npm run bot -w apps/bot-linkedin -- --seco` **enviaba**. El bot (`src/argumentos.ts`) y los scripts de la raíz (`scripts/argumentos.mjs`) leen las dos formas. `--vacante` sin código se rechaza.
+- **Alternativa descartada:** documentar `npm.cmd` o variables de entorno en lugar de los comandos (fácil de olvidar en vivo; un `--seco` ignorado envía datos).
+
+## D-73 · Segunda instancia de Vínculo sin API en las E2E
+
+- **Fecha:** 2026-11-03 (auditoría F4-V)
+- **Decisión:** `e2e/vinculo-sin-api.spec.ts` arranca, con el supervisor, una segunda instancia del mismo build de Vínculo en el puerto 3214, con `VINCULO_API_HABILITADA=false` y sobre la misma base E2E. Así se prueba la interfaz sin API (menú, pie, 404, Integraciones, vacante antes conectada y Solicitud sencilla), y la instancia de 3211 sigue con la API para el resto de las pruebas.
+- **Alternativa descartada:** apagar la API en la instancia principal a mitad de la suite (habría que reiniciarla y las pruebas quedarían dependientes del orden).

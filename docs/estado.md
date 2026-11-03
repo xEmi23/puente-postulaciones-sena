@@ -593,5 +593,16 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Puerta de calidad: lint 0 · typecheck 0 · Vitest 29 + 30 + 142 + 16 · Playwright 50/50 (2 omitidas, capturas) (**267**).
 - Riesgos:
   - avisos moderados de `minimatch` en las herramientas de ESLint;
-  - `render.yaml` no define `VINCULO_API_HABILITADA`.
+  - `render.yaml` declara `VINCULO_API_HABILITADA="false"` (D-71, auditoría del 2026-11-03).
 - Siguiente paso: la demo, con el guion V4 y su bloque del bot. LinkedIn real solo si la Puerta 0 dice «Bot = sí».
+
+## V4 F4-V · Auditoría final (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). Detalle en `docs/v4/AUDITORIA_F4V.md`.
+
+- Cinco defectos corregidos, cada uno en su commit «v4 F4-V fix: …». El más grave: en PowerShell, `-- --seco` enviaba (D-72).
+- La API apagada también se prueba en E2E (D-73).
+- `render.yaml` declara `VINCULO_API_HABILITADA="false"` (D-71).
+- Guion final para PowerShell: `docs/guion-demo.md`. Casos de fallo en la demo: `docs/manuales/bot.md`.
+- Puerta de calidad, dos corridas seguidas e idénticas: lint 0 · typecheck 0 · Vitest 29 + 30 + 143 + 29 · Playwright 53 (2 omitidas, capturas) = **284**, sin pruebas inestables.
+- Pendiente (pregunta): los nombres visibles «Simulador LinkedIn» y «Simulador BUK» no están hechos y contradicen CLAUDE.md.
