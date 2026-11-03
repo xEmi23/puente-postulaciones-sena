@@ -4,6 +4,7 @@
 const ETIQUETAS: Record<string, string> = {
   "apply-connect": "Simulador LinkedIn (Apply Connect)",
   importador: "Importador manual",
+  "formulario-publico": "Formulario público",
   "vinculo-bot": "LinkedIn (bot, simulador)",
   "linkedin-bot": "Bot experimental (LinkedIn)",
 };

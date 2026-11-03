@@ -35,6 +35,9 @@ export default async function LayoutPuente({ children }: { children: React.React
                 <EnlaceMenu href="/importar">Importar</EnlaceMenu>
               </li>
               <li>
+                <EnlaceMenu href="/formulario">Formulario público</EnlaceMenu>
+              </li>
+              <li>
                 <EnlaceMenu href="/conexiones">Conexiones</EnlaceMenu>
               </li>
               {usuario.rol === "ADMIN" && (

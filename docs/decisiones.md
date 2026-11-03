@@ -518,3 +518,36 @@
 - **Motivo:** la demostración se entiende mejor y queda más cerca de lo real (el reclutador reconoce los sistemas que usa), y el rótulo «Simulador» más la franja impiden presentarlo como conexión real. Sigue prohibido afirmar conexión, certificación o compatibilidad con LinkedIn o BUK.
 - **Pruebas:** `e2e/nombres-visibles.spec.ts` recorre las pantallas principales de las tres apps y falla si aparece «Vínculo» o «Talentia» en el texto, el título de la pestaña o un atributo visible, o si falta la franja. `apps/puente/tests/nombres-visibles.test.ts` fija las etiquetas de las fuentes y `e2e/bot.spec.ts` (BV-4) verifica «LinkedIn (bot, simulador)» en Operaciones.
 - **Alternativa descartada:** mantener «Vínculo» y «Talentia» (decisión anterior, D-19 y CLAUDE.md): obligaba a explicar en la demo qué sistema real representa cada uno.
+
+## D-75 · Bot descartado como vía de entrada; formulario público del Puente con enlace externo en la oferta
+
+> Actualizado por Claude Code (2026-11-03). Decisión del equipo del 03/11/2026 («APROBADO PARA DESPLEGAR», F6).
+
+- **Fecha:** 2026-11-03 (F6)
+- **Decisión:** la entrada nueva es una sola: la oferta en LinkedIn lleva un **enlace externo** a `/postular/<código>`, el formulario público del Puente. Ese formulario va al núcleo (`registrarRecepcion`) y luego al ATS por `ConectorATS` (Simulador BUK por API). El bot (`apps/bot-linkedin`) queda **descartado como vía de entrada**: no se borra, no se toca, no se despliega y no se incluye en esta entrega. Vínculo (Simulador LinkedIn) tampoco se toca ni se despliega de nuevo.
+- **Cómo funciona:**
+  - Cada vacante vinculada a un proceso del ATS tiene un código público de 12 caracteres al azar. Es una `Correspondencia` de la fuente del sistema `formulario-publico`, y su `vacanteExterna` es el código. El panel (con sesión) muestra el enlace completo con un botón «Copiar» en **Formulario público**.
+  - La fuente se rotula «Formulario público».
+  - Duplicados, revisión, reintentos y envío al ATS son los mismos que en las demás entradas.
+  - El mismo correo en la misma vacante es la misma postulación: el núcleo la responde DUPLICADA y la persona ve la misma confirmación.
+- **Privacidad:**
+  - `/privacidad` es un aviso en español claro, rotulado «Borrador pendiente de validación legal (Ley 1581 de 2012)». No inventa datos de la empresa: el responsable y su identificación quedan «pendientes de completar».
+  - El canal de contacto sale de `PRIVACIDAD_CORREO`. Si la variable no es un correo válido, el aviso dice «pendiente de configurar».
+  - Cada postulación guarda la prueba del consentimiento: `consentimientoEn`, `consentimientoVersion` (`VERSION_AVISO`) y `consentimientoOrigen` (HMAC de la IP con la clave del Puente; nunca la IP en claro).
+- **Motivo:** no exige automatizar sesiones reales ni API de LinkedIn (sección R). El candidato entrega sus datos y su autorización directamente a la herramienta de la empresa, y el recorrido es el mismo núcleo ya probado. El bot dependía de la Puerta 0 y de una sesión real; el enlace externo es una función estándar de la oferta y no automatiza nada.
+- **Alternativa descartada:** seguir con el bot sobre LinkedIn real (riesgo de términos de uso y de bloqueo, y una sesión humana en cada corrida), o reutilizar la Solicitud sencilla de Vínculo (no existe en LinkedIn real para esta empresa, D-68).
+
+## D-76 · Protecciones del formulario público
+
+- **Fecha:** 2026-11-03 (F6)
+- **Decisión:**
+  - Límite en memoria del proceso: 5 envíos por IP cada 10 minutos (`PUENTE_FORMULARIO_LIMITE_IP`) y 100 por vacante cada hora (`PUENTE_FORMULARIO_LIMITE_VACANTE`).
+  - Campo trampa oculto (`sitio_web`): si llega lleno, se responde como aceptado y no se registra nada.
+  - Tiempo mínimo de llenado de 3 s (`PUENTE_FORMULARIO_MIN_MS`), con una marca de tiempo firmada con HMAC por código que vence a las 2 horas.
+  - Tope de tamaño antes de leer el cuerpo, y PDF validado por contenido (firma `%PDF-`) en el formulario y otra vez en el núcleo.
+  - Respuesta 303 idéntica para una postulación nueva, repetida o con campo trampa.
+  - Los registros solo llevan el id de la recepción, y el id externo es un hash, así que el correo no viaja como referencia al ATS.
+- **Supuesto pendiente:** qué encabezado de IP es confiable detrás del proxy de Render. Se usa, en orden, `True-Client-IP`, `CF-Connecting-IP`, el primer valor de `X-Forwarded-For` y `X-Real-IP`. Si Render deja pasar un `X-Forwarded-For` puesto por el cliente, el límite por IP se puede esquivar; el tope por vacante sigue frenando.
+- **Alternativa descartada:**
+  - Un CAPTCHA de terceros: implica llamadas a un servicio externo real, y los datos del candidato saldrían a otro proveedor.
+  - Contar en PostgreSQL: más robusto con varias instancias, pero en Render gratuito hay una sola.

@@ -104,6 +104,10 @@ services:
       # V4: reintentos por postulación antes de FALLIDA_DEFINITIVA.
       - key: PUENTE_MAX_INTENTOS
         value: "5"
+      # V4 F6: canal de contacto del aviso de privacidad (/privacidad). MARCADOR: la empresa responsable debe poner su
+      # correo real. Mientras no sea un correo válido, el aviso dice «pendiente de configurar» (no se inventa uno).
+      - key: PRIVACIDAD_CORREO
+        value: "PENDIENTE-correo-de-privacidad"
 
 databases:
   - name: puente-postulaciones-db

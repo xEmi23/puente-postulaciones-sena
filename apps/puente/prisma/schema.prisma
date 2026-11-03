@@ -237,6 +237,11 @@ model Recepcion {
   datosBorradosEn    DateTime?         @db.Timestamptz(3)
   // V4: se completó, pero con una salvedad visible (p. ej., «CV no enviado: el ATS no lo admite por API»).
   advertencia        String?
+  // V4 F6: prueba del consentimiento (formulario público): fecha, versión del aviso de privacidad y origen resumido
+  // (HMAC de la IP con la clave del Puente; la IP nunca se guarda en claro).
+  consentimientoEn      DateTime? @db.Timestamptz(3)
+  consentimientoVersion String?
+  consentimientoOrigen  String?
   duplicadosEvitados Int               @default(0)
   recibidaEn         DateTime          @default(now()) @db.Timestamptz(3)
   completadaEn       DateTime?         @db.Timestamptz(3)

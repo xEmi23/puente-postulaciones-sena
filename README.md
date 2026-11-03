@@ -6,6 +6,8 @@ Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: lle
 
 > Actualizado por Claude Code (2026-11-03, D-74). En pantalla, **Vínculo** se llama **«Simulador LinkedIn»** y **Talentia** **«Simulador BUK»** (siempre con «Simulador»; franja «No es LinkedIn ni BUK: simulación académica»). En el Puente la fuente `vinculo-bot` se ve como «LinkedIn (bot, simulador)» y `importador` como «Importador manual». Los nombres de carpetas, esquemas, URL, variables y comandos no cambian: este README los usa como nombres internos.
 
+> Actualizado por Claude Code (2026-11-03, D-75). **Decisión del equipo: el bot queda descartado como vía de entrada.** La entrada nueva es **LinkedIn (oferta con enlace externo) → formulario público del Puente (`/postular/<código>`) → API del ATS (Simulador BUK)**. El enlace de cada vacante está en Puente → **Formulario público** (botón «Copiar»); el aviso de privacidad (borrador pendiente de validación legal) está en `/privacidad`. `apps/bot-linkedin` y Vínculo quedan como están, fuera de esta entrega.
+
 **El producto es el Puente:** un middleware que recibe postulaciones de **cualquier fuente** con un contrato común (`PostulacionCanonica v1`), las valida, evita duplicados, verifica el CV y las registra en el ATS a través de una interfaz (`ConectorATS`), con estados visibles, revisión humana y auditoría. Cambiar de fuente o de ATS no toca el núcleo.
 
 ```
@@ -25,6 +27,7 @@ Con `npm run dev` en marcha y `npm run demo:bot -- --reiniciar` (conecta el Puen
 
 | Entrada | Cómo | Dónde se ve |
 |---|---|---|
+| **Formulario público (D-75)** | Puente → **Formulario público** → «Crear enlace» en un proceso → «Copiar» → abrir el enlace sin sesión → nombres, apellidos, correo, teléfono, PDF y la casilla de autorización → «Enviar postulación» | Operaciones (fuente «Formulario público»); Simulador BUK → Postulantes (mismo SHA-256 en la ficha) |
 | **Importador manual** | Puente → **Importar** → elegir proceso → adjuntar PDF (p. ej. `fixtures/cv/*.pdf`) → revisar → **Confirmar e importar** ([manual](docs/manuales/importador.md)) | Puente → Operaciones (fuente `importador`); Talentia → Postulantes |
 | **Entrada genérica** | Puente → **Fuentes** → crear fuente y **Generar token**; **Correspondencias** → fuente, vacante y proceso; luego `POST /api/entradas/v1/postulaciones` (ejemplo en PowerShell en `docs/v4/REPORTE_F2.md`; contrato en `docs/contratos.md` §8) | Operaciones (fuente propia); sin correo o sin CV queda en «Requiere revisión» |
 | **Bot asistido (experimental, solo Vínculo)** | `npm run bot:login -w apps/bot-linkedin` y `npm run bot -w apps/bot-linkedin` ([manual](docs/manuales/bot.md)) | Operaciones (fuente `vinculo-bot`); Talentia 9005 → Postulantes |

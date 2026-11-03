@@ -474,3 +474,49 @@
   font-size: 0.85rem;
   color: #1f2937;
 }
+
+/* V4 F6: páginas públicas (formulario de postulación y aviso de privacidad), sin menú del panel. */
+.publico {
+  display: grid;
+  justify-items: center;
+  padding: 2rem 1rem 3rem;
+}
+.publico-tarjeta {
+  width: 100%;
+  max-width: 640px;
+}
+.publico-tarjeta h2 {
+  font-size: 1.05rem;
+  margin-top: 1.4rem;
+}
+.p-campo-casilla {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 1rem 0;
+}
+.p-campo-casilla input {
+  margin-top: 0.25rem;
+  width: auto;
+}
+.p-trampa {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.p-enlace-publico {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.p-enlace-publico input {
+  font: inherit;
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}

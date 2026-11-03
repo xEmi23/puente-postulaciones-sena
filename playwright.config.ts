@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e",
   // La prueba de humo de Render tiene su propia configuración (playwright.render.config.ts).
-  testIgnore: ["humo-render.spec.ts"],
+  testIgnore: ["humo-render.spec.ts", "humo-formulario-render.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

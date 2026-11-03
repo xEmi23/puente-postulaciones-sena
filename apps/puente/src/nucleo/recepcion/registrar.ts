@@ -6,7 +6,7 @@ import { validarCanonica, type PostulacionCanonica } from "../contrato/canonica"
 import { auditar, log, type Actor } from "../auditoria";
 
 // registrarRecepcion(): ÚNICA puerta de entrada al núcleo del Puente (ESPECIFICACION_V4 §5–§7). Todo adaptador de
-// entrada (Apply Connect, entrada genérica, importador, bot) termina aquí con una PostulacionCanonica v1:
+// entrada (Apply Connect, entrada genérica, importador, bot, formulario público) termina aquí con una PostulacionCanonica v1:
 //   1. valida y normaliza la canónica;
 //   2. deduplicación dura UNIQUE(fuente, idExterno): una segunda llegada no crea nada (DUPLICADA);
 //   3. resuelve el proceso del ATS (nunca adivina: publicación o correspondencia; el importador elige el proceso);
@@ -37,6 +37,8 @@ export interface OpcionesRegistro {
   payloadSha256?: string;
   /** Proceso elegido por una persona (importador): no se busca correspondencia. */
   procesoAtsId?: number;
+  /** Prueba del consentimiento (formulario público): se guarda con la recepción. */
+  consentimiento?: { en: Date; version: string; origen: string };
 }
 
 export type ResultadoRecepcion =
@@ -140,6 +142,9 @@ export async function registrarRecepcion(
         // Solo si una persona eligió el proceso (importador); si no, el procesador lo resuelve (y respeta cierres posteriores).
         procesoAtsId: opciones.procesoAtsId ?? null,
         ...datosCv,
+        ...(opciones.consentimiento
+          ? { consentimientoEn: opciones.consentimiento.en, consentimientoVersion: opciones.consentimiento.version, consentimientoOrigen: opciones.consentimiento.origen }
+          : {}),
         ...(enRevision ? { estado: "REQUIERE_REVISION" as const, motivoRevision: motivos.join(",") } : {}),
         // En revisión, el trabajo queda detenido: el worker no lo toma hasta que una persona apruebe.
         trabajo: { create: enRevision ? { estado: "DETENIDO" } : {} },
