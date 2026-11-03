@@ -12,6 +12,9 @@ export const VIN = `http://localhost:${PUERTOS.vinculo}`;
 export const TAL = `http://localhost:${PUERTOS.talentia}`;
 export const PUE = `http://localhost:${PUERTOS.puente}`;
 const PUERTO_CONTROL = 3219;
+/** D-68: una segunda instancia de Vínculo (mismo build y misma base E2E) con la API APAGADA, solo para vinculo-sin-api.spec.ts. */
+export const PUERTO_VIN_SIN_API = 3214;
+export const VIN_SIN_API = `http://localhost:${PUERTO_VIN_SIN_API}`;
 const CONTROL = `http://127.0.0.1:${PUERTO_CONTROL}`;
 
 type App = keyof typeof PUERTOS;
@@ -46,6 +49,12 @@ function definiciones() {
   for (const app of Object.keys(PUERTOS) as App[]) {
     def[app] = { cwd: `apps/${app}`, args: [next, "start", "-p", String(PUERTOS[app])], env: envApp(app), salud: `http://localhost:${PUERTOS[app]}/ingresar` };
   }
+  def["vinculo-sin-api"] = {
+    cwd: "apps/vinculo",
+    args: [next, "start", "-p", String(PUERTO_VIN_SIN_API)],
+    env: { ...envApp("vinculo"), APP_BASE_URL: VIN_SIN_API, VINCULO_API_HABILITADA: "false" },
+    salud: `${VIN_SIN_API}/ingresar`,
+  };
   for (const app of ["vinculo", "puente"] as const) {
     def[`worker-${app}`] = { cwd: `apps/${app}`, args: ["--import", "tsx", "worker/index.ts"], env: envApp(app) };
   }
@@ -98,6 +107,8 @@ export const matarWorker = async () => {
 };
 export const matarSistema = (app: App) => control(`/${app}/stop`);
 export const iniciarSistema = (app: App) => control(`/${app}/start`, 20);
+export const iniciarVinculoSinApi = () => control("/vinculo-sin-api/start", 20);
+export const detenerVinculoSinApi = () => control("/vinculo-sin-api/stop").catch(() => undefined);
 export const detenerTodo = () => control("/todo/stop").catch(() => undefined);
 
 export function prepararBase() {

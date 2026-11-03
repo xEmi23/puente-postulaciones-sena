@@ -21,6 +21,8 @@ export default async function VacanteReclutador({ params, searchParams }: { para
     include: { aplicacion: true, postulaciones: { orderBy: { aplicadaEn: "desc" }, include: { archivoCv: { omit: { contenido: true } }, candidato: { include: { perfil: { select: { slug: true } } } } } } },
   });
   if (!v) notFound();
+  // Con la API apagada (D-68) ninguna vacante se presenta como conectada a un ATS, aunque lo haya estado antes.
+  const conectada = apiHabilitada() && !!v.aplicacion;
   const base = `/reclutador/vacantes/${id}`;
   const deApi = !v.externalJobId.startsWith("VIN-");
 
@@ -77,7 +79,7 @@ export default async function VacanteReclutador({ params, searchParams }: { para
       </div>
       <p className="v-meta">
         Código <code>{v.externalJobId}</code> · {v.estado === "PUBLICADA" ? "Publicada" : v.estado === "CERRADA" ? "Cerrada" : "Borrador"} ·{" "}
-        {v.solicitudSencilla ? (v.aplicacion ? `Solicitud sencilla, entregada a «${v.aplicacion.nombre}»` : "Solicitud sencilla en Vínculo") : "Postulación en el sitio de la empresa"}
+        {v.solicitudSencilla ? (conectada ? `Solicitud sencilla, entregada a «${v.aplicacion!.nombre}»` : "Solicitud sencilla en Vínculo") : "Postulación en el sitio de la empresa"}
         {v.estado !== "BORRADOR" && (
           <>
             {" "}
@@ -94,7 +96,7 @@ export default async function VacanteReclutador({ params, searchParams }: { para
 
       <section className="v-tarjeta" aria-labelledby="t-postulantes">
         <h2 id="t-postulantes">Postulantes ({v.postulaciones.length})</h2>
-        {v.aplicacion && (
+        {conectada && (
           <p className="v-ayuda">Estas solicitudes también se entregan automáticamente al ATS conectado. No necesitas descargarlas.</p>
         )}
         {v.postulaciones.length === 0 ? (

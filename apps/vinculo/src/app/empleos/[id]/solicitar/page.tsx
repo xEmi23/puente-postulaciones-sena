@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { config } from "@/lib/config";
+import { apiHabilitada, config } from "@/lib/config";
 import { formatoTamano } from "@/lib/archivos";
 import { exigirUsuario } from "@/lib/sesion-servidor";
 import { FormularioSolicitud } from "./formulario";
@@ -42,6 +42,7 @@ export default async function Solicitar({ params }: { params: Promise<{ id: stri
         empresa={v.empresa.nombre}
         maxMb={Math.round(config().CV_MAX_BYTES / (1024 * 1024))}
         inicial={{ nombre: nombres, apellido: apellidos, correo: u.correo, telefono: perfil?.telefono ?? "", ciudad: perfil?.ciudad ?? "" }}
+        conApi={apiHabilitada()}
         cvPerfil={perfil?.cv ? { nombre: perfil.cv.nombreArchivo, tamano: formatoTamano(perfil.cv.tamano) } : null}
       />
     </div>

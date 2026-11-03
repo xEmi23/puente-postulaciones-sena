@@ -10,6 +10,8 @@ interface Props {
   maxMb: number;
   inicial: { nombre: string; apellido: string; correo: string; telefono: string; ciudad: string };
   cvPerfil: { nombre: string; tamano: string } | null;
+  /** Con la API de Vínculo apagada (D-68) no se menciona la entrega a un ATS. */
+  conApi?: boolean;
 }
 
 const CAMPOS = [
@@ -21,7 +23,7 @@ const CAMPOS = [
 ] as const;
 
 /** «Solicitud sencilla»: paso 1 confirma los datos de contacto; paso 2 elige el CV y envía. */
-export function FormularioSolicitud({ vacanteId, titulo, empresa, maxMb, inicial, cvPerfil }: Props) {
+export function FormularioSolicitud({ vacanteId, titulo, empresa, maxMb, inicial, cvPerfil, conApi = false }: Props) {
   const [estado, accion, enviando] = useActionState<EstadoSolicitud, FormData>(enviar, {});
   const [paso, setPaso] = useState<1 | 2>(1);
   const [origen, setOrigen] = useState<"perfil" | "nuevo">(cvPerfil ? "perfil" : "nuevo");
@@ -154,7 +156,7 @@ export function FormularioSolicitud({ vacanteId, titulo, empresa, maxMb, inicial
           </p>
         )}
         <p className="v-ayuda">
-          Al enviar, la empresa recibe tus datos de contacto y tu hoja de vida para este proceso de selección (Ley 1581 de 2012). Si la empresa tiene un ATS conectado, se le entregan automáticamente.
+          Al enviar, la empresa recibe tus datos de contacto y tu hoja de vida para este proceso de selección (Ley 1581 de 2012).{conApi && " Si la empresa tiene un ATS conectado, se le entregan automáticamente."}
         </p>
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem", flexWrap: "wrap" }}>
           <button type="button" className="v-boton v-boton-borde" onClick={() => setPaso(1)}>
