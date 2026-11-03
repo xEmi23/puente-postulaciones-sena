@@ -119,3 +119,37 @@ Las URL exactas de los servicios las muestra Render en cada servicio (si el nomb
    ```
    Luego, en el Puente desplegado: **Fuentes** → crear `linkedin-bot` (solo si se construye el bot) y entregar su token al equipo por un canal privado (nunca en archivos); **Importar** → un PDF ficticio en un proceso de Talentia → «Enviada al ATS» → Talentia → Postulantes. Prueba de humo existente: `RENDER_HUMO=1 RENDER_CANDIDATO=santiago npx playwright test -c playwright.render.config.ts -g "(0 ·|6 ·|7 ·|8 ·)"`.
 5. **Reversión (sin reescribir historia):** `git revert` de los commits V4 en `v2` y push; las columnas y tablas nuevas pueden quedarse (la v2 no las usa).
+
+---
+
+## V4 F6 · Despliegue del formulario público (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). Aprobado por el equipo («APROBADO PARA DESPLEGAR», D-75). Solo el **Puente** y el **Simulador BUK** (Talentia); **Vínculo y el bot no se tocaron**.
+
+**Rama:** no se hizo merge a `v2` (regla: solo se hace push a `v4`). Con la CLI se cambió la rama de los servicios `puente-postulaciones` y `talentia-simulado` a **`v4`**: `render services update <id> --branch v4`. `vinculo-simulado` sigue en `v2`. El Blueprint sigue apuntando a `v2`, así que **los cambios de `render.yaml` en `v4` no se sincronizan solos**: por eso las variables nuevas se cargaron a mano en el servicio (abajo). Como los servicios tienen el autodespliegue prendido, cada push a `v4` vuelve a desplegar el Puente y el Simulador BUK.
+
+**Variables cargadas en `puente-postulaciones`** (API de Render, `PUT /v1/services/<id>/env-vars/<clave>`):
+- `ATS_DESTINO=talentia`
+- `RETENCION_CV_DIAS=30`
+- `PUENTE_MAX_INTENTOS=5`
+- **`PRIVACIDAD_CORREO=PENDIENTE-correo-de-privacidad`**: es un marcador. Mientras no sea un correo válido, `/privacidad` dice «pendiente de configurar». La empresa debe poner el suyo: Render → `puente-postulaciones` → Environment.
+
+**Migraciones:** las aplica el `startCommand` del Puente (`npx prisma migrate deploy`): las tres de V4 que faltaban en Render y `20261103180000_v4_f6_formulario_publico`. Ninguna borra datos. El Simulador BUK no tiene migraciones nuevas: entre `v2` y `v4` solo cambiaron textos.
+
+**Conexión y vacante de prueba:** el Puente de Render ya tenía su conexión con el Simulador BUK (la API Key de octubre). La lista de procesos en **Formulario público** demuestra que responde. Se creó el enlace público del proceso **9006 · Diseñador/a UX/UI** (Correspondencia `formulario-publico:<código>` → 9006).
+
+**Prueba de humo** (no reconfigura conexiones; no usar `humo-render.spec.ts`, que sí las reconfigura):
+
+```powershell
+$env:RENDER_HUMO="1"; npx playwright test -c playwright.render-formulario.config.ts
+# Otro proceso: $env:RENDER_PROCESO="9003"
+```
+
+Verifica cinco cosas:
+- el panel exige sesión;
+- el enlace público aparece con «Copiar»;
+- el formulario carga sin sesión y un PDF ficticio llega a Postulantes del Simulador BUK con el mismo SHA-256;
+- el segundo envío con el mismo correo es duplicado (misma confirmación, una sola postulación en el ATS);
+- `/privacidad` carga sin sesión.
+
+**Reversión:** `render services update <id> --branch v2` en los dos servicios y redesplegar. Las columnas nuevas (`consentimiento*`) pueden quedarse, porque la v2 no las usa.

@@ -614,3 +614,29 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - En pantalla: «Simulador LinkedIn», «Simulador BUK» y la franja «No es LinkedIn ni BUK: simulación académica»; en el Puente, la fuente del bot es «LinkedIn (bot, simulador)» y el importador es «Importador manual». Nada interno cambió.
 - Puerta de calidad dos veces: lint 0, typecheck 0, Vitest 234, Playwright 56 (2 omitidas), build 0.
 - Siguiente paso: reiniciar `npm run dev` antes de la demo (el worker del Puente no se recarga solo) y ensayar con la ventana visible y `bot:login` manual.
+
+## V4 F6 · Formulario público y despliegue (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). D-75 (el bot queda descartado como vía de entrada) y D-76 (protecciones). Despliegue en `docs/despliegue.md` («V4 F6»).
+
+- **Entrada nueva:** oferta en LinkedIn con enlace externo → `/postular/<código>` (formulario público del Puente, sin sesión) → `registrarRecepcion` → ConectorATS → Simulador BUK. Fuente «Formulario público» (`formulario-publico`).
+- **Panel:** **Formulario público** muestra el enlace completo de cada proceso del ATS con «Copiar», y permite crearlo o desactivarlo (solo administradores). El panel sigue exigiendo sesión.
+- **Privacidad:** `/privacidad` es un borrador rotulado «pendiente de validación legal (Ley 1581 de 2012)», con el contacto desde `PRIVACIDAD_CORREO`. Cada postulación guarda la prueba del consentimiento: fecha, versión `2026-11-03.1` y origen HMAC.
+- **Protecciones:** 5 envíos por IP cada 10 minutos, 100 por vacante cada hora, campo trampa, 3 s mínimos de llenado (marca firmada), tope de 5 MB, PDF por contenido y la misma respuesta para un envío nuevo o repetido.
+- **Fuera de esta entrega:** `apps/bot-linkedin` y Vínculo no se tocaron ni se desplegaron.
+- **Pruebas nuevas:** `apps/puente/tests/formulario.test.ts` (16) y `e2e/formulario.spec.ts` (6 en escritorio, 1 en móvil). La humo de Render está aparte: `e2e/humo-formulario-render.spec.ts`.
+- **Puerta de calidad:**
+  - Vuelta 1: la E2E nueva falló dos veces por defectos de la prueba (un clic antes de cargar; un envío antes del tiempo mínimo). Se corrigieron sin aflojar aserciones.
+  - Vuelta 2: 1 fallo en I-7 del importador, por `ENOENT` del archivo de traza. Lo causó la humo de Render corrida al mismo tiempo, que vació `test-results`.
+  - El resto de cada vuelta: lint 0, typecheck 0, Vitest 29 + 30 + 162 + 29 = 250, build 0.
+  - **Vueltas 3 y 4, seguidas y sin nada en paralelo, idénticas:** lint 0 · typecheck 0 · Vitest 250 · Playwright 63 (2 omitidas, capturas) · build 0 = **313 pruebas**.
+- **Render:**
+  - `puente-postulaciones` y `talentia-simulado` pasaron a la rama `v4`; `vinculo-simulado` sigue en `v2`.
+  - Commit `b8f32b4` en vivo; se aplicaron las 4 migraciones pendientes del Puente.
+  - Humo: 5/5 (panel con sesión, enlace, PDF ficticio en Postulantes de 9006 con el mismo SHA-256, duplicado, `/privacidad`).
+  - Enlace de la vacante de prueba (9006 · Diseñador/a UX/UI): https://puente-postulaciones.onrender.com/postular/cnibi7tmi252
+- **Pendiente del equipo:**
+  - el correo real en `PRIVACIDAD_CORREO`;
+  - la identificación del responsable en el aviso, y su validación legal;
+  - verificar qué encabezado de IP es confiable en Render (D-76);
+  - la base gratuita de Render vence el 2026-11-28.
