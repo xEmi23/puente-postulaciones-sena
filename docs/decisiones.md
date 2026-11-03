@@ -448,3 +448,42 @@
 - **Fecha:** 2026-11-02 (F3)
 - **Decisión:** la subida va a `POST /api/importador/lotes` (ruta con verificación de sesión, porque 20 PDF de 5 MB superan el límite de las acciones de servidor) y guarda un `LoteImportacion` con los PDF y lo sugerido. La persona revisa y confirma en `/importar/<lote>`; cada fila confirmada entra por `registrarRecepcion()` con `fuente = importador`, `idExterno = <proceso>:<sha256>`, `vacanteExterna = <proceso>`, el proceso elegido y `origenDatos = confirmado-por-persona`. Los bytes del lote se borran al confirmar; los lotes sin confirmar se borran a las 24 h (ciclo de retención). La fuente `importador` es del sistema (sin token: actúa la persona con sesión). En el ATS la fuente visible es «Importador manual del Puente».
 - **Alternativa descartada:** mantener los archivos en el navegador y reenviarlos al confirmar (doble subida y sin trazabilidad del lote).
+
+> Actualizado por Claude Code (2026-11-02, V4 F4-V: bot con perfil Vínculo, PROMPT_BOT_VINCULO.md).
+
+## D-65 · El bot se organiza por perfiles de sitio
+
+- **Fecha:** 2026-11-02 (F4-V)
+- **Decisión:** `apps/bot-linkedin` separa lo común (navegación con un `Navegador` abstracto sobre el contexto persistente de Playwright, guardias, mapeo a la canónica, envío con reintentos, pausas con reloj inyectable) de lo propio de cada sitio (`PerfilSitio`: rutas, selectores, pausas y horario por defecto, detección de bloqueo y extracción de HTML a datos). `BOT_SITIO=vinculo|linkedin` elige el perfil. La extracción son funciones puras HTML → datos, probadas con páginas guardadas. El perfil `linkedin` es un esqueleto con selectores vacíos marcados «pendiente de la Puerta 0» y `cargarPerfil` se niega con «perfil LinkedIn pendiente de la Puerta 0» mientras no esté listo y no haya páginas anonimizadas.
+- **Alternativa descartada:** un bot escrito directamente para LinkedIn (no se puede construir ni probar sin la Puerta 0 y sin páginas reales) o uno solo para Vínculo (habría que reescribirlo para LinkedIn).
+
+## D-66 · Vínculo primero, con pausas cortas
+
+- **Fecha:** 2026-11-02 (F4-V)
+- **Decisión:** el primer perfil completo es Vínculo (red simulada del proyecto): permite probar el bot de punta a punta (E2E con las tres apps reales) sin tocar LinkedIn. Para eso Vínculo gana la ficha del postulante en el panel del reclutador (`/reclutador/postulaciones/<id>`, con atributos `data-campo` estables) y el enlace «Ver ficha». Pausas por defecto: Vínculo 800–1500 ms y horario libre (es local y nuestro); LinkedIn 3000–8000 ms y 07–19. El tope de 25 por ejecución es igual para ambos. Las páginas de prueba de Vínculo se capturaron del sitio en local con datos ficticios.
+- **Alternativa descartada:** esperar la Puerta 0 para construir algo (no habría demo ni pruebas del adaptador).
+
+## D-67 · node-html-parser 9.0.4 para extraer datos del HTML
+
+- **Fecha:** 2026-11-02 (F4-V)
+- **Decisión:** `node-html-parser` 9.0.4 (MIT, JavaScript puro, selectores CSS) para las funciones de extracción, que así se prueban sin navegador. Playwright (misma versión 1.64.1 del repositorio) solo navega y descarga con la sesión. `dotenv` 18.0.9 (ya usado en el repositorio) lee `apps/bot-linkedin/.env`.
+- **Alternativa descartada:** extraer con `page.locator` (exige un navegador en cada prueba unitaria) o `cheerio` (más dependencias).
+
+## D-68 · VINCULO_API_HABILITADA: Vínculo sin API por defecto
+
+- **Fecha:** 2026-11-02 (F4-V, ajuste pedido por el equipo)
+- **Decisión:** para la empresa, el LinkedIn real no tiene API; el simulador debe comportarse igual. Vínculo lee `VINCULO_API_HABILITADA` (por defecto **false**; `true` o `1` la prenden). Apagada: no aparecen «Desarrolladores», «API para integradores» ni «Integraciones»; `/developers` y `/reclutador/integraciones` responden 404 (también sus acciones; `src/proxy.ts` asegura el estado HTTP 404, porque con `loading.tsx` la página sale en streaming con 200); OAuth (`/oauth/v2/accessToken`), `/api/v1/*` y `/api/openapi.json` responden 404; no se crean entregas de webhook al postular, el despachador no envía nada y la vacante no ofrece «Entregar a un ATS conectado». Prendida: todo como antes. El código de la API y sus pruebas se conservan: Vitest de Vínculo y Playwright la prenden explícitamente, y `tests/api-apagada.test.ts` verifica el caso apagado. El adaptador Apply Connect del Puente no cambia (es la vía oficial futura). `npm run demo:bot` la deja apagada (además conecta solo Talentia en el Puente) y `npm run vinculo:api -- on|off|estado` la cambia en `apps/vinculo/.env` (hay que reiniciar las apps).
+- **Consecuencia:** con la API apagada, `npm run demo:conectar` falla en el paso de Vínculo (404): primero `npm run vinculo:api -- on` y reiniciar. `render.yaml` no define la variable, así que un despliegue nuevo quedaría sin API (decidirlo antes de desplegar).
+- **Alternativa descartada:** borrar la API de Vínculo (se pierde la demostración de la vía oficial y sus pruebas de contrato).
+
+## D-69 · Scripts de base de datos con --if-present
+
+- **Fecha:** 2026-11-02 (F4-V)
+- **Decisión:** el bot es un cuarto workspace sin base de datos; `db:migrate`, `db:seed` y `demo:reset` de la raíz usan `--if-present` para no fallar en él. `test`, `typecheck` y `build` sí lo incluyen (el `build` del bot es `tsc --noEmit`).
+- **Alternativa descartada:** dejar el bot fuera de los workspaces (no compartiría las versiones exactas ni entraría en la puerta de calidad).
+
+## D-70 · El bot espera la página final y se detiene ante una página del panel incompleta
+
+- **Fecha:** 2026-11-02 (F4-V)
+- **Decisión:** Vínculo envía sus páginas en streaming y, con la sesión vencida (por ejemplo, después de `demo:reset`, que vuelve a crear las cuentas), redirige al ingreso desde el cliente. El navegador del bot espera, además de `load`, a que la red quede quieta (máximo 15 s) antes de leer la página. Y el perfil de Vínculo trata como bloqueo `pagina_inesperada` cualquier página bajo `/reclutador` sin el menú del panel: el bot se detiene con «Se requiere intervención humana» en lugar de informar «0 vacantes». Se encontró en el ensayo de la demo en local.
+- **Alternativa descartada:** esperas fijas (lentas y frágiles) o aceptar el panel vacío (oculta una sesión vencida).

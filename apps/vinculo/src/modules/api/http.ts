@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { apiHabilitada } from "@/lib/config";
 import { leerToken } from "@/lib/tokens";
 import type { AplicacionDev } from "@/generated/prisma/client";
 
@@ -28,7 +29,14 @@ export async function aplicacionDelToken(req: Request): Promise<AplicacionDev | 
   return app;
 }
 
+/** Con VINCULO_API_HABILITADA apagada la API no existe: 404 sin cuerpo útil, como una ruta que no hay. */
+export function apiNoDisponible(): Response | null {
+  return apiHabilitada() ? null : error(404, "NOT_FOUND", "No existe.");
+}
+
 export async function conAplicacion(req: Request, manejador: (app: AplicacionDev) => Promise<Response>): Promise<Response> {
+  const apagada = apiNoDisponible();
+  if (apagada) return apagada;
   const app = await aplicacionDelToken(req);
   if (!app) return error(401, "INVALID_ACCESS_TOKEN", "El access token falta, venció o no es válido.");
   try {

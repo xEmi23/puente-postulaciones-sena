@@ -62,6 +62,8 @@ En otra terminal, **una vez**, conecta los sistemas (equivale a hacerlo a mano e
 npm run demo:conectar  # API Key en Talentia → app en Vínculo autorizada por Andina → conexiones del puente → publica 9001 y 9002
 ```
 
+> Actualizado por Claude Code (2026-11-02, V4 F4-V). Desde D-68 Vínculo arranca **sin API** (`VINCULO_API_HABILITADA=false`), como el LinkedIn real para la empresa: sin portal de desarrolladores, OAuth ni webhooks. Para usar `demo:conectar` (Apply Connect simulado, la «vía oficial futura») primero `npm run vinculo:api -- on` y reinicia `npm run dev`. La demo del bot (`npm run demo:bot`, manual en `docs/manuales/bot.md`) la deja apagada.
+
 | Sistema | URL | Qué es |
 |---|---|---|
 | **Vínculo** | http://localhost:3001 | Red profesional simulada: empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y su API |
@@ -105,6 +107,9 @@ Guion completo con tiempos y plan B: [docs/guion-demo.md](docs/guion-demo.md) (s
 | `npm run dev` / `npm start` | Las tres apps en desarrollo o compiladas (3001, 3002, 3003). |
 | `npm run demo:conectar` | Conecta los tres sistemas y publica 9001 y 9002 (requiere las apps encendidas). |
 | `npm run demo:reset` | Borra y vuelve a sembrar **solo** datos demo en las tres apps (en el puente también borra las conexiones). Se niega con `NODE_ENV=production` o con una base no local. |
+| `npm run demo:bot` | V4: vacante VIN-DEMO-BOT con 3 postulaciones en Vínculo, fuente «vinculo-bot» con token (en `apps/bot-linkedin/.env`), correspondencia → 9005, conexión del Puente con Talentia, y deja la API de Vínculo apagada. |
+| `npm run vinculo:api -- on|off|estado` | Prende o apaga la API tipo Apply Connect de Vínculo (D-68); reiniciar las apps después. |
+| `npm run bot:login -w apps/bot-linkedin` / `npm run bot -w apps/bot-linkedin` | Bot asistido (experimental) sobre Vínculo: iniciar sesión a mano y recorrer (`-- --seco`, `-- --vacante <id>`). |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | Cliente Prisma y `tsc --noEmit` en cada app. |
 | `npm test` | Vitest de cada app contra PostgreSQL real (`tb2_test`). |

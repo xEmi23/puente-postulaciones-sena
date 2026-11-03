@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { apiHabilitada } from "@/lib/config";
 import { usuarioActual } from "@/lib/sesion-servidor";
 import { EnlaceMenu } from "@/components/enlace-menu";
 import "./globals.css";
@@ -65,9 +66,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     <EnlaceMenu href="/reclutador">Panel de reclutador</EnlaceMenu>
                   </li>
                 )}
-                <li>
-                  <EnlaceMenu href="/developers">Desarrolladores</EnlaceMenu>
-                </li>
+                {apiHabilitada() && (
+                  <li>
+                    <EnlaceMenu href="/developers">Desarrolladores</EnlaceMenu>
+                  </li>
+                )}
                 {usuario ? (
                   <li>
                     <form action={salir}>
@@ -96,8 +99,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
         <footer className="v-pie">
-          Vínculo es una red profesional ficticia para un prototipo académico. No es LinkedIn ni está afiliada a LinkedIn. ·{" "}
-          <Link href="/developers/docs">API para integradores</Link>
+          Vínculo es una red profesional ficticia para un prototipo académico. No es LinkedIn ni está afiliada a LinkedIn.
+          {apiHabilitada() && (
+            <>
+              {" "}
+              · <Link href="/developers/docs">API para integradores</Link>
+            </>
+          )}
         </footer>
       </body>
     </html>

@@ -11,3 +11,12 @@
 | Reclutador/a de Talentia | Talentia (:3002) | [reclutador-talentia.md](reclutador-talentia.md) | `reclutador@andina.demo.test` |
 | Administrador/a del puente | Puente (:3003) | [admin-puente.md](admin-puente.md) | `admin@puente.demo.test` |
 | Operador/a del puente | Puente (:3003) | [operador-puente.md](operador-puente.md) | `operador@puente.demo.test` |
+
+> Actualizado por Claude Code (2026-11-02, V4). Manuales nuevos:
+
+| Rol | Sistema | Manual | Cuenta demo |
+|---|---|---|---|
+| Operador/a del puente (importar CV) | Puente (:3003) | [importador.md](importador.md) | `operador@puente.demo.test` |
+| Persona que ejecuta el bot (experimental) | Vínculo (:3001) → Puente | [bot.md](bot.md) | `reclutadora@andina.demo.test` (inicio de sesión a mano) |
+
+El manual de desarrollador/a aplica solo con la API de Vínculo prendida (`npm run vinculo:api -- on`, D-68); por defecto está apagada.

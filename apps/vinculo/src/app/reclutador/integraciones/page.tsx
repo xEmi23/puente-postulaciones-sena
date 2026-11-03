@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { apiHabilitada } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { exigirUsuario, exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { fechaHora } from "@/lib/fechas";
@@ -12,6 +13,7 @@ const volver = (p: Record<string, string>) => redirect(`/reclutador/integracione
 
 async function autorizar(formData: FormData) {
   "use server";
+  if (!apiHabilitada()) notFound();
   const u = await exigirUsuarioAccion("RECLUTADOR");
   const r = await autorizarAplicacion(u.empresaId ?? "", String(formData.get("clientId") ?? ""), u.id);
   if (!r.ok) return volver({ error: r.error });
@@ -28,6 +30,7 @@ async function revocar(formData: FormData) {
 const ENTREGA: Record<string, string> = { PENDIENTE: "Pendiente", ENVIADO: "Entregada", FALLIDO: "Fallida" };
 
 export default async function Integraciones({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  if (!apiHabilitada()) notFound();
   const u = await exigirUsuario("/reclutador/integraciones", "RECLUTADOR");
   const { ok, error } = await searchParams;
   const empresa = await prisma.empresa.findUnique({ where: { id: u.empresaId ?? "" } });

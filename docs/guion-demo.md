@@ -93,3 +93,18 @@
 | 4:15–5:00 | **Honestidad:** qué es simulado (Talentia, Vínculo), qué es experimental (el bot, no construido sin la Puerta 0) y qué falta para BUK real (`/apidocs` y API Key de la empresa) | Mensaje central de la §15.3. |
 
 **Plan B:** Render no despierta → demo local. Algo falla en vivo → video del recorrido (grabarlo el 8/11 con la fecha visible). La Puerta 0 falla → el bot se presenta como alternativa evaluada y descartada, con su motivo.
+
+## V4 · Bloque del bot asistido sobre Vínculo (unos 2 minutos)
+
+> Actualizado por Claude Code (2026-11-02, F4-V). El bot corre **contra Vínculo (simulado)**; el perfil de LinkedIn se niega a correr hasta la Puerta 0. Vínculo arranca **sin API** (D-68): como para la empresa, la única forma de llevar candidatos al ATS es el bot o el importador.
+
+**Antes (local, una vez):** `npm run pg:start`, `npm run dev` (dejarlo abierto), y en otra ventana `npm run demo:reset`, `npm run demo:bot -- --reiniciar` y `npm run bot:login -w apps/bot-linkedin` (siempre después de `demo:reset`: vuelve a crear las cuentas) (iniciar sesión a mano como `reclutadora@andina.demo.test` / `Demo2026!` y cerrar la ventana). Pestañas: Vínculo → Panel de reclutador → «Analista de Integraciones (demo del bot)»; Talentia (reclutador) → proceso 9005.
+
+| Tiempo | Qué se muestra | Qué se dice |
+|---|---|---|
+| 0:00–0:20 | Vínculo: la vacante con 3 postulantes; «Ver ficha» de una; el menú sin «Desarrolladores» | «Así lo ve hoy el reclutador: sin API, a mano, uno por uno.» |
+| 0:20–1:10 | `npm run bot -w apps/bot-linkedin` con la ventana visible: el bot abre la vacante y cada ficha, con pausas; la consola dice «3 recibida(s)» | «Lo ejecuta una persona, con su sesión; no guarda contraseñas, se detiene ante cualquier verificación y tiene un tope de 25.» |
+| 1:10–1:40 | Talentia → proceso 9005 → Postulantes: las 3 tarjetas, cada una con su CV | «Mismo archivo, byte a byte; entra por la misma puerta que el importador.» |
+| 1:40–2:00 | Segunda corrida: «3 duplicada(s)»; Talentia sigue con 3 | «Idempotente: correrlo dos veces no duplica.» |
+
+**Si sale «Se requiere intervención humana»:** la sesión venció → `npm run bot:login -w apps/bot-linkedin` y repetir. **Si piden ver la vía oficial:** `npm run vinculo:api -- on`, reiniciar `npm run dev` y `npm run demo:conectar`; se ve el portal de desarrolladores y Apply Connect simulado.

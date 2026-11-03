@@ -26,7 +26,8 @@ export function envApp(app: App): NodeJS.ProcessEnv {
     WORKER_INTERVALO_MS: "300",
   };
   const propios: Record<App, Record<string, string>> = {
-    vinculo: {},
+    // Las pruebas E2E ejercitan la API tipo Apply Connect de Vínculo: se prende explícitamente (D-68).
+    vinculo: { VINCULO_API_HABILITADA: "true" },
     talentia: {},
     puente: {
       PUENTE_MODO_PRUEBAS: "1",

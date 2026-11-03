@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { aplicacionDelToken, error } from "@/modules/api/http";
+import { apiNoDisponible, aplicacionDelToken, error } from "@/modules/api/http";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
  * solo la aplicación dueña de la vacante puede descargarlo y el enlace vale 30 días.
  */
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const apagada = apiNoDisponible();
+  if (apagada) return apagada;
   const app = await aplicacionDelToken(req);
   if (!app) return error(401, "INVALID_ACCESS_TOKEN", "El access token falta, venció o no es válido.");
   const { id } = await ctx.params;

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma, esViolacionUnica } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
+import { apiHabilitada } from "@/lib/config";
 import { aplicacionAutorizada, validarWebhook } from "./aplicaciones";
 
 // Vacantes de Vínculo: buscador público, gestión del reclutador y publicación por API desde un ATS (jobPostings).
@@ -85,7 +86,8 @@ export async function siguienteCodigo(ahora = new Date()): Promise<string> {
 
 async function destinoDeAplicacion(empresaId: string, recepcion: "VINCULO" | "SITIO_EMPRESA", aplicacionId?: string) {
   if (recepcion === "SITIO_EMPRESA") return { solicitudSencilla: false, aplicacionId: null, webhookUrl: null, motivo: null };
-  if (!aplicacionId) return { solicitudSencilla: true, aplicacionId: null, webhookUrl: null, motivo: null };
+  // Con la API apagada (VINCULO_API_HABILITADA) no hay ATS conectados: las postulaciones quedan en Vínculo.
+  if (!aplicacionId || !apiHabilitada()) return { solicitudSencilla: true, aplicacionId: null, webhookUrl: null, motivo: null };
   const app = await prisma.aplicacionDev.findUnique({ where: { id: aplicacionId } });
   if (!app || app.revocadaEn || !(await aplicacionAutorizada(app.id, empresaId))) {
     return { error: "La aplicación elegida no está autorizada para la empresa." } as const;

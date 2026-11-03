@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { apiHabilitada } from "@/lib/config";
 import { exigirUsuario } from "@/lib/sesion-servidor";
 
 export default async function LayoutReclutador({ children }: { children: React.ReactNode }) {
@@ -19,9 +20,11 @@ export default async function LayoutReclutador({ children }: { children: React.R
             <li>
               <Link href="/reclutador/vacantes/nueva">Publicar vacante</Link>
             </li>
-            <li>
-              <Link href="/reclutador/integraciones">Integraciones</Link>
-            </li>
+            {apiHabilitada() && (
+              <li>
+                <Link href="/reclutador/integraciones">Integraciones</Link>
+              </li>
+            )}
           </ul>
         </nav>
       </div>

@@ -37,3 +37,6 @@ docs/ficha/
 # V4: páginas reales de LinkedIn y sesión del bot (nunca versionar)
 fixtures/linkedin/originales/
 .bot-perfil/
+
+# V4 F4-V: perfiles del navegador del bot por sitio (sesión iniciada a mano; nunca versionar)
+.bot-perfil-*/

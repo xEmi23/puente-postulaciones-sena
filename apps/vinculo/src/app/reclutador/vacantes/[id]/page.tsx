@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { apiHabilitada } from "@/lib/config";
 import { exigirUsuario, exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { fechaHora } from "@/lib/fechas";
 import { cambiarEstadoVacante, editarVacante, type ErroresVacante } from "@/modules/vacantes";
@@ -113,10 +114,13 @@ export default async function VacanteReclutador({ params, searchParams }: { para
               </thead>
               <tbody>
                 {v.postulaciones.map((p) => (
-                  <tr key={p.id} data-testid="fila-postulante">
+                  <tr key={p.id} data-testid="fila-postulante" data-postulacion={p.id}>
                     <td>
                       {p.candidato.perfil ? <Link href={`/in/${p.candidato.perfil.slug}`}>{`${p.nombre} ${p.apellido}`}</Link> : `${p.nombre} ${p.apellido}`}
                       <div className="v-meta">{p.ciudad}</div>
+                      <Link href={`/reclutador/postulaciones/${p.id}`} className="v-meta" data-testid="enlace-ficha">
+                        Ver ficha
+                      </Link>
                     </td>
                     <td>
                       {p.correo}
@@ -156,7 +160,7 @@ export default async function VacanteReclutador({ params, searchParams }: { para
         <CamposVacante
           valores={{ titulo: v.titulo, descripcion: v.descripcion, ciudad: v.ciudad, modalidad: v.modalidad, nivel: v.nivel, tipoEmpleo: v.tipoEmpleo, recepcion: v.solicitudSencilla ? "VINCULO" : "SITIO_EMPRESA", aplicacionId: v.aplicacionId ?? "", urlEmpresa: v.urlEmpresa ?? "" }}
           errores={errores}
-          aplicaciones={aplicaciones}
+          aplicaciones={apiHabilitada() ? aplicaciones : null}
           mostrarRecepcion={!deApi}
         />
         <button type="submit" className="v-boton">

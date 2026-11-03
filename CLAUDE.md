@@ -55,6 +55,9 @@ Detalle y diagramas Mermaid en `docs/arquitectura.md` (sección «v2»).
 | `npm run pg:start` / `pg:stop` / `pg:status` | PostgreSQL local del proyecto. **No tocar el 5433 (v1).** |
 | `npm run dev` / `npm start` | Las tres apps (3001, 3002, 3003) con sus workers dentro del proceso. |
 | `npm run demo:conectar` | Con las apps encendidas: API Key en Talentia, aplicación autorizada en Vínculo, conexiones del puente probadas, 9001 y 9002 publicadas, webhook validado. |
+| `npm run demo:bot` | V4 F4-V: demo del bot sobre Vínculo (vacante VIN-DEMO-BOT con 3 postulaciones, fuente «vinculo-bot» y token en `apps/bot-linkedin/.env`, correspondencia → 9005, conexión con Talentia) y deja `VINCULO_API_HABILITADA=false`. |
+| `npm run vinculo:api -- on|off|estado` | API tipo Apply Connect de Vínculo (D-68, apagada por defecto). `demo:conectar` la necesita prendida. Reiniciar las apps tras cambiarla. |
+| `npm run bot:login -w apps/bot-linkedin` / `npm run bot -w apps/bot-linkedin` | Bot asistido experimental (perfil `vinculo`; `linkedin` se niega hasta la Puerta 0). |
 | `npm run demo:reset` | Borra y re-siembra solo datos `demo = true` en las tres apps (en el puente también conexiones y publicaciones). Se niega con `NODE_ENV=production` o base no local. |
 | `npm run lint` | ESLint (raíz). |
 | `npm run typecheck` | `prisma generate` + `tsc --noEmit` en cada app. |

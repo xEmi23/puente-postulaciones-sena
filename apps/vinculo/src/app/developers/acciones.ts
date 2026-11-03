@@ -2,12 +2,18 @@
 
 import { randomInt, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { urlPublica } from "@/lib/config";
+import { apiHabilitada, urlPublica } from "@/lib/config";
 import { exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { crearAplicacion, regenerarSecreto, registrarWebhook, revocarAplicacion, secretoDe } from "@/modules/aplicaciones";
 import { enviarAlWebhook, reenviarEvento } from "@/modules/despachador";
 import { CASOS_CONSOLA } from "./casos";
+
+/** Sin VINCULO_API_HABILITADA el portal no existe, tampoco sus acciones (D-68). */
+function exigirApi() {
+  if (!apiHabilitada()) notFound();
+}
 
 export interface EstadoSecreto {
   clientId?: string;
@@ -19,6 +25,7 @@ export interface EstadoSecreto {
 
 /** Crea la aplicación y devuelve el Client Secret UNA vez (en el resultado de la acción; nunca en la URL). */
 export async function crearApp(_p: EstadoSecreto, formData: FormData): Promise<EstadoSecreto> {
+  exigirApi();
   const u = await exigirUsuarioAccion();
   const r = await crearAplicacion(u.id, { nombre: formData.get("nombre"), webhookUrl: formData.get("webhookUrl") });
   if (!r.ok) return { error: r.error };
@@ -34,6 +41,7 @@ async function propia(appId: string) {
 }
 
 export async function regenerar(_p: EstadoSecreto, formData: FormData): Promise<EstadoSecreto> {
+  exigirApi();
   const app = await propia(String(formData.get("appId")));
   if (app.revocadaEn) return { error: "La aplicación está revocada." };
   const clientSecret = await regenerarSecreto(app.id);
@@ -42,6 +50,7 @@ export async function regenerar(_p: EstadoSecreto, formData: FormData): Promise<
 }
 
 export async function revocar(formData: FormData) {
+  exigirApi();
   const app = await propia(String(formData.get("appId")));
   await revocarAplicacion(app.id);
   revalidatePath(`/developers/aplicaciones/${app.id}`);
@@ -53,6 +62,7 @@ export interface EstadoWebhook {
 }
 
 export async function guardarWebhook(_p: EstadoWebhook, formData: FormData): Promise<EstadoWebhook> {
+  exigirApi();
   const app = await propia(String(formData.get("appId")));
   const url = String(formData.get("webhookUrl") ?? "").trim();
   if (!url) return { ok: false, detalle: "Escribe la URL del webhook." };
@@ -68,6 +78,7 @@ export interface EstadoEnvio {
 
 /** «Reenviar»: el mismo cuerpo con la misma firma (redeliver). */
 export async function reenviar(_p: EstadoEnvio, formData: FormData): Promise<EstadoEnvio> {
+  exigirApi();
   const app = await propia(String(formData.get("appId")));
   const fila = await prisma.outbox.findFirst({ where: { id: String(formData.get("outboxId")), aplicacionId: app.id } });
   if (!fila) return { status: "No existe" };
@@ -98,6 +109,7 @@ function payloadBase(externalJobId: string) {
 }
 
 export async function consola(_p: EstadoEnvio, formData: FormData): Promise<EstadoEnvio> {
+  exigirApi();
   const app = await propia(String(formData.get("appId")));
   if (!app.webhookUrl) return { status: "La aplicación no tiene webhook." };
   const caso = String(formData.get("caso")) as Caso;

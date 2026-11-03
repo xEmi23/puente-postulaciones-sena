@@ -3,6 +3,7 @@ import { firmarCuerpo } from "@/lib/firma";
 import { motivoUrlNoPermitida } from "@/lib/red";
 import { fetchSaliente } from "@/lib/salida";
 import { CODIGOS_SIN_REINTENTO } from "@/modules/contrato-apply-connect";
+import { apiHabilitada } from "@/lib/config";
 import { secretoDe } from "./aplicaciones";
 
 // Despachador de Vínculo: entrega cada postulación al webhook de la aplicación (como LinkedIn con Apply Connect),
@@ -130,6 +131,7 @@ export async function reenviarEvento(outboxId: string, fetchImpl?: typeof fetch)
 
 /** Un ciclo del despachador. Devuelve cuántas entregas intentó. */
 export async function despacharPendientes(opciones: OpcionesDespacho = {}): Promise<number> {
+  if (!apiHabilitada()) return 0; // API apagada: no sale ningún webhook hacia integradores.
   const ids = await reclamar(opciones.limite ?? 10);
   for (const id of ids) await entregarUno(id, opciones);
   return ids.length;

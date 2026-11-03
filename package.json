@@ -9,7 +9,8 @@
   "workspaces": [
     "apps/vinculo",
     "apps/talentia",
-    "apps/puente"
+    "apps/puente",
+    "apps/bot-linkedin"
   ],
   "scripts": {
     "setup": "node scripts/setup.mjs",
@@ -23,11 +24,13 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces",
     "test:e2e": "npm run build && playwright test",
-    "db:migrate": "npm run db:migrate --workspaces",
-    "db:seed": "npm run db:seed --workspaces",
-    "demo:reset": "npm run demo:reset --workspaces",
+    "db:migrate": "npm run db:migrate --workspaces --if-present",
+    "db:seed": "npm run db:seed --workspaces --if-present",
+    "demo:reset": "npm run demo:reset --workspaces --if-present",
     "cv:generar": "tsx scripts/generar-cv.ts",
-    "demo:conectar": "node scripts/demo-conectar.mjs"
+    "demo:conectar": "node scripts/demo-conectar.mjs",
+    "demo:bot": "node scripts/demo-bot.mjs",
+    "vinculo:api": "node scripts/vinculo-api.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

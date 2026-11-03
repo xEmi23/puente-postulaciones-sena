@@ -17,5 +17,7 @@ export function prepararEntornoPruebas() {
     VINCULO_SECRETO_PUENTE: "",
     PUENTE_WEBHOOK_URL: "",
     CV_MAX_BYTES: "1048576",
+    // Las pruebas existentes ejercitan la API tipo Apply Connect: se prende explícitamente (D-68). api-apagada.test.ts la apaga.
+    VINCULO_API_HABILITADA: "true",
   });
 }

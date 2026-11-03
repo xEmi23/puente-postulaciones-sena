@@ -1,7 +1,7 @@
 import { createHash, randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { config, urlPublica } from "@/lib/config";
+import { apiHabilitada, config, urlPublica } from "@/lib/config";
 import { nombreArchivoSeguro, pareceUnPdf, sha256Hex, formatoTamano } from "@/lib/archivos";
 import { TIPO_EVENTO, type PayloadApplyConnect } from "@/modules/contrato-apply-connect";
 
@@ -166,7 +166,8 @@ export async function enviarSolicitud(
       },
     });
     // Solo se entrega si la vacante está conectada a un ATS; si no, la postulación queda en Vínculo para el reclutador.
-    if (vacante.aplicacionId && vacante.webhookUrl) await tx.outbox.create({ data: { aplicacionId: vacante.aplicacionId, postulacionId, url: vacante.webhookUrl, payload } });
+    // Con la API apagada (VINCULO_API_HABILITADA) no hay integradores: no se genera ningún webhook.
+    if (apiHabilitada() && vacante.aplicacionId && vacante.webhookUrl) await tx.outbox.create({ data: { aplicacionId: vacante.aplicacionId, postulacionId, url: vacante.webhookUrl, payload } });
     if (!("delPerfil" in cv) && cv.guardarEnPerfil) {
       const perfilCv = await tx.archivoCv.create({ data: { nombreArchivo, mime: "application/pdf", tamano: archivo.bytes.length, sha256, contenido: Buffer.from(archivo.bytes) } });
       const anterior = await tx.perfil.findUnique({ where: { userId: candidatoId }, select: { cvId: true } });

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { emitirToken } from "@/lib/tokens";
 import { secretoCorrecto } from "@/modules/aplicaciones";
+import { apiNoDisponible } from "@/modules/api/http";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ const errorOAuth = (status: number, error: string, descripcion: string) =>
  * Acepta application/x-www-form-urlencoded (como LinkedIn) o JSON.
  */
 export async function POST(req: Request) {
+  const apagada = apiNoDisponible();
+  if (apagada) return apagada;
   let campos: Record<string, string> = {};
   const tipo = req.headers.get("content-type") ?? "";
   try {

@@ -1,0 +1,24 @@
+{
+  "name": "bot-linkedin",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Adaptador experimental del Puente: bot asistido por perfiles de sitio (hoy: Vínculo, simulado; LinkedIn: pendiente de la Puerta 0).",
+  "scripts": {
+    "bot:login": "tsx src/cli.ts login",
+    "bot": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dotenv": "18.0.9",
+    "node-html-parser": "9.0.4",
+    "playwright": "1.64.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

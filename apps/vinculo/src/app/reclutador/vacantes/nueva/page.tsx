@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { apiHabilitada } from "@/lib/config";
 import { exigirUsuario, exigirUsuarioAccion } from "@/lib/sesion-servidor";
 import { crearVacante, type ErroresVacante } from "@/modules/vacantes";
 import { CamposVacante } from "../../formulario-vacante";
@@ -41,7 +42,7 @@ export default async function NuevaVacante({ searchParams }: { searchParams: Pro
           {errores.general ?? "Revisa los campos marcados."}
         </div>
       )}
-      <CamposVacante valores={q} errores={errores} aplicaciones={aplicaciones} />
+      <CamposVacante valores={q} errores={errores} aplicaciones={apiHabilitada() ? aplicaciones : null} />
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
         <button type="submit" name="accion" value="publicar" className="v-boton">
           Publicar vacante

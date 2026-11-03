@@ -12,8 +12,11 @@ export interface ValoresVacante {
   urlEmpresa?: string;
 }
 
-/** Campos de la vacante (crear y editar). Las aplicaciones listadas son las que la empresa autorizó. */
-export function CamposVacante({ valores, errores, aplicaciones, mostrarRecepcion = true }: { valores: ValoresVacante; errores: ErroresVacante; aplicaciones: { id: string; nombre: string }[]; mostrarRecepcion?: boolean }) {
+/**
+ * Campos de la vacante (crear y editar). Las aplicaciones listadas son las que la empresa autorizó.
+ * aplicaciones = null: la API de Vínculo está apagada (VINCULO_API_HABILITADA) y no se ofrece entregar a un ATS.
+ */
+export function CamposVacante({ valores, errores, aplicaciones, mostrarRecepcion = true }: { valores: ValoresVacante; errores: ErroresVacante; aplicaciones: { id: string; nombre: string }[] | null; mostrarRecepcion?: boolean }) {
   const campo = (id: keyof ValoresVacante, etiqueta: string, control: React.ReactNode, ayuda?: string) => (
     <div className="v-campo">
       <label htmlFor={id}>{etiqueta}</label>
@@ -73,19 +76,20 @@ export function CamposVacante({ valores, errores, aplicaciones, mostrarRecepcion
               <option value="SITIO_EMPRESA">En el sitio de la empresa (enlace)</option>
             </select>,
           )}
-          {campo(
-            "aplicacionId",
-            "Entregar las solicitudes a un ATS conectado",
-            <select id="aplicacionId" name="aplicacionId" defaultValue={valores.aplicacionId ?? ""} aria-invalid={invalido("aplicacionId")}>
-              <option value="">No: las reviso en Vínculo y descargo los CV</option>
-              {aplicaciones.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nombre}
-                </option>
-              ))}
-            </select>,
-            "Solo aparecen las aplicaciones autorizadas en Integraciones. Vínculo valida su webhook antes de publicar.",
-          )}
+          {aplicaciones !== null &&
+            campo(
+              "aplicacionId",
+              "Entregar las solicitudes a un ATS conectado",
+              <select id="aplicacionId" name="aplicacionId" defaultValue={valores.aplicacionId ?? ""} aria-invalid={invalido("aplicacionId")}>
+                <option value="">No: las reviso en Vínculo y descargo los CV</option>
+                {aplicaciones.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nombre}
+                  </option>
+                ))}
+              </select>,
+              "Solo aparecen las aplicaciones autorizadas en Integraciones. Vínculo valida su webhook antes de publicar.",
+            )}
         </>
       )}
       {campo("urlEmpresa", "Enlace del sitio de la empresa (opcional)", <input id="urlEmpresa" name="urlEmpresa" type="url" defaultValue={valores.urlEmpresa} aria-invalid={invalido("urlEmpresa")} />)}

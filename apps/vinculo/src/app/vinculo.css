@@ -490,3 +490,25 @@ body {
   font-size: 0.8rem;
   max-height: 20rem;
 }
+/* Ficha del postulante en el panel del reclutador. */
+.v-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+.v-datos dt {
+  color: var(--v-suave, #4b5563);
+}
+.v-datos dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+  .v-datos {
+    grid-template-columns: 1fr;
+  }
+  .v-datos dd {
+    margin-bottom: 0.4rem;
+  }
+}

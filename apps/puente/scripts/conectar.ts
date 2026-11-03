@@ -8,9 +8,18 @@ import { publicarProceso } from "../src/modules/publicacion";
 // (CONECTAR_VINCULO_URL, CONECTAR_CLIENT_ID, CONECTAR_CLIENT_SECRET, CONECTAR_TALENTIA_URL, CONECTAR_API_KEY), las prueba
 // y publica en Vínculo los procesos de CONECTAR_PUBLICAR (por ejemplo «9001,9002»). Requiere que las tres apps estén
 // corriendo: Vínculo valida el webhook del puente por HTTP antes de publicar.
+// Sin CONECTAR_VINCULO_URL solo guarda y prueba Talentia (la usa `npm run demo:bot`: con la API de Vínculo apagada, D-68).
 
 async function main() {
   const e = process.env;
+  if (!e.CONECTAR_VINCULO_URL) {
+    const t = await guardarTalentia({ urlBase: e.CONECTAR_TALENTIA_URL, apiKey: e.CONECTAR_API_KEY });
+    if (!t.ok) throw new Error(`Talentia: ${t.error}`);
+    const pt = await probarTalentia();
+    console.log(`Talentia: ${pt.ok ? "✔" : "✖"} ${pt.detalle}`);
+    if (!pt.ok) process.exit(3);
+    return;
+  }
   const v = await guardarVinculo({ urlBase: e.CONECTAR_VINCULO_URL, clientId: e.CONECTAR_CLIENT_ID, clientSecret: e.CONECTAR_CLIENT_SECRET });
   if (!v.ok) throw new Error(`Vínculo: ${v.error}`);
   const t = await guardarTalentia({ urlBase: e.CONECTAR_TALENTIA_URL, apiKey: e.CONECTAR_API_KEY });

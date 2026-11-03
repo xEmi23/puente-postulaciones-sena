@@ -36,3 +36,12 @@ export function esEntornoLocal(): boolean {
   const host = new URL(urlPublica()).hostname;
   return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) || host.endsWith(".test");
 }
+
+/**
+ * ¿Expone Vínculo su API tipo Apply Connect (portal de desarrolladores, OAuth, /api/v1, OpenAPI y webhooks)?
+ * Por defecto NO: para la empresa el LinkedIn real no tiene API, y la demo debe mostrar solo el bot y el importador.
+ * VINCULO_API_HABILITADA=true la prende para mostrarla como «vía oficial futura» (D-68).
+ */
+export function apiHabilitada(): boolean {
+  return ["1", "true", "si", "sí"].includes((process.env.VINCULO_API_HABILITADA ?? "").trim().toLowerCase());
+}

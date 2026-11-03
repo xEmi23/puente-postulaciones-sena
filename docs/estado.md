@@ -581,3 +581,17 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 
 - README, arquitectura (capas V4), seguridad, guion V4, resultados, uso de IA y comandos de despliegue preparados. `render.yaml` con las variables V4 del Puente (validado). **No** se desplegó ni se hizo merge a `v2`. Reporte: `docs/v4/REPORTE_F5.md`. Informe de la noche: `docs/v4/INFORME_NOCHE.md`.
 - Pendientes del equipo: Puerta 0 (`docs/v4/PUERTA0.md`), F4 si «Bot = sí», aprobación del despliegue (PROMPT F5 con «APROBADO PARA DESPLEGAR»).
+
+## V4 F4-V · Bot con perfil Vínculo (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). Prompt `PROMPT_BOT_VINCULO.md` más el ajuste «Vínculo sin API».
+
+- `apps/bot-linkedin` por perfiles de sitio: `vinculo` completo y probado; `linkedin` es un esqueleto que se niega («perfil LinkedIn pendiente de la Puerta 0»).
+- Ficha del postulante en el panel de Vínculo.
+- `VINCULO_API_HABILITADA` (apagada por defecto) y `npm run demo:bot` / `npm run vinculo:api`.
+- Decisiones D-65 a D-70. Manual `docs/manuales/bot.md`. Reporte `docs/v4/REPORTE_F4V.md`.
+- Puerta de calidad: lint 0 · typecheck 0 · Vitest 29 + 30 + 142 + 16 · Playwright 50/50 (2 omitidas, capturas) (**267**).
+- Riesgos:
+  - avisos moderados de `minimatch` en las herramientas de ESLint;
+  - `render.yaml` no define `VINCULO_API_HABILITADA`.
+- Siguiente paso: la demo, con el guion V4 y su bloque del bot. LinkedIn real solo si la Puerta 0 dice «Bot = sí».
