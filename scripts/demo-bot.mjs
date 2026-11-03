@@ -66,6 +66,12 @@ try {
   console.log("  npm run bot:login -w apps/bot-linkedin   (inicia sesión A MANO como reclutadora@andina.demo.test y cierra la ventana)");
   console.log("  npm run bot -w apps/bot-linkedin");
 } catch (e) {
-  console.error(`✖ ${e instanceof Error ? e.message : e}`);
+  const m = e instanceof Error ? e.message : String(e);
+  if (/Can't reach database|ECONNREFUSED|P1001|connect ECONN|Connection refused/i.test(m)) {
+    console.error("✖ PostgreSQL no responde. Enciéndelo con «npm run pg:start» (o deja abierto «npm run dev», que lo enciende) y vuelve a ejecutar.");
+  } else if (/conectar.ts|crear-llave.ts/.test(m)) {
+    console.error("✖ No se pudo conectar el Puente con Talentia. ¿Está encendido «npm run dev»?");
+  }
+  console.error(`✖ ${m.length > 1500 ? `${m.slice(0, 1500)}…` : m}`);
   process.exit(1);
 }

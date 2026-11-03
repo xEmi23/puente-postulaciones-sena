@@ -1,6 +1,7 @@
 // Arranca las tres apps a la vez (cada una en su puerto, con su worker dentro del proceso si WORKER_EN_PROCESO=1).
 // Uso: node scripts/dev.mjs dev|start
 import { spawn, spawnSync } from "node:child_process";
+import { connect } from "node:net";
 import path from "node:path";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
@@ -10,6 +11,24 @@ const APPS = [
   { nombre: "talentia", color: 35, puerto: 3002 },
   { nombre: "puente", color: 33, puerto: 3003 },
 ];
+
+/** ¿Hay algo escuchando ya en el puerto? (otra ventana con npm run dev, u otro programa). */
+const ocupado = (puerto) =>
+  new Promise((ok) => {
+    const c = connect({ port: puerto, host: "127.0.0.1" });
+    c.setTimeout(1500);
+    c.once("connect", () => (c.destroy(), ok(true)));
+    c.once("timeout", () => (c.destroy(), ok(false)));
+    c.once("error", () => ok(false));
+  });
+const tomados = [];
+for (const a of APPS) if (await ocupado(a.puerto)) tomados.push(a);
+if (tomados.length) {
+  for (const a of tomados) console.error(`✖ El puerto ${a.puerto} (${a.nombre}) ya está en uso.`);
+  console.error("  ¿Ya hay otra ventana con «npm run dev» o «npm start»? Usa esa, o ciérrala (Ctrl+C) y vuelve a ejecutar.");
+  console.error("  Para ver qué programa lo usa: netstat -ano | findstr :" + tomados[0].puerto);
+  process.exit(2);
+}
 
 // PostgreSQL local primero (no hace nada si ya corre).
 const pg = spawnSync(process.execPath, [path.join(RAIZ, "scripts/pg-local.mjs"), "start"], { stdio: "inherit" });

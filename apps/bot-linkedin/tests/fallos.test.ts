@@ -149,6 +149,16 @@ describe("recorrido: casos de la página", () => {
   });
 });
 
+describe("página de error del sitio", () => {
+  it("«Algo salió mal» de Vínculo (p. ej., PostgreSQL apagado) detiene el bot y dice qué revisar, no habla de la sesión", async () => {
+    const { detectarBloqueo } = await import("../src/guardias");
+    const html = `<main id="contenido" class="indice" role="alert"><h1>Algo salió mal</h1><p>Ocurrió un error inesperado.</p></main>`;
+    const b = detectarBloqueo(perfilVinculo, html, `${BASE}/reclutador`);
+    expect(b?.tipo).toBe("pagina_inesperada");
+    expect(b?.detalle).toMatch(/npm run pg:start/);
+  });
+});
+
 describe("errores del navegador: en español y con qué hacer", () => {
   it("ventana cerrada, perfil en uso, sitio apagado, tiempo agotado y sin Chromium", () => {
     expect(mensajeErrorNavegador(new Error("page.goto: Target page, context or browser has been closed"))).toMatch(/Se cerró la ventana del bot.*duplicada/);
