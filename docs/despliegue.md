@@ -153,3 +153,14 @@ Verifica cinco cosas:
 - `/privacidad` carga sin sesión.
 
 **Reversión:** `render services update <id> --branch v2` en los dos servicios y redesplegar. Las columnas nuevas (`consentimiento*`) pueden quedarse, porque la v2 no las usa.
+
+### Formulario más realista (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). D-77.
+
+- **Migración nueva:** `20261103210000_v4_f6_ficha_vacante` (tabla `FichaVacante`, no borra datos). La aplica el `startCommand` al desplegar el push a `v4`.
+- **Ficha de la vacante de prueba** (enlace `cnibi7tmi252`, proceso 9006): «Gerente Administrativo», Itagüí, Antioquia, Presencial, Tiempo completo. Se fija por el panel o con la prueba de humo:
+  ```powershell
+  $env:RENDER_HUMO="1"; $env:RENDER_FICHA_PRUEBA="1"; npx playwright test -c playwright.render-formulario.config.ts
+  ```
+  Sin `RENDER_FICHA_PRUEBA`, la prueba de humo no cambia la ficha.

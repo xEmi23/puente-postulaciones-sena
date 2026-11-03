@@ -551,3 +551,35 @@
 - **Alternativa descartada:**
   - Un CAPTCHA de terceros: implica llamadas a un servicio externo real, y los datos del candidato saldrían a otro proveedor.
   - Contar en PostgreSQL: más robusto con varias instancias, pero en Render gratuito hay una sola.
+
+## D-77 · Formulario público más realista: ficha de la vacante, campos de una solicitud típica y referencia
+
+> Actualizado por Claude Code (2026-11-03). Pedido del equipo («v4 F6: formulario más realista»).
+
+- **Fecha:** 2026-11-03 (F6)
+- **Ficha de la vacante:**
+  - Lo que ve el candidato (título público, ciudad, modalidad, tipo de empleo y una descripción corta) se guarda en la tabla nueva `FichaVacante`, una fila por código.
+  - Sale por defecto del proceso del ATS (título, ciudad y descripción; «Presencial» y «Tiempo completo») y se edita en Panel → Formulario público → «Lo que ve el candidato».
+  - **El proceso del ATS no cambia.**
+  - La vacante de prueba (enlace `cnibi7tmi252`, proceso 9006) se muestra como «Gerente Administrativo», Itagüí, Antioquia, Presencial, Tiempo completo.
+- **Campos (minimización):** Nombres, Apellidos, Correo, Teléfono con indicativo de país (+57 por defecto), Ciudad de residencia, Perfil de LinkedIn (opcional; https, dominio linkedin.com, máximo 200 caracteres), Hoja de vida PDF (máximo 5 MB) y la autorización. No se pide nada más.
+- **Validación:** la misma en la página (en línea) y en el servidor (`apps/puente/src/entradas/formulario/campos.ts`).
+- **Campo trampa:** se llama `campo_auxiliar` (antes `sitio_web`, que parecía un campo real). Está fuera de la ventana con CSS, con `aria-hidden` y `tabindex=-1`.
+- **Mapeo, sin cambiar el contrato ni la API del ATS:**
+
+  | Campo | PostulacionCanonica v1 | Simulador BUK |
+  |---|---|---|
+  | Teléfono | `candidato.telefono` (E.164) | `telefono` |
+  | Ciudad de residencia | `candidato.ciudad` | `ciudad` |
+  | Perfil de LinkedIn | `candidato.perfilUrl` (`Recepcion.jobApplicant`) | `referencia_externa` del postulante («Referencia externa»), como ya ocurría con Apply Connect |
+
+  - **Sin perfil**, la referencia externa es la del Puente (`formulario-publico:<hash>`).
+  - **Solo en el Puente:** la prueba del consentimiento (fecha, versión y origen HMAC), la ficha de la vacante y la fuente técnica.
+- **Envío y confirmación:**
+  - **Con JavaScript:** la página envía con `fetch` (`Accept: application/json`) y muestra «Enviando…». Si algo falla, el mensaje aparece junto a cada campo y no se pierde lo escrito. **Sin JavaScript:** el envío normal y la redirección 303 siguen funcionando.
+  - **Referencia:** la confirmación muestra el número de referencia, la misma referencia corta que ve Operaciones (de `formulario-publico:<hash>`), y explica qué pasa después.
+  - **Envío repetido:** recibe la misma referencia que el primero, así que no revela nada nuevo.
+- **Franja:** en `/postular` y `/privacidad` es más discreta y dice «Ejercicio académico (proyecto SENA) · Entorno de simulación · No es LinkedIn ni BUK: simulación académica.». En el panel no cambia.
+- **Alternativa descartada:**
+  - Cambiar el título del proceso en el ATS (alteraría el Simulador BUK y su historia).
+  - Agregar campos de notas al ATS (cambia su API, que no es nuestra).

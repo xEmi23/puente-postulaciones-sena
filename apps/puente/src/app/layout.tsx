@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { FranjaSimulacion } from "@/components/franja-simulacion";
 
 export const metadata: Metadata = {
   title: { default: "Puente · Entorno de simulación", template: "%s · Puente" },
@@ -14,9 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="saltar" href="#contenido">
           Saltar al contenido
         </a>
-        <div className="aviso-simulacion" role="note" aria-label="Aviso de entorno">
-          <strong>Entorno de simulación</strong> · No es LinkedIn ni BUK: simulación académica. Datos ficticios.
-        </div>
+        <FranjaSimulacion />
         {children}
       </body>
     </html>

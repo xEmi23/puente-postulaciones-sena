@@ -640,3 +640,15 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
   - la identificación del responsable en el aviso, y su validación legal;
   - verificar qué encabezado de IP es confiable en Render (D-76);
   - la base gratuita de Render vence el 2026-11-28.
+
+## V4 F6 · Formulario más realista (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). D-77.
+
+- **Ficha pública por enlace:** título, ciudad, modalidad, tipo de empleo y descripción, editable en Panel → Formulario público; el proceso del ATS no cambia. La vacante de prueba `cnibi7tmi252` es «Gerente Administrativo», Itagüí, Antioquia, Presencial, Tiempo completo.
+- **Campos nuevos:** indicativo de país (+57 por defecto), ciudad de residencia (obligatoria) y perfil de LinkedIn (opcional, URL validada).
+- **Trampa:** renombrada a `campo_auxiliar`.
+- **Página:** de empleo, móvil primero, con validación en línea, estado «Enviando…» y confirmación con referencia y «Qué pasa después». La franja es discreta: «Ejercicio académico (proyecto SENA)…».
+- **Hacia el ATS:** ciudad → `ciudad`; perfil → «Referencia externa» del postulante. Solo en el Puente: consentimiento, ficha y fuente técnica.
+- **Pruebas:** `apps/puente/tests/formulario.test.ts` (27) y `e2e/formulario.spec.ts` (7 en escritorio y 2 en móvil).
+- **Puerta de calidad (una vez):** lint 0 · typecheck 0 · Vitest 29 + 30 + 173 + 29 = 261 · Playwright 67 (2 omitidas, capturas) · build 0 = **328 pruebas**.

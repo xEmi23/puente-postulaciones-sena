@@ -1,11 +1,13 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { config, urlPublica } from "@/lib/config";
 import { pareceUnPdf } from "@/lib/archivos";
-import { normalizarCorreo } from "@/nucleo/contrato/canonica";
-import { registrarRecepcion } from "@/nucleo/recepcion/registrar";
+import { referenciaCorta } from "@/lib/privacidad";
+import { referenciaDe, registrarRecepcion } from "@/nucleo/recepcion/registrar";
 import { auditar, type Actor } from "@/nucleo/auditoria";
 import { VERSION_AVISO } from "./aviso";
+import { CAMPO_TRAMPA, MODALIDADES, TIPOS_EMPLEO, validarFormulario, type ErroresCampos } from "./campos";
 
 // Formulario público del Puente (V4 F6, D-75): la oferta en LinkedIn lleva un enlace externo a /postular/<código>.
 // Cada vacante vinculada a un proceso del ATS tiene un código público: es una Correspondencia de la fuente
@@ -46,29 +48,97 @@ export async function asegurarFuenteFormulario() {
   });
 }
 
-/** Vacante pública activa por su código, o null (código inexistente, mal formado o desactivado). */
-export async function vacantePublica(codigo: string) {
-  if (!formatoCodigo.test(codigo)) return null;
-  const c = await prisma.correspondencia.findUnique({ where: { externalJobId: `${FUENTE_FORMULARIO}:${codigo}` } });
-  return c && c.activa ? { codigo, titulo: c.descripcion, procesoAtsId: c.procesoAtsId } : null;
+// ───────────── Ficha pública de la vacante ─────────────
+
+/** Lo que ve el candidato. Es del Puente: editarla no cambia el proceso del ATS. */
+export interface Ficha {
+  titulo: string;
+  ciudad: string;
+  modalidad: string;
+  tipoEmpleo: string;
+  descripcion: string;
 }
 
-/** Crea (o reactiva) el enlace público de un proceso del ATS. Un proceso tiene un solo código. */
-export async function crearEnlace(procesoAtsId: number, titulo: string, actor: Actor): Promise<string> {
+/** Datos del proceso del ATS de los que sale la ficha por defecto. */
+export interface ProcesoBase {
+  titulo: string;
+  ciudad?: string;
+  descripcion?: string;
+}
+
+export function fichaPorDefecto(p: ProcesoBase): Ficha {
+  return {
+    titulo: p.titulo.slice(0, 120),
+    ciudad: (p.ciudad || "Por definir").slice(0, 80),
+    modalidad: "Presencial",
+    tipoEmpleo: "Tiempo completo",
+    descripcion: (p.descripcion || `Postúlate a la vacante ${p.titulo}. El equipo de selección revisará tu hoja de vida.`).slice(0, 1200),
+  };
+}
+
+const textoFicha = (max: number) =>
+  z
+    .string()
+    .transform((v) => v.replace(/[ \t]+/g, " ").trim())
+    .pipe(z.string().min(2, "Mínimo 2 caracteres.").max(max, `Máximo ${max} caracteres.`));
+
+export const esquemaFicha = z.object({
+  titulo: textoFicha(120),
+  ciudad: textoFicha(80),
+  modalidad: z.enum(MODALIDADES, { error: "Modalidad no válida." }),
+  tipoEmpleo: z.enum(TIPOS_EMPLEO, { error: "Tipo de empleo no válido." }),
+  descripcion: z
+    .string()
+    .transform((v) => v.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim())
+    .pipe(z.string().min(20, "La descripción debe tener al menos 20 caracteres.").max(1200, "Máximo 1200 caracteres.")),
+});
+
+/** Vacante pública activa por su código, o null (código inexistente, mal formado o desactivado). */
+export async function vacantePublica(codigo: string): Promise<{ codigo: string; procesoAtsId: number; ficha: Ficha } | null> {
+  if (!formatoCodigo.test(codigo)) return null;
+  const c = await prisma.correspondencia.findUnique({ where: { externalJobId: `${FUENTE_FORMULARIO}:${codigo}` } });
+  if (!c || !c.activa) return null;
+  const f = await prisma.fichaVacante.findUnique({ where: { codigo } });
+  const ficha = f
+    ? { titulo: f.titulo, ciudad: f.ciudad, modalidad: f.modalidad, tipoEmpleo: f.tipoEmpleo, descripcion: f.descripcion }
+    : fichaPorDefecto({ titulo: c.descripcion });
+  return { codigo, procesoAtsId: c.procesoAtsId, ficha };
+}
+
+/** Crea (o reactiva) el enlace público de un proceso del ATS. Un proceso tiene un solo código; su ficha se conserva. */
+export async function crearEnlace(procesoAtsId: number, proceso: ProcesoBase, actor: Actor): Promise<string> {
   await asegurarFuenteFormulario();
   const existente = await prisma.correspondencia.findFirst({ where: { fuente: FUENTE_FORMULARIO, procesoAtsId } });
+  const codigo = existente?.vacanteExterna ?? nuevoCodigo();
   if (existente) {
-    await prisma.correspondencia.update({ where: { id: existente.id }, data: { activa: true, cerradaEn: null, descripcion: titulo } });
+    await prisma.correspondencia.update({ where: { id: existente.id }, data: { activa: true, cerradaEn: null } });
     await auditar(actor, "formulario.enlace_activado", null, `proceso ${procesoAtsId}`);
-    return existente.vacanteExterna!;
+  } else {
+    await prisma.correspondencia.create({
+      data: { fuente: FUENTE_FORMULARIO, vacanteExterna: codigo, externalJobId: `${FUENTE_FORMULARIO}:${codigo}`, procesoAtsId, descripcion: proceso.titulo, demo: false },
+    });
+    await auditar(actor, "formulario.enlace_creado", null, `proceso ${procesoAtsId}`);
   }
-  const codigo = nuevoCodigo();
-  await prisma.correspondencia.create({
-    data: { fuente: FUENTE_FORMULARIO, vacanteExterna: codigo, externalJobId: `${FUENTE_FORMULARIO}:${codigo}`, procesoAtsId, descripcion: titulo, demo: false },
-  });
-  await auditar(actor, "formulario.enlace_creado", null, `proceso ${procesoAtsId}`);
+  if (!(await prisma.fichaVacante.findUnique({ where: { codigo } }))) await prisma.fichaVacante.create({ data: { codigo, ...fichaPorDefecto(proceso) } });
   return codigo;
 }
+
+/** Guarda la ficha pública de un enlace (Panel → Formulario público). El proceso del ATS no cambia. */
+export async function guardarFicha(codigo: string, datos: unknown, actor: Actor): Promise<{ ok: true } | { ok: false; mensaje: string }> {
+  if (!formatoCodigo.test(codigo) || !(await prisma.correspondencia.findUnique({ where: { externalJobId: `${FUENTE_FORMULARIO}:${codigo}` } }))) {
+    return { ok: false, mensaje: "El enlace no existe." };
+  }
+  const r = esquemaFicha.safeParse(datos);
+  if (!r.success) {
+    const i = r.error.issues[0];
+    return { ok: false, mensaje: `${ETIQUETA_FICHA[String(i.path[0])] ?? "Dato"}: ${i.message}` };
+  }
+  await prisma.fichaVacante.upsert({ where: { codigo }, create: { codigo, ...r.data }, update: r.data });
+  await auditar(actor, "formulario.ficha_guardada", null, codigo);
+  return { ok: true };
+}
+
+const ETIQUETA_FICHA: Record<string, string> = { titulo: "Título", ciudad: "Ciudad", modalidad: "Modalidad", tipoEmpleo: "Tipo de empleo", descripcion: "Descripción" };
 
 /** Desactiva el enlace: el formulario deja de aceptar postulaciones (las anteriores se respetan, D-17). */
 export async function desactivarEnlace(codigo: string, actor: Actor) {
@@ -128,9 +198,10 @@ export function reiniciarCuposFormulario() {
 
 // ───────────── Envío ─────────────
 
+export type CodigoError = "vacante" | "limite" | "rapido" | "datos" | "consentimiento" | "sin_cv" | "no_pdf" | "grande";
 export type ResultadoFormulario =
-  | { ok: true } // nueva, repetida, en revisión o campo trampa: la persona ve lo mismo
-  | { ok: false; error: "vacante" | "limite" | "rapido" | "datos" | "consentimiento" | "sin_cv" | "no_pdf" | "grande"; campos?: string[] };
+  | { ok: true; referencia: string } // nueva, repetida, en revisión o campo trampa: la persona ve lo mismo
+  | { ok: false; error: CodigoError; campos?: ErroresCampos };
 
 const texto = (form: FormData, campo: string) => {
   const v = form.get(campo);
@@ -154,11 +225,22 @@ export async function recibirFormulario(req: Request, codigo: string): Promise<R
     return { ok: false, error: "datos" };
   }
 
-  // Campo trampa: una persona no lo ve ni lo llena. Se responde como si todo hubiera ido bien.
-  if (texto(form, "sitio_web").trim() !== "") return { ok: true };
+  // Campo trampa: una persona no lo ve ni lo llena. Se responde como si todo hubiera ido bien (referencia al azar).
+  if (texto(form, CAMPO_TRAMPA).trim() !== "") return { ok: true, referencia: referenciaCorta(randomBytes(8).toString("hex")) };
   const t = tiempoValido(codigo, texto(form, "t"));
   if (t === "invalido") return { ok: false, error: "datos" };
   if (t === "rapido") return { ok: false, error: "rapido" };
+
+  const v = validarFormulario({
+    nombres: texto(form, "nombres"),
+    apellidos: texto(form, "apellidos"),
+    correo: texto(form, "correo"),
+    indicativo: texto(form, "indicativo") || "+57",
+    telefono: texto(form, "telefono"),
+    ciudad: texto(form, "ciudad"),
+    perfil: texto(form, "perfil"),
+  });
+  if (!v.ok) return { ok: false, error: "datos", campos: v.errores };
   if (texto(form, "autorizacion") !== "si") return { ok: false, error: "consentimiento" };
 
   const archivo = form.get("cv");
@@ -167,16 +249,20 @@ export async function recibirFormulario(req: Request, codigo: string): Promise<R
   const bytes = new Uint8Array(await archivo.arrayBuffer());
   if (!pareceUnPdf(bytes)) return { ok: false, error: "no_pdf" };
 
-  const correo = normalizarCorreo(texto(form, "correo"));
-  const candidato = { nombres: texto(form, "nombres"), apellidos: texto(form, "apellidos"), correo, telefono: texto(form, "telefono") };
-  const faltan = (["nombres", "apellidos", "correo", "telefono"] as const).filter((c) => !candidato[c].trim());
-  if (faltan.length) return { ok: false, error: "datos", campos: [...faltan] };
-
+  const d = v.datos;
   // Misma persona (correo) en la misma vacante = misma postulación: el núcleo la responde DUPLICADA. El id externo es un
   // hash para no llevar el correo a la referencia que viaja al ATS.
-  const idExterno = createHash("sha256").update(`${codigo}:${correo}`, "utf8").digest("hex").slice(0, 32);
+  const idExterno = createHash("sha256").update(`${codigo}:${d.correo}`, "utf8").digest("hex").slice(0, 32);
   const r = await registrarRecepcion(
-    { version: "1", fuente: FUENTE_FORMULARIO, idExterno, vacanteExterna: codigo, candidato, origenDatos: "fuente" },
+    {
+      version: "1",
+      fuente: FUENTE_FORMULARIO,
+      idExterno,
+      vacanteExterna: codigo,
+      // La ciudad va a candidato.ciudad y el perfil a candidato.perfilUrl: campos que la canónica v1 ya tiene.
+      candidato: { nombres: d.nombres, apellidos: d.apellidos, correo: d.correo, telefono: d.telefono, ciudad: d.ciudad, ...(d.perfil ? { perfilUrl: d.perfil } : {}) },
+      origenDatos: "fuente",
+    },
     { tipo: "binario", bytes, nombreArchivo: archivo.name || "cv.pdf" },
     ACTOR,
     {
@@ -189,11 +275,12 @@ export async function recibirFormulario(req: Request, codigo: string): Promise<R
     case "RECIBIDA":
     case "REQUIERE_REVISION":
     case "DUPLICADA":
-      return { ok: true };
+      // La referencia corta que también muestra Operaciones (de la referencia global). Repetida = la de la primera.
+      return { ok: true, referencia: referenciaCorta(referenciaDe(FUENTE_FORMULARIO, idExterno)) };
     case "SIN_CORRESPONDENCIA":
       return { ok: false, error: "vacante" };
     case "INVALIDA":
-      return { ok: false, error: "datos", campos: [...new Set(r.errores.map((e) => e.campo.split(".").pop()!))] };
+      return { ok: false, error: "datos" };
     case "CV_INVALIDO":
       return { ok: false, error: r.codigo === "DEMASIADO_GRANDE" ? "grande" : "no_pdf" };
   }

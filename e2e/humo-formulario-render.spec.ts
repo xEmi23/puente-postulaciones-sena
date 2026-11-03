@@ -20,6 +20,14 @@ const marca = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
 const apellido = `Humo ${marca}`;
 const correo = `humo.formulario.${marca}@demo.test`;
 let enlace = "";
+const DESCRIPCION_PRUEBA = [
+  "Buscamos un Gerente Administrativo para liderar la gestión administrativa y financiera de nuestra sede en Itagüí.",
+  "",
+  "- Planear, ejecutar y controlar el presupuesto, los costos y el flujo de caja.",
+  "- Coordinar compras, proveedores, contratos y servicios generales.",
+  "- Liderar al equipo administrativo y presentar indicadores mensuales a la gerencia general.",
+  "- Requisitos: profesional en Administración de Empresas, Ingeniería Industrial o afines, con mínimo 5 años de experiencia en cargos similares y manejo avanzado de Excel y de un ERP.",
+].join("\n");
 
 async function ingresar(page: Page, base: string, cuenta: string) {
   await page.context().clearCookies();
@@ -36,12 +44,15 @@ async function postular(page: Page, correoUsado: string) {
   await page.getByLabel("Nombres").fill("Daniela");
   await page.getByLabel("Apellidos").fill(apellido);
   await page.getByLabel("Correo").fill(correoUsado);
+  await page.getByLabel("Indicativo del país").selectOption("+57");
   await page.getByLabel("Teléfono").fill("300 555 0142");
-  await page.getByLabel("Hoja de vida (PDF, máximo 5 MB)").setInputFiles(CV);
+  await page.getByLabel("Ciudad de residencia").fill("Itagüí");
+  await page.getByLabel("Hoja de vida en PDF").setInputFiles(CV);
   await page.getByLabel(/Autorizo el tratamiento de mis datos/).check();
   await page.waitForTimeout(3500);
   await page.getByRole("button", { name: "Enviar postulación" }).click();
   await expect(page.getByRole("heading", { name: "Recibimos tu postulación" })).toBeVisible();
+  await expect(page.getByTestId("referencia")).toHaveText(/^[A-Z0-9]{8}$/);
 }
 
 test("0 · Puente y Simulador BUK despiertos", async ({ request }) => {
@@ -62,6 +73,21 @@ test("1 · el panel exige sesión; el admin obtiene el enlace público del proce
   enlace = await fila.getByTestId("enlace-publico").inputValue();
   expect(enlace).toMatch(new RegExp(`^${PUE}/postular/[a-z0-9]{12}$`));
   console.log(`ENLACE PÚBLICO: ${enlace}`);
+
+  // Ficha pública de la vacante de prueba (D-77): lo que ve el candidato. El proceso del ATS no cambia.
+  if (process.env.RENDER_FICHA_PRUEBA) {
+    const ficha = page.locator(`[data-testid="ficha-vacante"][data-proceso="${PROCESO}"]`);
+    await ficha.getByLabel("Título público").fill("Gerente Administrativo");
+    await ficha.getByLabel("Ciudad").fill("Itagüí, Antioquia");
+    await ficha.getByLabel("Modalidad").selectOption("Presencial");
+    await ficha.getByLabel("Tipo de empleo").selectOption("Tiempo completo");
+    await ficha.getByLabel("Descripción corta").fill(DESCRIPCION_PRUEBA);
+    await ficha.getByRole("button", { name: `Guardar datos de la vacante ${PROCESO}` }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("Datos de la vacante guardados");
+  }
+  await page.context().clearCookies();
+  await page.goto(enlace);
+  console.log(`TÍTULO PÚBLICO: ${await page.getByTestId("titulo-vacante").textContent()}`);
 });
 
 test("2 · el formulario carga y el envío llega a Postulantes del Simulador BUK con el mismo SHA-256", async ({ page }) => {

@@ -520,3 +520,21 @@
   border: 1px solid #cbd5e1;
   border-radius: 8px;
 }
+
+.p-campo textarea {
+  font: inherit;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+.p-ficha {
+  border-top: 1px solid var(--p-borde);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.p-ficha h3 {
+  font-size: 1rem;
+  margin: 0 0 0.6rem;
+}

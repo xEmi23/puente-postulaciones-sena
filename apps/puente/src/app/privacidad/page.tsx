@@ -33,7 +33,8 @@ export default function Privacidad() {
 
         <h2>Qué datos recogemos</h2>
         <ul>
-          <li>Nombres, apellidos, correo y teléfono.</li>
+          <li>Nombres, apellidos, correo, teléfono y ciudad de residencia.</li>
+          <li>La dirección de tu perfil de LinkedIn, solo si decides escribirla.</li>
           <li>Tu hoja de vida en PDF y su huella SHA-256 (un código que permite comprobar que el archivo no cambió).</li>
           <li>
             La prueba de tu autorización: fecha y hora, la versión de este aviso y un resumen cifrado de la dirección desde la que enviaste el formulario (no se guarda

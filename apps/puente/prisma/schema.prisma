@@ -349,3 +349,15 @@ model ArchivoImportacion {
 
   @@index([loteId, orden])
 }
+
+// V4 F6: lo que ve el candidato en el formulario público (/postular/<código>). Por defecto sale del proceso del ATS y
+// se edita en Panel → Formulario público; el proceso del ATS no cambia.
+model FichaVacante {
+  codigo        String   @id
+  titulo        String
+  ciudad        String
+  modalidad     String
+  tipoEmpleo    String
+  descripcion   String
+  actualizadaEn DateTime @updatedAt @db.Timestamptz(3)
+}
