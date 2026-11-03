@@ -23,8 +23,8 @@ export async function sembrarDemo(prisma: PrismaClient) {
   // V4: la fuente del sistema de Apply Connect (sin token; usa la firma HMAC del webhook).
   await prisma.fuente.upsert({
     where: { nombre: "apply-connect" },
-    create: { nombre: "apply-connect", descripcion: "Apply Connect (Vínculo, simulado): webhook firmado con HMAC", sistema: true },
-    update: { sistema: true, activa: true },
+    create: { nombre: "apply-connect", descripcion: "Apply Connect (Simulador LinkedIn): webhook firmado con HMAC", sistema: true },
+    update: { sistema: true, activa: true, descripcion: "Apply Connect (Simulador LinkedIn): webhook firmado con HMAC" },
   });
   await prisma.fuente.upsert({
     where: { nombre: "importador" },

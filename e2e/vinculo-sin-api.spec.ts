@@ -42,7 +42,7 @@ test("reclutadora: sin «Integraciones», una vacante conectada antes no dice «
   await page.goto(`${VIN_SIN_API}/reclutador`);
   await page.locator('[data-testid="fila-vacante"][data-external-job-id="9001"]').getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: /Postulantes/ })).toBeVisible();
-  await expect(page.getByText("Solicitud sencilla en Vínculo")).toBeVisible();
+  await expect(page.getByText("Solicitud sencilla en el Simulador LinkedIn")).toBeVisible();
   await expect(page.getByText(/entregada a «/)).toHaveCount(0);
   await expect(page.getByText(/se entregan automáticamente al ATS/)).toHaveCount(0);
 

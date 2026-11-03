@@ -57,7 +57,7 @@ const aPostulacion = (p: PostulacionTalentia): PostulacionATS => ({ id: p.id, id
 export function crearConectorTalentia(opciones: OpcionesTalentia = {}): ConectorATS {
   async function llamar<T>(metodo: "GET" | "POST" | "PATCH", ruta: string, o: Llamada = {}): Promise<{ status: number; datos: T }> {
     const c = await conexionTalentia();
-    if (!c) throw new ErrorConectorATS("sin_conexion", "El puente no tiene configurada la conexión con Talentia (ver Conexiones).");
+    if (!c) throw new ErrorConectorATS("sin_conexion", "El puente no tiene configurada la conexión con el Simulador BUK (ver Conexiones).");
     const fetchImpl = opciones.fetchImpl ?? fetch;
     const headers: Record<string, string> = { auth_token: c.apiKey, Accept: "application/json" };
     if (o.cuerpo !== undefined) headers["Content-Type"] = "application/json";
@@ -77,7 +77,7 @@ export function crearConectorTalentia(opciones: OpcionesTalentia = {}): Conector
       r = o.operacion ? await conFalloSimulado(o.operacion, senal, peticion) : await peticion();
     } catch (e) {
       const nombre = e instanceof Error ? e.name : "Error";
-      const mensaje = nombre === "TimeoutError" ? "Talentia no respondió a tiempo." : "No fue posible conectar con Talentia.";
+      const mensaje = nombre === "TimeoutError" ? "El Simulador BUK no respondió a tiempo." : "No fue posible conectar con el Simulador BUK.";
       throw new ErrorConectorATS("red", mensaje);
     }
     await marcarContacto("TALENTIA");
@@ -91,15 +91,15 @@ export function crearConectorTalentia(opciones: OpcionesTalentia = {}): Conector
     if (r.ok) return { status: r.status, datos: (json as { data: T }).data };
     const err = (json as { error?: { codigo?: string; mensaje?: string; detalle?: Record<string, unknown> } } | null)?.error;
     const datosError = [r.status, err?.codigo, err?.detalle] as const;
-    if (r.status === 401) throw new ErrorConectorATS("autenticacion", "La API Key de Talentia fue revocada o no es válida.", ...datosError);
-    if (r.status === 403) throw new ErrorConectorATS("permiso", err?.mensaje ?? "La API Key de Talentia no tiene el permiso necesario.", ...datosError);
-    if (r.status === 409) throw new ErrorConectorATS("conflicto", err?.mensaje ?? "Talentia reporta un conflicto.", ...datosError);
+    if (r.status === 401) throw new ErrorConectorATS("autenticacion", "La API Key del Simulador BUK fue revocada o no es válida.", ...datosError);
+    if (r.status === 403) throw new ErrorConectorATS("permiso", err?.mensaje ?? "La API Key del Simulador BUK no tiene el permiso necesario.", ...datosError);
+    if (r.status === 409) throw new ErrorConectorATS("conflicto", err?.mensaje ?? "El Simulador BUK reporta un conflicto.", ...datosError);
     if (r.status === 429) {
       const espera = Number(r.headers.get("retry-after") ?? "60");
-      throw new ErrorConectorATS("servidor", `Talentia limitó las solicitudes (429); se reintenta en ${espera} s.`, ...datosError, Number.isFinite(espera) ? espera : 60);
+      throw new ErrorConectorATS("servidor", `El Simulador BUK limitó las solicitudes (429); se reintenta en ${espera} s.`, ...datosError, Number.isFinite(espera) ? espera : 60);
     }
-    if (r.status >= 500) throw new ErrorConectorATS("servidor", `Talentia respondió ${r.status}.`, ...datosError);
-    throw new ErrorConectorATS("validacion", err?.mensaje ?? `Talentia rechazó la solicitud (${r.status}).`, ...datosError);
+    if (r.status >= 500) throw new ErrorConectorATS("servidor", `El Simulador BUK respondió ${r.status}.`, ...datosError);
+    throw new ErrorConectorATS("validacion", err?.mensaje ?? `El Simulador BUK rechazó la solicitud (${r.status}).`, ...datosError);
   }
 
   return {

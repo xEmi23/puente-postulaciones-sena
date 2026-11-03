@@ -56,9 +56,9 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
   return (
     <>
       <ActualizarCada ms={10000} />
-      <h1>Procesos de Talentia</h1>
+      <h1>Procesos del Simulador BUK</h1>
       <p className="p-sub">
-        Leídos por la API de Talentia. «Publicar en Vínculo» crea la vacante con «Solicitud sencilla» y el webhook del puente: cada solicitud llega sola a «Postulantes» del proceso.
+        Leídos por la API del Simulador BUK. «Publicar en el Simulador LinkedIn» crea la vacante con «Solicitud sencilla» y el webhook del puente: cada solicitud llega sola a «Postulantes» del proceso.
       </p>
       <div role="status" aria-live="polite">
         {ok && <div className="alerta alerta-exito">{ok}</div>}
@@ -84,18 +84,18 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
       <section className="p-tarjeta" aria-labelledby="t-procesos">
         <h2 id="t-procesos">Procesos</h2>
         {!procesos ? (
-          <p className="alerta alerta-error">No se pudo consultar Talentia: {errorTalentia}</p>
+          <p className="alerta alerta-error">No se pudo consultar el Simulador BUK: {errorTalentia}</p>
         ) : procesos.length === 0 ? (
-          <p className="vacio">Talentia no tiene procesos.</p>
+          <p className="vacio">El Simulador BUK no tiene procesos.</p>
         ) : (
           <div className="p-tabla-contenedor">
             <table className="p-tabla">
-              <caption className="visualmente-oculto">Procesos de Talentia y su publicación en Vínculo</caption>
+              <caption className="visualmente-oculto">Procesos del Simulador BUK y su publicación en el Simulador LinkedIn</caption>
               <thead>
                 <tr>
                   <th scope="col">Proceso</th>
-                  <th scope="col">Estado en Talentia</th>
-                  <th scope="col">Publicación en Vínculo</th>
+                  <th scope="col">Estado en el Simulador BUK</th>
+                  <th scope="col">Publicación en el Simulador LinkedIn</th>
                   <th scope="col">Acción</th>
                 </tr>
               </thead>
@@ -120,7 +120,7 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
                             {pb.url && pb.estado !== "ERROR" && (
                               <div>
                                 <a href={pb.url} target="_blank" rel="noopener noreferrer">
-                                  Ver en Vínculo ↗
+                                  Ver en el Simulador LinkedIn ↗
                                 </a>
                               </div>
                             )}
@@ -135,7 +135,7 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
                           <form action={pb?.estado === "PUBLICADA" ? cerrar : publicar}>
                             <input type="hidden" name="procesoId" value={p.id} />
                             <button type="submit" className={pb?.estado === "PUBLICADA" ? "p-boton p-boton-secundario" : "p-boton"}>
-                              {pb?.estado === "PUBLICADA" ? "Cerrar en Vínculo" : pb ? "Publicar de nuevo" : "Publicar en Vínculo"}
+                              {pb?.estado === "PUBLICADA" ? "Cerrar en el Simulador LinkedIn" : pb ? "Publicar de nuevo" : "Publicar en el Simulador LinkedIn"}
                             </button>
                           </form>
                         )}

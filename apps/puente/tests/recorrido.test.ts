@@ -22,7 +22,7 @@ describe("recorrido del puente: webhook → CV de Vínculo → candidato, docume
 
     const [post] = talentia.postulaciones;
     expect(post).toMatchObject({ procesoId: 9001, etapa: "Postulantes", referenciaExterna: jobApplicationId });
-    expect(post.fuente).toBe("Portal simulado (tipo LinkedIn)"); // nunca «LinkedIn Easy Apply» en texto visible (D-19)
+    expect(post.fuente).toBe("Simulador LinkedIn (Apply Connect)"); // siempre rotulado como simulador, nunca «LinkedIn Easy Apply» (D-74)
     const candidato = talentia.candidatos.get(post.candidatoId)!;
     expect(candidato.correo).toBe("camila.ejemplo@demo.test");
     expect(candidato.telefono).toBe("+573000000001");

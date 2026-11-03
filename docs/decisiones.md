@@ -507,3 +507,14 @@
 - **Fecha:** 2026-11-03 (auditoría F4-V)
 - **Decisión:** `e2e/vinculo-sin-api.spec.ts` arranca, con el supervisor, una segunda instancia del mismo build de Vínculo en el puerto 3214, con `VINCULO_API_HABILITADA=false` y sobre la misma base E2E. Así se prueba la interfaz sin API (menú, pie, 404, Integraciones, vacante antes conectada y Solicitud sencilla), y la instancia de 3211 sigue con la API para el resto de las pruebas.
 - **Alternativa descartada:** apagar la API en la instancia principal a mitad de la suite (habría que reiniciarla y las pruebas quedarían dependientes del orden).
+
+## D-74 · Nombres visibles «Simulador LinkedIn» y «Simulador BUK»
+
+> Actualizado por Claude Code (2026-11-03). Decisión del equipo del 03/11/2026 (paso 0 de PROMPT_BOT_VINCULO.md). Reemplaza la regla de nombres de CLAUDE.md («sin … nombres … de LinkedIn, BUK») y, en lo visible, el texto de fuente de D-19.
+
+- **Fecha:** 2026-11-03 (F4-V)
+- **Decisión:** en la interfaz, Vínculo se llama **«Simulador LinkedIn»** y Talentia **«Simulador BUK»**: título de pestaña, menú, encabezados, pantallas de ingreso, textos, mensajes de error, mensajes de los scripts y del bot, y la documentación OpenAPI. Siempre con la palabra «Simulador». La franja dice «Entorno de simulación · No es LinkedIn ni BUK: simulación académica. Datos ficticios.» en las tres apps. En el Puente, las fuentes se rotulan con `etiquetaFuente()` (`apps/puente/src/nucleo/fuentes.ts`): `vinculo-bot` → «LinkedIn (bot, simulador)», `importador` → «Importador manual», `apply-connect` → «Simulador LinkedIn (Apply Connect)»; esa misma etiqueta llega como fuente a la postulación del ATS. El ATS activo se informa como «ATS Simulador BUK activo».
+- **Lo que NO cambia:** carpetas (`apps/vinculo`, `apps/talentia`), paquetes, esquemas, URL, variables (`VINCULO_API_HABILITADA`, `ATS_DESTINO=talentia`…), identificadores de fuente (`vinculo-bot`, `apply-connect`, `importador`), cookies y código interno. Sin logos, colores ni tipografías de LinkedIn o BUK (se mantienen la paleta y la marca propias). Lo desplegado en Render no se tocó.
+- **Motivo:** la demostración se entiende mejor y queda más cerca de lo real (el reclutador reconoce los sistemas que usa), y el rótulo «Simulador» más la franja impiden presentarlo como conexión real. Sigue prohibido afirmar conexión, certificación o compatibilidad con LinkedIn o BUK.
+- **Pruebas:** `e2e/nombres-visibles.spec.ts` recorre las pantallas principales de las tres apps y falla si aparece «Vínculo» o «Talentia» en el texto, el título de la pestaña o un atributo visible, o si falta la franja. `apps/puente/tests/nombres-visibles.test.ts` fija las etiquetas de las fuentes y `e2e/bot.spec.ts` (BV-4) verifica «LinkedIn (bot, simulador)» en Operaciones.
+- **Alternativa descartada:** mantener «Vínculo» y «Talentia» (decisión anterior, D-19 y CLAUDE.md): obligaba a explicar en la demo qué sistema real representa cada uno.

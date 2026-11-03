@@ -26,16 +26,16 @@ export default async function Conexiones() {
       <ActualizarCada ms={8000} />
       <h1>Conexiones</h1>
       <p className="p-sub">
-        Credenciales con las que el puente habla con Vínculo (red profesional) y Talentia (ATS). Cambiar de sistema real es cambiar esta configuración.
+        Credenciales con las que el puente habla con el Simulador LinkedIn (red profesional) y el Simulador BUK (ATS). Cambiar de sistema real es cambiar esta configuración.
       </p>
       {!admin && <p className="p-nota">Tu rol de operador permite ver y probar las conexiones; solo un administrador puede cambiarlas.</p>}
 
       <ol className="p-asistente" aria-label="Asistente de configuración" data-testid="asistente">
         <li data-hecho={vOk} aria-current={actual === 1 ? "step" : undefined}>
-          1. Vínculo {vOk && "✓"}
+          1. Simulador LinkedIn {vOk && "✓"}
         </li>
         <li data-hecho={tOk} aria-current={actual === 2 ? "step" : undefined}>
-          2. Talentia {tOk && "✓"}
+          2. Simulador BUK {tOk && "✓"}
         </li>
         <li data-hecho={vOk && tOk && webhookOk} aria-current={actual === 3 ? "step" : undefined}>
           3. Webhook validado y listo {vOk && tOk && webhookOk && "✓"}
@@ -44,9 +44,9 @@ export default async function Conexiones() {
 
       <div className="p-rejilla-2">
         <section className="p-tarjeta" aria-labelledby="t-vinculo" data-testid="conexion-vinculo">
-          <h2 id="t-vinculo">1 · Vínculo</h2>
+          <h2 id="t-vinculo">1 · Simulador LinkedIn</h2>
           <p className="p-nota">
-            Crea una aplicación en el portal de desarrolladores de Vínculo, copia su Client ID y su Client Secret, y pide a la empresa que la autorice (Integraciones → Conectar ATS).
+            Crea una aplicación en el portal de desarrolladores del Simulador LinkedIn, copia su Client ID y su Client Secret, y pide a la empresa que la autorice (Integraciones → Conectar ATS).
           </p>
           <dl className="p-datos">
             <dt>Estado</dt>
@@ -62,20 +62,20 @@ export default async function Conexiones() {
             <dt>Empresa</dt>
             <dd>{vinculo?.empresaNombre ?? "—"}</dd>
           </dl>
-          <FormularioConexion tipo="VINCULO" nombre="Vínculo" urlBase={vinculo?.urlBase ?? ""} clientId={vinculo?.clientId ?? ""} secretoMascara={enmascarar(vinculo?.secretoFinal)} editable={admin} conectada={!!vinculo} />
+          <FormularioConexion tipo="VINCULO" nombre="Simulador LinkedIn" urlBase={vinculo?.urlBase ?? ""} clientId={vinculo?.clientId ?? ""} secretoMascara={enmascarar(vinculo?.secretoFinal)} editable={admin} conectada={!!vinculo} />
           {vinculo && admin && (
             <form action={quitar}>
               <input type="hidden" name="tipo" value="VINCULO" />
               <button type="submit" className="p-boton-texto">
-                Desconectar Vínculo
+                Desconectar el Simulador LinkedIn
               </button>
             </form>
           )}
         </section>
 
         <section className="p-tarjeta" aria-labelledby="t-talentia" data-testid="conexion-talentia">
-          <h2 id="t-talentia">2 · Talentia</h2>
-          <p className="p-nota">Crea una API Key en Talentia (Administración → API Keys) con permisos de Selección: Lectura y Modificación.</p>
+          <h2 id="t-talentia">2 · Simulador BUK</h2>
+          <p className="p-nota">Crea una API Key en el Simulador BUK (Administración → API Keys) con permisos de Selección: Lectura y Modificación.</p>
           <dl className="p-datos">
             <dt>Estado</dt>
             <dd data-testid="estado-talentia">{talentia ? ESTADO[talentia.estadoPrueba] : "Sin configurar"}</dd>
@@ -88,12 +88,12 @@ export default async function Conexiones() {
               </>
             )}
           </dl>
-          <FormularioConexion tipo="TALENTIA" nombre="Talentia" urlBase={talentia?.urlBase ?? ""} secretoMascara={enmascarar(talentia?.secretoFinal)} editable={admin} conectada={!!talentia} />
+          <FormularioConexion tipo="TALENTIA" nombre="Simulador BUK" urlBase={talentia?.urlBase ?? ""} secretoMascara={enmascarar(talentia?.secretoFinal)} editable={admin} conectada={!!talentia} />
           {talentia && admin && (
             <form action={quitar}>
               <input type="hidden" name="tipo" value="TALENTIA" />
               <button type="submit" className="p-boton-texto">
-                Desconectar Talentia
+                Desconectar el Simulador BUK
               </button>
             </form>
           )}
@@ -102,13 +102,13 @@ export default async function Conexiones() {
 
       <section className="p-tarjeta" aria-labelledby="t-webhook">
         <h2 id="t-webhook">3 · Webhook del puente</h2>
-        <p>Registra esta URL como webhook de la aplicación en el portal de desarrolladores de Vínculo:</p>
+        <p>Registra esta URL como webhook de la aplicación en el portal de desarrolladores del Simulador LinkedIn:</p>
         <Copiar texto={urlWebhook()} etiqueta="Copiar la URL del webhook" />
         <p data-testid="estado-webhook">
           {webhookOk ? (
-            <span className="p-ok">✓ Vínculo validó el webhook (desafío respondido el {fechaHora(vinculo!.webhookValidadoEn!)}).</span>
+            <span className="p-ok">✓ El Simulador LinkedIn validó el webhook (desafío respondido el {fechaHora(vinculo!.webhookValidadoEn!)}).</span>
           ) : (
-            "Vínculo aún no ha validado el webhook. Ocurre al registrar la URL y antes de publicar cada vacante con Solicitud sencilla."
+            "El Simulador LinkedIn aún no ha validado el webhook. Ocurre al registrar la URL y antes de publicar cada vacante con Solicitud sencilla."
           )}
         </p>
       </section>

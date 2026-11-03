@@ -69,7 +69,7 @@ test.describe("P5 · vacantes y casos de fallo", () => {
     await postular(page, { apellido: `Credenciales ${sufijoUnico()}`, correo: correoUnico("credenciales") });
     await abrirOperacionDeConfirmacion(page);
     await expect(page.getByTestId("estado-operacion")).toHaveText("Fallido (reintentable)", { timeout: 30_000 });
-    await expect(page.getByText("La API Key de Talentia fue revocada o no es válida.").first()).toBeVisible();
+    await expect(page.getByText("La API Key del Simulador BUK fue revocada o no es válida.").first()).toBeVisible();
     await expect(page.getByText(/Administración → API Keys/)).toBeVisible();
     const url = page.url();
     await page.goto(`${PUE}/pruebas`);

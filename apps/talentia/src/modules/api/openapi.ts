@@ -62,7 +62,7 @@ const EJ = {
     documento_id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
     etapa: { id: "3b9d6f0e-2a41-4c1e-9d55-0f2a7c1b8e01", nombre: "Postulantes", orden: 1 },
     calificacion: "SIN_CALIFICAR",
-    fuente: "Portal simulado (tipo LinkedIn)",
+    fuente: "Simulador LinkedIn (Apply Connect)",
     referencia_externa: "urn:li:jobApplication:6172839405",
     descartada: false,
     creada_en: "2026-10-28T15:04:07.000Z",
@@ -80,7 +80,7 @@ export const EJEMPLOS_SOLICITUD = {
     proceso_id: 9001,
     postulante_id: "8f14e45f-ceea-4e7a-9b1d-2c3d4e5f6a7b",
     documento_id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
-    fuente: "Portal simulado (tipo LinkedIn)",
+    fuente: "Simulador LinkedIn (Apply Connect)",
     referencia_externa: "urn:li:jobApplication:6172839405",
   },
   moverPostulacion: { etapa: "Por contactar" },
@@ -115,10 +115,10 @@ export function documentoOpenApi(servidor: string) {
   return {
     openapi: "3.1.0",
     info: {
-      title: "API de Talentia (simulador)",
+      title: "API del Simulador BUK",
       version: "1.0.0",
       description:
-        "Entorno de simulación con datos ficticios. API del ATS simulado Talentia. Los recursos (procesos, postulantes, postulaciones) y los permisos por módulo (Selección → Lectura y Modificación) siguen lo verificado del centro de ayuda público de BUK; **las rutas, los campos y el encabezado `auth_token` son contrato del simulador** y no son la API oficial de BUK.",
+        "Entorno de simulación con datos ficticios. API del ATS «Simulador BUK». Los recursos (procesos, postulantes, postulaciones) y los permisos por módulo (Selección → Lectura y Modificación) siguen lo verificado del centro de ayuda público de BUK; **las rutas, los campos y el encabezado `auth_token` son contrato del simulador** y no son la API oficial de BUK.",
     },
     servers: [{ url: servidor }],
     security: [{ ApiKey: [] }],
@@ -217,7 +217,7 @@ export function documentoOpenApi(servidor: string) {
           tags: ["Documentos"],
           operationId: "subirDocumento",
           summary: "Subir el CV (PDF) con su SHA-256",
-          description: "Supuesto pendiente: no hay documentación pública de adjuntos en BUK. Talentia recalcula el SHA-256 y responde 422 si no coincide.",
+          description: "Supuesto pendiente: no hay documentación pública de adjuntos en BUK. El Simulador BUK recalcula el SHA-256 y responde 422 si no coincide.",
           parameters: [idUuid("Id del postulante"), idempotencia],
           requestBody: {
             required: true,

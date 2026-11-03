@@ -96,7 +96,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
     if (opciones.simularCaidaDespuesDe === paso) throw new CaidaSimulada(paso);
   };
   const conector = conectorATS({ fetchImpl: opciones.fetchImpl });
-  const ats = conector.nombre === "talentia" ? "Talentia" : conector.nombre.toUpperCase();
+  const ats = conector.nombre === "talentia" ? "Simulador BUK" : conector.nombre.toUpperCase();
 
   rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { estado: "PROCESANDO" } });
   try {
@@ -124,7 +124,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
         { referenciaExterna: rec.jobApplicant },
       );
       rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "postulante_listo", atsPostulanteId: postulante.id } });
-      await evento(rec.id, "PASO", postulante.existente ? `Postulante existente actualizado en ${ats} (mismo correo).` : `Postulante creado en ${ats}.`, "postulante_listo");
+      await evento(rec.id, "PASO", postulante.existente ? `Postulante existente actualizado en el ${ats} (mismo correo).` : `Postulante creado en el ${ats}.`, "postulante_listo");
       caida("postulante_listo");
     }
 
@@ -143,7 +143,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
           `${rec.jobApplicationId}:documento`,
         );
         rec = await prisma.recepcion.update({ where: { id: rec.id }, data: { paso: "documento_subido", atsDocumentoId: doc?.idDocumento ?? null } });
-        await evento(rec.id, "PASO", `CV subido a ${ats}; ${ats} confirmó el mismo SHA-256.`, "documento_subido");
+        await evento(rec.id, "PASO", `CV subido al ${ats}; el ${ats} confirmó el mismo SHA-256.`, "documento_subido");
       }
       caida("documento_subido");
     }
@@ -159,7 +159,7 @@ export async function procesarTrabajo(trabajoId: string, opciones: OpcionesProce
         await evento(rec.id, "RECONCILIACION", "El ATS confirma que la postulación no existe; se crea de nuevo.");
       }
       let postulacionId: string;
-      let detalle = `Postulación creada en la etapa Postulantes de ${ats}.`;
+      let detalle = `Postulación creada en la etapa Postulantes del ${ats}.`;
       try {
         const post = await conector.crearPostulacion(rec.atsPostulanteId!, String(rec.procesoAtsId), `${rec.jobApplicationId}:postulacion`, {
           idDocumento: rec.atsDocumentoId ?? undefined,

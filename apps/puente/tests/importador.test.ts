@@ -97,7 +97,7 @@ describe("I-1 · tres PDF con correo en el texto llegan a Postulantes del proces
     for (const rec of recs) expect(rec).toMatchObject({ fuente: "importador", estado: "COMPLETADO", procesoAtsId: 9002 });
     expect(recs[0].idExterno).toBe(`9002:${sha(archivos[0].bytes)}`);
     expect(talentia.postulaciones.map((p) => p.procesoId)).toEqual([9002, 9002, 9002]);
-    expect(talentia.postulaciones[0].fuente).toBe("Importador manual del Puente");
+    expect(talentia.postulaciones[0].fuente).toBe("Importador manual");
     expect(talentia.documentos.map((d) => d.sha256).sort()).toEqual(archivos.map((a) => sha(a.bytes)).sort());
     // Los bytes se borran del lote al confirmar.
     expect(await prisma.archivoImportacion.count({ where: { loteId: r.loteId, contenido: { not: null } } })).toBe(0);

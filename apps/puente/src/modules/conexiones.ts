@@ -82,7 +82,7 @@ export async function guardarTalentia(entrada: unknown): Promise<ResultadoGuarda
   if (motivo) return { ok: false, error: motivo };
   const actual = await prisma.conexion.findUnique({ where: { tipo: "TALENTIA" } });
   const llave = r.data.apiKey || null;
-  if (!llave && !actual) return { ok: false, error: "Escribe la API Key de Talentia." };
+  if (!llave && !actual) return { ok: false, error: "Escribe la API Key del Simulador BUK." };
   const datos = {
     urlBase,
     ...(llave ? { secretoCifrado: cifrar(llave), secretoFinal: llave.slice(-4) } : {}),

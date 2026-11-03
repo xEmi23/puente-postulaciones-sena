@@ -111,7 +111,7 @@ describe("recursos de Selección", () => {
   it("postulaciones: 201 en «Postulantes»; misma referencia → 200; misma persona → 409; PATCH mueve; GET por referencia_externa", async () => {
     const llave = await nuevaLlave();
     const { body: pos } = await api("POST", "/api/v1/seleccion/postulantes", llave, persona);
-    const nueva = { proceso_id: 9001, postulante_id: pos.data.id, fuente: "Portal simulado (tipo LinkedIn)", referencia_externa: "urn:li:jobApplication:1" };
+    const nueva = { proceso_id: 9001, postulante_id: pos.data.id, fuente: "Simulador LinkedIn (Apply Connect)", referencia_externa: "urn:li:jobApplication:1" };
     const a = await api("POST", "/api/v1/seleccion/postulaciones", llave, nueva);
     expect(a.status).toBe(201);
     expect(a.body.data.etapa).toMatchObject({ nombre: "Postulantes", orden: 1 });

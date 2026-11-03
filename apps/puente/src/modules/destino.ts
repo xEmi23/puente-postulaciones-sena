@@ -20,7 +20,7 @@ export async function resolverDestino(fuente: string, vacanteExterna: string, ap
     const pub = await prisma.publicacion.findUnique({ where: { externalJobId: vacanteExterna } });
     if (pub) {
       if (pub.estado === "PUBLICADA" || (pub.estado === "CERRADA" && anterior(aplicadaEn, pub.cerradaEn))) return { ok: true, procesoId: pub.procesoId, origen: "PUBLICACION" };
-      return { ok: false, motivo: "La vacante se cerró en Vínculo antes de esta postulación." };
+      return { ok: false, motivo: "La vacante se cerró en el Simulador LinkedIn antes de esta postulación." };
     }
   }
   const corr = await prisma.correspondencia.findUnique({ where: { externalJobId: referenciaCorrespondencia(fuente, vacanteExterna) } });
@@ -32,7 +32,7 @@ export async function resolverDestino(fuente: string, vacanteExterna: string, ap
     ok: false,
     motivo:
       fuente === "apply-connect"
-        ? "La vacante no tiene un proceso de Talentia asociado (ni publicación ni correspondencia)."
+        ? "La vacante no tiene un proceso del Simulador BUK asociado (ni publicación ni correspondencia)."
         : `La vacante «${vacanteExterna}» de la fuente «${fuente}» no tiene correspondencia con un proceso del ATS.`,
   };
 }

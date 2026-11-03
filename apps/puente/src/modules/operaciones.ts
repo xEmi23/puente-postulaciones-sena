@@ -52,8 +52,8 @@ export async function reconciliar(recepcionId: string, opciones: { fetchImpl?: t
     return { ok: false, mensaje: `No se pudo consultar el ATS (${detalle}). Intenta de nuevo más tarde.` };
   }
   if (existente) {
-    await completar(rec, existente.id, "Reconciliado desde el panel: Talentia ya tenía la postulación.");
-    return { ok: true, mensaje: "Talentia ya tenía la postulación. Operación marcada como completada." };
+    await completar(rec, existente.id, "Reconciliado desde el panel: el Simulador BUK ya tenía la postulación.");
+    return { ok: true, mensaje: "El Simulador BUK ya tenía la postulación. Operación marcada como completada." };
   }
   await prisma.$transaction([
     prisma.recepcion.update({ where: { id: recepcionId }, data: { estado: "FALLIDO_REINTENTABLE", errorCodigo: null, errorDetalle: null } }),

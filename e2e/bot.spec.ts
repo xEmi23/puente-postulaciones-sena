@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { chromium, expect, test, type Page } from "@playwright/test";
 import { envApp, PUE, TAL, VIN } from "./procesos";
-import { iniciarSesionTalentia, iniciarSesionVinculo } from "./utilidades";
+import { iniciarSesionPuente, iniciarSesionTalentia, iniciarSesionVinculo } from "./utilidades";
 import { prepararDemoBot } from "../scripts/demo-bot-lib.mjs";
 
 // V4 F4-V: el bot asistido (perfil de sitio «vinculo») de punta a punta con las tres apps reales:
@@ -104,6 +104,9 @@ test("BV-3 · el bot recorre la vacante en Vínculo, envía al Puente y los post
     for (const nombre of PERSONAS) await expect(t.filter({ hasText: nombre }).first()).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 90_000 });
   await expect((await tarjetas(page)).filter({ hasText: "Bot experimental (LinkedIn)" })).toHaveCount(0); // fuente propia, no LinkedIn
+  // D-74: la etiqueta visible de la fuente del bot llega al ATS; el identificador interno no se muestra.
+  await expect((await tarjetas(page)).filter({ hasText: "LinkedIn (bot, simulador)" })).toHaveCount(PERSONAS.length);
+  await expect(page.locator("main")).not.toContainText("vinculo-bot");
 
   // El CV que guardó Talentia es byte a byte el de Vínculo.
   await (await tarjetas(page)).filter({ hasText: PERSONAS[0] }).getByRole("link").first().click();
@@ -125,6 +128,16 @@ test("BV-4 · una segunda corrida no crea nada: las 3 son DUPLICADA", async ({ p
   await iniciarSesionTalentia(page, "reclutador");
   const t = await tarjetas(page);
   for (const nombre of PERSONAS) await expect(t.filter({ hasText: nombre })).toHaveCount(1);
+
+  // D-74: en Operaciones del Puente la fuente del bot se ve como «LinkedIn (bot, simulador)»; el identificador no cambia.
+  await iniciarSesionPuente(page, "operador");
+  await page.goto(`${PUE}/operaciones?fuente=vinculo-bot`);
+  const filas = page.getByTestId("fila-operacion");
+  await expect(filas.first()).toBeVisible();
+  expect(await filas.count()).toBeGreaterThanOrEqual(3);
+  for (const f of await filas.all()) await expect(f.locator("td").nth(1)).toHaveText("LinkedIn (bot, simulador)");
+  await expect(page.getByTestId("filtro-fuente").getByRole("link", { name: "LinkedIn (bot, simulador)" })).toHaveAttribute("aria-current", "true");
+  await expect(page.locator("main")).not.toContainText("vinculo-bot");
 });
 
 test("BV-5 · --seco recorre y no envía nada", async () => {

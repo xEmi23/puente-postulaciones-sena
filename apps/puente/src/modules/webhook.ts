@@ -20,7 +20,7 @@ export async function responderDesafio(challengeCode: string | null): Promise<Re
     return { status: 400, body: { error: "Falta el parámetro challengeCode." } };
   }
   const c = await conexionVinculo();
-  if (!c) return { status: 503, body: { error: "El puente aún no tiene configurada la conexión con Vínculo." } };
+  if (!c) return { status: 503, body: { error: "El puente aún no tiene configurada la conexión con el Simulador LinkedIn." } };
   await prisma.conexion.update({ where: { tipo: "VINCULO" }, data: { webhookValidadoEn: new Date() } });
   return { status: 200, body: { challengeCode, challengeResponse: respuestaDesafio(challengeCode, c.clientSecret) } };
 }
@@ -54,8 +54,8 @@ export async function recibirPostulacion(cuerpoCrudo: string, firma: string | nu
   const c = await conexionVinculo();
   if (!c) {
     // Sin secreto no se puede verificar la firma: se pide reintentar (TRANSIENT_ERROR) en vez de perder la entrega.
-    await registrarRechazo("TRANSIENT_ERROR", "El puente aún no tiene configurada la conexión con Vínculo.");
-    return { status: 503, body: cuerpoError("TRANSIENT_ERROR", { otherErrorDetails: "Conexión con Vínculo sin configurar." }) };
+    await registrarRechazo("TRANSIENT_ERROR", "El puente aún no tiene configurada la conexión con el Simulador LinkedIn.");
+    return { status: 503, body: cuerpoError("TRANSIENT_ERROR", { otherErrorDetails: "Conexión con el Simulador LinkedIn sin configurar." }) };
   }
 
   if (!firmaValida(cuerpoCrudo, firma, c.clientSecret)) {

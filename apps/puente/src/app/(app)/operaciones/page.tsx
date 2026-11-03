@@ -38,7 +38,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
     <>
       <ActualizarCada ms={3000} />
       <h1>Operaciones del puente</h1>
-      <p className="p-sub">Cada postulación recibida (de Vínculo, de la entrada genérica o del importador) y su avance hasta Talentia. Se actualiza solo.</p>
+      <p className="p-sub">Cada postulación recibida (del Simulador LinkedIn, de la entrada genérica o del importador) y su avance hasta el Simulador BUK. Se actualiza solo.</p>
 
       <section aria-labelledby="t-metricas">
         <h2 id="t-metricas" className="visualmente-oculto">
@@ -101,14 +101,14 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
             </Link>
             {fuentes.map((x) => (
               <Link key={x} href={enlace({ estado: filtro, fuente: x })} aria-current={filtroFuente === x ? "true" : undefined}>
-                {x}
+                {etiquetaFuente(x)}
               </Link>
             ))}
           </nav>
         )}
         {operaciones.length === 0 ? (
           <p className="vacio">
-            {filtro ? "No hay operaciones en este estado." : "Aún no llegan postulaciones. Cuando alguien postule con «Solicitud sencilla» en Vínculo, aparecerá aquí."}
+            {filtro ? "No hay operaciones en este estado." : "Aún no llegan postulaciones. Cuando alguien postule con «Solicitud sencilla» en el Simulador LinkedIn, aparecerá aquí."}
           </p>
         ) : (
           <div className="p-tabla-contenedor">
@@ -133,7 +133,7 @@ export default async function Operaciones({ searchParams }: { searchParams: Prom
                         {referenciaCorta(o.jobApplicationId)}
                       </Link>
                     </td>
-                    <td title={etiquetaFuente(o.fuente)}>{o.fuente}</td>
+                    <td title={`Fuente «${o.fuente}»`}>{etiquetaFuente(o.fuente)}</td>
                     <td>
                       <span className={`p-estado p-estado-${o.estado}`}>{ETIQUETA_ESTADO[o.estado]}</span>
                     </td>

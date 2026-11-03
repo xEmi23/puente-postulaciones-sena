@@ -43,7 +43,7 @@ export async function conAplicacion(req: Request, manejador: (app: AplicacionDev
     return await manejador(app);
   } catch (e) {
     console.error("[vinculo:api] error inesperado", e instanceof Error ? e.message : e);
-    return error(500, "INTERNAL_ERROR", "Error inesperado en Vínculo.");
+    return error(500, "INTERNAL_ERROR", "Error inesperado en el Simulador LinkedIn.");
   }
 }
 

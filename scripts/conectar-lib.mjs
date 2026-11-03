@@ -21,9 +21,9 @@ function correr(raiz, app, args, env) {
 export function conectar(o) {
   const log = o.registro ?? console.log;
   const { apiKey } = JSON.parse(correr(o.raiz, "talentia", ["scripts/crear-llave.ts"], o.entorno("talentia")));
-  log("✔ Talentia: API Key creada para el puente (Lectura y Modificación).");
+  log("✔ Simulador BUK: API Key creada para el puente (Lectura y Modificación).");
   const app = JSON.parse(correr(o.raiz, "vinculo", ["scripts/crear-aplicacion.ts", "crear"], o.entorno("vinculo")));
-  log(`✔ Vínculo: aplicación ${app.clientId} registrada y autorizada por Andina Software S.A.S.`);
+  log(`✔ Simulador LinkedIn: aplicación ${app.clientId} registrada y autorizada por Andina Software S.A.S.`);
   log(
     correr(o.raiz, "puente", ["scripts/conectar.ts"], {
       ...o.entorno("puente"),

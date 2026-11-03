@@ -22,7 +22,7 @@ export function FormularioLlave() {
           >
             {copiada ? "Copiada" : "Copiar llave"}
           </button>
-          <p className="a-ayuda">Talentia solo guarda su huella SHA-256 y el prefijo. Si la pierdes, revócala y crea otra.</p>
+          <p className="a-ayuda">El Simulador BUK solo guarda su huella SHA-256 y el prefijo. Si la pierdes, revócala y crea otra.</p>
         </div>
       )}
       <form action={accion} className="a-form" aria-labelledby="t-nueva">

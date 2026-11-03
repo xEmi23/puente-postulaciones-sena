@@ -14,9 +14,9 @@ export default function ApiDocs() {
           <span className="a-marca-logo" aria-hidden="true">
             T
           </span>{" "}
-          Talentia · API v1
+          Simulador BUK · API v1
         </p>
-        <h1>Documentación de la API de Talentia</h1>
+        <h1>Documentación de la API del Simulador BUK</h1>
         <p>
           Contrato del simulador (no es la API oficial de BUK). Autenticación con la API Key en el encabezado <code>auth_token</code>; crea una en{" "}
           <a href="/admin/api-keys">Administración → API Keys</a>. Límite: 120 solicitudes por minuto por llave. Documento:{" "}

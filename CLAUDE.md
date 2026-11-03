@@ -14,14 +14,14 @@ Hoy el reclutador entra a cada vacante en LinkedIn, descarga todos los CV y los 
 
 No hay acceso a APIs reales de LinkedIn ni de BUK. En la v2 son **tres sistemas independientes**:
 
-1. **Vínculo** (`apps/vinculo`, puerto 3001, esquema `vinculo`): red profesional **simulada** (empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y API modelada sobre Apply Connect).
-2. **Talentia** (`apps/talentia`, puerto 3002, esquema `talentia`): ATS **simulado** (procesos por etapas, postulantes, API Keys con permisos de Selección, API v1 y `/apidocs`).
+1. **Vínculo** (en pantalla «Simulador LinkedIn», `apps/vinculo`, puerto 3001, esquema `vinculo`): red profesional **simulada** (empleos, perfiles, «Solicitud sencilla», panel del reclutador, portal de desarrolladores y API modelada sobre Apply Connect).
+2. **Talentia** (en pantalla «Simulador BUK», `apps/talentia`, puerto 3002, esquema `talentia`): ATS **simulado** (procesos por etapas, postulantes, API Keys con permisos de Selección, API v1 y `/apidocs`).
 3. **Puente** (`apps/puente`, puerto 3003, esquema `puente`): **el producto**. Conexiones configurables y cifradas, publicación en Vínculo, recepción del webhook, transferencia a Talentia, aviso «CV descargado», operaciones, rechazos y métricas.
 
 ## Reglas que nunca se rompen
 
 - Nunca afirmar conexión, certificación ni compatibilidad comprobada con LinkedIn o BUK. Todo lo externo se llama «simulado».
-- Cada pantalla muestra discretamente «Entorno de simulación». **Identidad visual propia:** sin logos, nombres ni colores de LinkedIn, BUK o la empresa. El origen y el ATS deben sentirse como productos distintos.
+- Cada pantalla muestra discretamente «Entorno de simulación · No es LinkedIn ni BUK: simulación académica». **Nombres visibles (D-74, decisión del equipo del 03/11/2026, reemplaza la regla anterior):** el origen se muestra como «Simulador LinkedIn» y el ATS como «Simulador BUK», siempre con la palabra «Simulador»; la fuente del bot como «LinkedIn (bot, simulador)» y el importador como «Importador manual». Por dentro (carpetas, paquetes, esquemas, URL, variables, identificadores) siguen siendo `vinculo` y `talentia`. **Identidad visual propia:** sin logos, colores ni tipografías de LinkedIn, BUK o la empresa. El origen y el ATS deben sentirse como productos distintos.
 - Sin *scraping*, sin automatizar sesiones reales, sin llamadas a servicios externos reales.
 - Solo datos y CV ficticios (`@demo.test`). Nunca usar nombres reales de candidatos, tampoco los de capturas de pantalla.
 - **No usar el nombre de la empresa retadora** en código, seeds, UI ni documentos publicables (la ficha exige publicación anonimizada).

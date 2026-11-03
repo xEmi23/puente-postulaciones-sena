@@ -64,7 +64,7 @@ export default async function NuevoProceso({ searchParams }: { searchParams: Pro
         <div className="a-campo">
           <label htmlFor="descripcion">Descripción (opcional)</label>
           <textarea id="descripcion" name="descripcion" className="a-input" rows={4} defaultValue={q.descripcion} />
-          <p className="a-ayuda">Se usa como descripción de la vacante cuando el puente la publica en Vínculo.</p>
+          <p className="a-ayuda">Se usa como descripción de la vacante cuando el puente la publica en el Simulador LinkedIn.</p>
         </div>
         <div className="a-campo">
           <label htmlFor="prioridad">Prioridad</label>

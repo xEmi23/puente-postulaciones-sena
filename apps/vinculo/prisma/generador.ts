@@ -113,7 +113,7 @@ const mes = (aaaamm: string | null) => {
 export async function cvPdf(p: PersonaFicticia): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Hoja de vida · ${p.nombre} ${p.apellido} (ficticia)`);
-  doc.setAuthor("Vínculo · datos ficticios");
+  doc.setAuthor("Simulador LinkedIn · datos ficticios");
   doc.setCreationDate(new Date("2026-10-01T12:00:00Z"));
   doc.setModificationDate(new Date("2026-10-01T12:00:00Z"));
   const page: PDFPage = doc.addPage([595.28, 841.89]);

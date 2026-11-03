@@ -1,3 +1,4 @@
+import { etiquetaFuente } from "@/nucleo/fuentes";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
@@ -36,7 +37,7 @@ export default async function Importar({ searchParams }: { searchParams: Promise
         ) : (
           <form action="/api/importador/lotes" method="post" encType="multipart/form-data" data-testid="form-importar">
             <div className="p-campo">
-              <label htmlFor="imp-proceso">Proceso del ATS</label>
+              <label htmlFor="imp-proceso">Proceso del ATS (Simulador BUK)</label>
               <select id="imp-proceso" name="procesoAtsId" required defaultValue="">
                 <option value="" disabled>
                   Elige un proceso…
@@ -52,7 +53,7 @@ export default async function Importar({ searchParams }: { searchParams: Promise
                   <optgroup label="Por correspondencia (vacante → proceso)">
                     {correspondencias.map((c) => (
                       <option key={c.id} value={c.procesoAtsId}>
-                        {c.fuente} · {c.vacanteExterna ?? c.externalJobId} → {c.procesoAtsId}
+                        {etiquetaFuente(c.fuente)} · {c.vacanteExterna ?? c.externalJobId} → {c.procesoAtsId}
                       </option>
                     ))}
                   </optgroup>

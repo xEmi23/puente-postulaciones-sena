@@ -24,7 +24,7 @@ export function estadoDestino(): { destino: NombreATS; implementado: boolean; me
     implementado,
     mensaje: implementado
       ? destino === "talentia"
-        ? "ATS talentia (simulado) activo"
+        ? "ATS Simulador BUK activo"
         : `ATS ${destino} activo`
       : `ATS ${destino} no implementado`,
   };

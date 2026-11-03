@@ -12,7 +12,7 @@ import { slugUnico } from "@/modules/slugs";
 export const COOKIE_SESION = "vin_sesion";
 
 export const auth = betterAuth({
-  appName: "Vínculo",
+  appName: "Simulador LinkedIn",
   baseURL: urlPublica(),
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),

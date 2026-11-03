@@ -19,7 +19,7 @@ export interface CvDescargado {
 export async function descargarCv(rec: { mediaUrl: string }, fetchImpl: typeof fetch = fetch): Promise<CvDescargado> {
   const cfg = config();
   const c = await conexionVinculo();
-  if (!c) throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", "El puente no tiene configurada la conexión con Vínculo.", "detener");
+  if (!c) throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", "El puente no tiene configurada la conexión con el Simulador LinkedIn.", "detener");
   if (!urlDeMediaPermitida(rec.mediaUrl, c.urlBase)) {
     throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El enlace del CV no pertenece al origen autorizado.", "rechazar");
   }
@@ -32,7 +32,7 @@ export async function descargarCv(rec: { mediaUrl: string }, fetchImpl: typeof f
     } catch (e) {
       if (e instanceof vinculo.ErrorVinculo && e.tipo === "credenciales") throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", e.message, "detener");
       if (e instanceof vinculo.ErrorVinculo && e.tipo === "sin_conexion") throw new ErrorProcesamiento("PUENTE_SIN_CONEXION", e.message, "detener");
-      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "Vínculo no está disponible.", "reintentar");
+      throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", e instanceof Error ? e.message : "El Simulador LinkedIn no está disponible.", "reintentar");
     }
     try {
       const senal = AbortSignal.timeout(Number(process.env.PUENTE_TIMEOUT_MS ?? 0) || 75_000);
@@ -52,7 +52,7 @@ export async function descargarCv(rec: { mediaUrl: string }, fetchImpl: typeof f
   if (r.status >= 300 && r.status < 400) throw new ErrorProcesamiento("CV_URL_NO_PERMITIDA", "El origen intentó redirigir la descarga del CV.", "rechazar");
   if (r.status === 401 || r.status === 403) {
     vinculo.olvidarToken();
-    throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "Vínculo rechazó el token del puente al descargar el CV.", "detener");
+    throw new ErrorProcesamiento("ORIGEN_AUTENTICACION", "El Simulador LinkedIn rechazó el token del puente al descargar el CV.", "detener");
   }
   if (r.status === 404 || r.status === 410) throw new ErrorProcesamiento("CV_NO_DISPONIBLE", "El enlace del CV expiró o no existe.", "rechazar");
   if (!r.ok) throw new ErrorProcesamiento("ORIGEN_NO_DISPONIBLE", `El origen respondió ${r.status} al descargar el CV.`, "reintentar");

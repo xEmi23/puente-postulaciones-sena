@@ -39,7 +39,7 @@ export default async function SolicitudEnviada({ params, searchParams }: { param
           </span>
         </p>
       ) : (
-        <p className="v-ayuda">La empresa revisará tu solicitud directamente en Vínculo.</p>
+        <p className="v-ayuda">La empresa revisará tu solicitud directamente en el Simulador LinkedIn.</p>
       )}
       <p className="v-ayuda">
         Referencia: <code data-testid="job-application-id">{post.jobApplicationId}</code>

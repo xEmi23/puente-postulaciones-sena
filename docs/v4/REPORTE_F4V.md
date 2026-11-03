@@ -66,3 +66,16 @@
 - LinkedIn real sigue bloqueado por la Puerta 0 (`docs/manuales/bot.md`, «Qué falta»).
 
 > Actualizado por Claude Code (2026-11-03): la auditoría final (`docs/v4/AUDITORIA_F4V.md`) corrigió cinco defectos y dejó la puerta en **284** pruebas (Vitest 231, Playwright 53), sin pruebas inestables.
+
+## Nombres visibles «Simulador LinkedIn» y «Simulador BUK» (D-74)
+
+> Actualizado por Claude Code (2026-11-03). Decisión del equipo del 03/11/2026: paso 0 de PROMPT_BOT_VINCULO.md.
+
+- **Interfaz:** Vínculo se muestra como «Simulador LinkedIn» y Talentia como «Simulador BUK» (pestaña, menú, encabezados, ingreso, textos, errores, OpenAPI, mensajes del bot y de los scripts). La franja de las tres apps dice «Entorno de simulación · No es LinkedIn ni BUK: simulación académica. Datos ficticios.» Se cambiaron solo literales de texto (con el analizador de TypeScript, sin tocar comentarios ni identificadores). Carpetas, paquetes, esquemas, URL, variables e identificadores siguen igual.
+- **Puente:** la fuente `vinculo-bot` se ve como «LinkedIn (bot, simulador)», `importador` como «Importador manual» y `apply-connect` como «Simulador LinkedIn (Apply Connect)» en Operaciones (tabla, filtro y detalle), Fuentes, Importar, Correspondencias y Métricas. Esa misma etiqueta llega al ATS como fuente de la postulación. `/api/salud` informa «ATS Simulador BUK activo».
+- **Datos guardados con el nombre anterior:** la descripción de `apply-connect` (la guardó la migración) y la de `vinculo-bot` (de corridas anteriores de `demo:bot`) se reescriben solas. La siembra de Talentia usa la etiqueta nueva.
+- **Pruebas:** `e2e/nombres-visibles.spec.ts` (3 pruebas, 22 pantallas) falla si aparece «Vínculo» o «Talentia» en el texto, el título de la pestaña o un atributo visible, o si falta la franja. Encontró las dos descripciones guardadas. `apps/puente/tests/nombres-visibles.test.ts` (3 pruebas) y `e2e/bot.spec.ts` (BV-3 en el Simulador BUK y BV-4 en Operaciones) verifican «LinkedIn (bot, simulador)». Las aserciones existentes se actualizaron al texto nuevo sin aflojarlas; `nucleo-salidas.test.ts` además exige el mensaje del ATS activo.
+- **Puerta de calidad, dos veces seguidas con el mismo resultado:** lint 0, typecheck 0, Vitest 29 + 30 + 146 + 29 = **234**, Playwright **56** pasaron y 2 omitidas (capturas, solo con `CAPTURAS=1`), build 0. Total **290**.
+- **Ensayo en PowerShell** contra `npm run dev`: `demo:reset` 5 s, `demo:bot -- --reiniciar` 11 s, `--seco` 14 s (0 enviadas), bot 14 s (3 recibidas), repetición 12 s (3 duplicadas), importador 13 s (3 «Enviada al ATS»). Ninguna pantalla clave mostró «Vínculo» ni «Talentia».
+- **Ojo:** el worker del Puente corre dentro de `npm run dev` y no se recarga en caliente. En el ensayo, sin reiniciar, las 3 tarjetas del bot llegaron al Simulador BUK como «Puente · fuente «vinculo-bot»». **Hay que reiniciar `npm run dev`** después de actualizar el código. Con el código compilado desde cero (E2E), llegan como «LinkedIn (bot, simulador)».
+- **No se tocó Render.**

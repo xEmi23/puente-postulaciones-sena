@@ -72,7 +72,7 @@ export function CamposVacante({ valores, errores, aplicaciones, mostrarRecepcion
             "recepcion",
             "¿Dónde se reciben las postulaciones?",
             <select id="recepcion" name="recepcion" defaultValue={valores.recepcion ?? "VINCULO"}>
-              <option value="VINCULO">En Vínculo, con «Solicitud sencilla»</option>
+              <option value="VINCULO">En el Simulador LinkedIn, con «Solicitud sencilla»</option>
               <option value="SITIO_EMPRESA">En el sitio de la empresa (enlace)</option>
             </select>,
           )}
@@ -81,14 +81,14 @@ export function CamposVacante({ valores, errores, aplicaciones, mostrarRecepcion
               "aplicacionId",
               "Entregar las solicitudes a un ATS conectado",
               <select id="aplicacionId" name="aplicacionId" defaultValue={valores.aplicacionId ?? ""} aria-invalid={invalido("aplicacionId")}>
-                <option value="">No: las reviso en Vínculo y descargo los CV</option>
+                <option value="">No: las reviso en el Simulador LinkedIn y descargo los CV</option>
                 {aplicaciones.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.nombre}
                   </option>
                 ))}
               </select>,
-              "Solo aparecen las aplicaciones autorizadas en Integraciones. Vínculo valida su webhook antes de publicar.",
+              "Solo aparecen las aplicaciones autorizadas en Integraciones. El Simulador LinkedIn valida su webhook antes de publicar.",
             )}
         </>
       )}

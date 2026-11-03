@@ -29,7 +29,7 @@ export default async function Ingresar({ searchParams }: { searchParams: Promise
   return (
     <div className="v-ingreso">
       <section className="v-tarjeta" aria-labelledby="t-ingreso">
-        <h1 id="t-ingreso">Ingresar a Vínculo</h1>
+        <h1 id="t-ingreso">Ingresar al Simulador LinkedIn</h1>
         <form action={ingresar}>
           {error && (
             <div className="alerta alerta-error" role="alert">
@@ -50,7 +50,7 @@ export default async function Ingresar({ searchParams }: { searchParams: Promise
           </button>
         </form>
         <p>
-          ¿No tienes cuenta? <Link href={`/registro${siguiente ? `?siguiente=${encodeURIComponent(siguiente)}` : ""}`}>Únete a Vínculo</Link>
+          ¿No tienes cuenta? <Link href={`/registro${siguiente ? `?siguiente=${encodeURIComponent(siguiente)}` : ""}`}>Únete al Simulador LinkedIn</Link>
         </p>
       </section>
       <aside className="v-demo" aria-labelledby="t-demo" data-testid="cuentas-demo">

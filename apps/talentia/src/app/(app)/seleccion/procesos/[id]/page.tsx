@@ -122,7 +122,7 @@ export default async function TableroProceso({
           <button type="button" className="a-boton a-boton-claro" aria-disabled="true" title="Próximamente">
             Acciones ▾
           </button>
-          <button type="button" className="a-boton" aria-disabled="true" title="Próximamente: las postulaciones llegan desde Vínculo por el puente">
+          <button type="button" className="a-boton" aria-disabled="true" title="Próximamente: las postulaciones llegan desde el Simulador LinkedIn por el puente">
             Nueva postulación ▾
           </button>
         </div>
@@ -151,7 +151,7 @@ export default async function TableroProceso({
       </nav>
 
       <div role="status" aria-live="polite">
-        {creado && <div className="alerta alerta-exito">Proceso {proceso.id} creado. Publícalo en Vínculo desde el puente (Procesos → «Publicar en Vínculo»).</div>}
+        {creado && <div className="alerta alerta-exito">Proceso {proceso.id} creado. Publícalo en el Simulador LinkedIn desde el puente (Procesos → «Publicar en el Simulador LinkedIn»).</div>}
         {error && <div className="alerta alerta-error">{error}</div>}
         {nuevas > 0 && (
           <div className="a-aviso-nuevo" data-testid="aviso-nuevos">

@@ -43,7 +43,7 @@ export function fijarApiVinculo(raiz, habilitada) {
   const linea = `VINCULO_API_HABILITADA="${habilitada}"`;
   const nuevo = /^VINCULO_API_HABILITADA=.*$/m.test(texto)
     ? texto.replace(/^VINCULO_API_HABILITADA=.*$/m, linea)
-    : `${texto.replace(/\n?$/, "\n")}# API tipo Apply Connect de Vínculo (D-68): false = como el LinkedIn real para la empresa, sin API.\n${linea}\n`;
+    : `${texto.replace(/\n?$/, "\n")}# API tipo Apply Connect del Simulador LinkedIn (D-68): false = como el LinkedIn real para la empresa, sin API.\n${linea}\n`;
   writeFileSync(archivo, nuevo);
   return antes;
 }

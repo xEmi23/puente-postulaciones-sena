@@ -18,7 +18,7 @@ export default async function ApiKeys() {
         <div>
           <h1>API Keys</h1>
           <p className="a-sub">
-            Para integrar sistemas externos con la API de Talentia. Se envían en el encabezado <code>{ENCABEZADO_LLAVE}</code>. Ver la{" "}
+            Para integrar sistemas externos con la API del Simulador BUK. Se envían en el encabezado <code>{ENCABEZADO_LLAVE}</code>. Ver la{" "}
             <a href="/apidocs">documentación</a>.
           </p>
         </div>

@@ -15,16 +15,16 @@ const MODALIDAD = (ciudad: string) => (/remoto/i.test(ciudad) ? "REMOTE" : "HYBR
 
 export async function publicarProceso(procesoId: number, opciones: { automatica?: boolean; fetchImpl?: typeof fetch } = {}): Promise<Resultado> {
   const v = await conexionVinculo();
-  if (!v) return { ok: false, mensaje: "Configura primero la conexión con Vínculo." };
-  if (!v.empresaId) return { ok: false, mensaje: "Prueba la conexión con Vínculo para identificar la empresa que autorizó al puente." };
+  if (!v) return { ok: false, mensaje: "Configura primero la conexión con el Simulador LinkedIn." };
+  if (!v.empresaId) return { ok: false, mensaje: "Prueba la conexión con el Simulador LinkedIn para identificar la empresa que autorizó al puente." };
   let p: ProcesoATS | undefined;
   try {
     p = (await conectorATS({ fetchImpl: opciones.fetchImpl }).listarProcesos()).find((x) => x.id === String(procesoId));
   } catch (e) {
-    return { ok: false, mensaje: `No se pudo leer el proceso en Talentia: ${e instanceof Error ? e.message : e}` };
+    return { ok: false, mensaje: `No se pudo leer el proceso en el Simulador BUK: ${e instanceof Error ? e.message : e}` };
   }
-  if (!p) return { ok: false, mensaje: `No se pudo leer el proceso en Talentia: el proceso ${procesoId} no existe.` };
-  if (p.estado !== "INICIADO") return { ok: false, mensaje: `El proceso ${procesoId} no está «Iniciado» en Talentia.` };
+  if (!p) return { ok: false, mensaje: `No se pudo leer el proceso en el Simulador BUK: el proceso ${procesoId} no existe.` };
+  if (p.estado !== "INICIADO") return { ok: false, mensaje: `El proceso ${procesoId} no está «Iniciado» en el Simulador BUK.` };
   const descripcion =
     p.descripcion && p.descripcion.length >= 10 ? p.descripcion : `${p.titulo} en ${v.empresaNombre ?? "la empresa"} (${p.area ?? ""}, ${p.ciudad ?? ""}). Vacante ficticia publicada desde el ATS por el puente.`;
   try {
@@ -48,8 +48,8 @@ export async function publicarProceso(procesoId: number, opciones: { automatica?
       update: datos,
     });
     return r.applyMethod === "ONSITE_APPLY"
-      ? { ok: true, mensaje: `Proceso ${procesoId} publicado en Vínculo con «Solicitud sencilla».` }
-      : { ok: false, mensaje: `Vínculo publicó el proceso ${procesoId} sin Solicitud sencilla: ${r.notOnsiteReason ?? "el webhook no pasó la validación"}.` };
+      ? { ok: true, mensaje: `Proceso ${procesoId} publicado en el Simulador LinkedIn con «Solicitud sencilla».` }
+      : { ok: false, mensaje: `El Simulador LinkedIn publicó el proceso ${procesoId} sin Solicitud sencilla: ${r.notOnsiteReason ?? "el webhook no pasó la validación"}.` };
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
     await prisma.publicacion.upsert({
@@ -57,20 +57,20 @@ export async function publicarProceso(procesoId: number, opciones: { automatica?
       create: { procesoId, externalJobId: String(procesoId), titulo: p.titulo, estado: "ERROR", motivo: mensaje, automatica: !!opciones.automatica },
       update: { estado: "ERROR", motivo: mensaje },
     });
-    return { ok: false, mensaje: `No se pudo publicar en Vínculo: ${mensaje}` };
+    return { ok: false, mensaje: `No se pudo publicar en el Simulador LinkedIn: ${mensaje}` };
   }
 }
 
 /** «Cerrar en Vínculo»: la vacante deja de recibir; las postulaciones hechas antes del cierre se siguen aceptando (D-17). */
 export async function cerrarPublicacion(procesoId: number, fetchImpl?: typeof fetch): Promise<Resultado> {
   const pub = await prisma.publicacion.findUnique({ where: { procesoId } });
-  if (!pub || pub.estado !== "PUBLICADA") return { ok: false, mensaje: "El proceso no está publicado en Vínculo." };
+  if (!pub || pub.estado !== "PUBLICADA") return { ok: false, mensaje: "El proceso no está publicado en el Simulador LinkedIn." };
   try {
     const r = await cerrarVacante(pub.externalJobId, fetchImpl);
     await prisma.publicacion.update({ where: { procesoId }, data: { estado: "CERRADA", cerradaEn: r.closedAt ? new Date(r.closedAt) : new Date() } });
-    return { ok: true, mensaje: `Vacante del proceso ${procesoId} cerrada en Vínculo.` };
+    return { ok: true, mensaje: `Vacante del proceso ${procesoId} cerrada en el Simulador LinkedIn.` };
   } catch (e) {
-    return { ok: false, mensaje: `No se pudo cerrar en Vínculo: ${e instanceof Error ? e.message : e}` };
+    return { ok: false, mensaje: `No se pudo cerrar en el Simulador LinkedIn: ${e instanceof Error ? e.message : e}` };
   }
 }
 
@@ -95,7 +95,7 @@ export async function sondearProcesosNuevos(opciones: { fetchImpl?: typeof fetch
     }
     resultado = publicados ? `Se publicaron ${publicados} procesos nuevos.` : "Sin procesos nuevos.";
   } catch (e) {
-    resultado = `No se pudo consultar Talentia: ${e instanceof Error ? e.message : e}`;
+    resultado = `No se pudo consultar el Simulador BUK: ${e instanceof Error ? e.message : e}`;
   }
   await prisma.configuracion.update({ where: { id: 1 }, data: { ultimoSondeoEn: new Date(), resultadoSondeo: resultado } });
   return publicados;

@@ -203,7 +203,7 @@ export async function publicarDesdeApi(app: { id: string; clientId: string; secr
   }
   const d = r.data;
   const empresa = await prisma.empresa.findUnique({ where: { id: d.companyId } });
-  if (!empresa) return { ok: false, status: 404, codigo: "COMPANY_NOT_FOUND", mensaje: "La empresa no existe en Vínculo." };
+  if (!empresa) return { ok: false, status: 404, codigo: "COMPANY_NOT_FOUND", mensaje: "La empresa no existe en el Simulador LinkedIn." };
   if (!(await aplicacionAutorizada(app.id, empresa.id))) {
     return { ok: false, status: 403, codigo: "COMPANY_NOT_AUTHORIZED", mensaje: "La empresa no ha autorizado a esta aplicación (Conectar ATS)." };
   }

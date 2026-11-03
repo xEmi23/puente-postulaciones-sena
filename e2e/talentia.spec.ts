@@ -66,7 +66,7 @@ test.describe("Talentia", () => {
 
   test("criterio 3 · /apidocs carga sin sesión con Swagger UI y el documento OpenAPI", async ({ page }) => {
     await page.goto(`${TAL}/apidocs`);
-    await expect(page.getByRole("heading", { name: "Documentación de la API de Talentia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Documentación de la API del Simulador BUK" })).toBeVisible();
     await expect(page.getByText("Entorno de simulación").first()).toBeVisible();
     await expect(page.locator("#swagger")).toContainText("/api/v1/seleccion/postulantes", { timeout: 20_000 });
     await expect(page.getByRole("button", { name: /Authorize/ })).toBeVisible();

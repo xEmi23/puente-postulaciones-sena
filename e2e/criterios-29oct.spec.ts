@@ -45,8 +45,8 @@ test("C1 · preparar una vacante en Vínculo y un proceso en Talentia, y vincula
   await expect(page.locator('[data-etapa="Postulantes"]')).toBeVisible();
 
   await page.goto(`${PUE}/correspondencias`);
-  await page.getByLabel("Código de la vacante en Vínculo").fill(codigoVacante);
-  await page.getByLabel("Proceso de Talentia").selectOption(procesoId);
+  await page.getByLabel("Código de la vacante en el Simulador LinkedIn").fill(codigoVacante);
+  await page.getByLabel("Proceso del Simulador BUK").selectOption(procesoId);
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${codigoVacante} vinculada al proceso ${procesoId}`);
 });
@@ -76,7 +76,7 @@ test("C4 · la postulación aparece en la columna Postulantes del proceso correc
   const tarjeta = page.locator('[data-etapa="Postulantes"]').getByTestId("tarjeta-postulante").filter({ hasText: apellido });
   await expect(tarjeta).toBeVisible();
   await expect(tarjeta).toContainText("Sin calificar");
-  await expect(tarjeta).toContainText("Portal simulado (tipo LinkedIn)");
+  await expect(tarjeta).toContainText("Simulador LinkedIn (Apply Connect)");
   await expect(page.getByTestId("aviso-nuevos")).toHaveText(/1 postulante nuevo fue agregado al proceso/);
   for (const otro of ["9001", "9002"]) {
     await page.goto(`${TAL}/seleccion/procesos/${otro}`);

@@ -80,4 +80,4 @@ for (const app of APPS) {
   correr(`npm run db:migrate -w apps/${app}`);
   correr(`npm run db:seed -w apps/${app}`);
 }
-console.log("\n✔ Listo. Ejecuta `npm run dev` y abre http://localhost:3001 (Vínculo), :3002 (Talentia) y :3003 (Puente).");
+console.log("\n✔ Listo. Ejecuta `npm run dev` y abre http://localhost:3001 (Simulador LinkedIn), :3002 (Simulador BUK) y :3003 (Puente).");

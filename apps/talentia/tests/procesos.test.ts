@@ -41,7 +41,7 @@ describe("atributos del proceso (como en el ATS de referencia)", () => {
     await prisma.proceso.update({ where: { id: 9001 }, data: { estado: "CERRADO" } });
     const p = await crearPostulante({ nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" });
     if (!p.ok) throw new Error("no se creó");
-    const r = await crearPostulacion({ proceso_id: 9001, postulante_id: p.datos.id, fuente: "Portal simulado (tipo LinkedIn)", referencia_externa: "x" }, "prueba");
+    const r = await crearPostulacion({ proceso_id: 9001, postulante_id: p.datos.id, fuente: "Simulador LinkedIn (Apply Connect)", referencia_externa: "x" }, "prueba");
     expect(r.ok).toBe(false);
     if (!r.ok) expect([r.status, r.codigo]).toEqual([422, "PROCESO_CERRADO"]);
   });
@@ -51,7 +51,7 @@ describe("mover tarjetas y descartar (con historial)", () => {
   it("mueve entre etapas del mismo proceso, rechaza etapas ajenas y registra cada movimiento", async () => {
     const p = await crearPostulante({ nombre: "Ana", apellido: "Prueba", correo: "ana@demo.test" });
     if (!p.ok) throw new Error("no se creó");
-    const post = await crearPostulacion({ proceso_id: 9002, postulante_id: p.datos.id, fuente: "Portal simulado (tipo LinkedIn)", referencia_externa: "ref-1" }, "API · tal_x");
+    const post = await crearPostulacion({ proceso_id: 9002, postulante_id: p.datos.id, fuente: "Simulador LinkedIn (Apply Connect)", referencia_externa: "ref-1" }, "API · tal_x");
     if (!post.ok) throw new Error("no se creó");
     expect(post.datos.etapa.nombre).toBe("Postulantes");
 

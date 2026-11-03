@@ -27,7 +27,7 @@ test.describe("Vínculo", () => {
 
   test("/developers/docs carga la documentación con los webhooks de la entrega", async ({ page }) => {
     await page.goto(`${VIN}/developers/docs`);
-    await expect(page.getByRole("heading", { name: "Documentación de la API de Vínculo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Documentación de la API del Simulador LinkedIn" })).toBeVisible();
     await expect(page.locator("#swagger")).toContainText("/api/v1/jobPostings", { timeout: 20_000 });
     await expect(page.locator("#swagger")).toContainText("entregaPostulacion");
   });
@@ -43,7 +43,7 @@ test.describe("Vínculo", () => {
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByLabel("Hoja de vida (PDF)").setInputFiles("fixtures/cv/cv-sofia-demo.pdf");
     await page.getByRole("button", { name: "Enviar solicitud" }).click();
-    await expect(page.getByText("La empresa revisará tu solicitud directamente en Vínculo.")).toBeVisible();
+    await expect(page.getByText("La empresa revisará tu solicitud directamente en el Simulador LinkedIn.")).toBeVisible();
     const ref = (await page.getByTestId("job-application-id").textContent())!.trim();
 
     await iniciarSesionVinculo(page, "reclutadora");

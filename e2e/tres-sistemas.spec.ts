@@ -29,7 +29,7 @@ async function guardarTalentia(page: Page, apiKey: string) {
   await iniciarSesionPuente(page, "admin");
   await page.goto(`${PUE}/conexiones`);
   const t = page.getByTestId("conexion-talentia");
-  await t.getByLabel("URL base de Talentia").fill(TAL);
+  await t.getByLabel("URL base del Simulador BUK").fill(TAL);
   await t.getByLabel("API Key").fill(apiKey);
   await t.getByRole("button", { name: "Guardar y probar" }).click();
   await expect(page.getByTestId("resultado-guardar-tal")).toContainText("Lectura sí, Modificación sí", { timeout: 30_000 });
@@ -39,9 +39,9 @@ test("1 · el administrador desconecta el puente y lo vuelve a conectar desde la
   test.setTimeout(120_000);
   await iniciarSesionPuente(page, "admin");
   await page.goto(`${PUE}/conexiones`);
-  await page.getByRole("button", { name: "Desconectar Vínculo" }).click();
+  await page.getByRole("button", { name: "Desconectar el Simulador LinkedIn" }).click();
   await expect(page.getByTestId("estado-vinculo")).toHaveText("Sin configurar");
-  await page.getByRole("button", { name: "Desconectar Talentia" }).click();
+  await page.getByRole("button", { name: "Desconectar el Simulador BUK" }).click();
   await expect(page.getByTestId("estado-talentia")).toHaveText("Sin configurar");
   const urlWebhook = (await page.getByTestId("url-webhook").textContent())!.trim();
   expect(urlWebhook).toBe(`${PUE}/api/webhooks/vinculo`);
@@ -63,7 +63,7 @@ test("1 · el administrador desconecta el puente y lo vuelve a conectar desde la
   await iniciarSesionPuente(page, "admin");
   await page.goto(`${PUE}/conexiones`);
   const v = page.getByTestId("conexion-vinculo");
-  await v.getByLabel("URL base de Vínculo").fill(VIN);
+  await v.getByLabel("URL base del Simulador LinkedIn").fill(VIN);
   await v.getByLabel("Client ID").fill(clientId);
   await v.getByLabel("Client Secret").fill(secreto);
   await v.getByRole("button", { name: "Guardar y probar" }).click();
@@ -86,7 +86,7 @@ test("1 · el administrador desconecta el puente y lo vuelve a conectar desde la
   await expect(page.getByTestId("resultado-validacion")).toContainText("✓");
   await iniciarSesionPuente(page, "admin");
   await page.goto(`${PUE}/conexiones`);
-  await expect(page.getByTestId("estado-webhook")).toContainText("Vínculo validó el webhook");
+  await expect(page.getByTestId("estado-webhook")).toContainText("Simulador LinkedIn validó el webhook");
 });
 
 test("2 · un proceso nuevo de Talentia se publica en Vínculo desde el puente", async ({ page }) => {
@@ -103,8 +103,8 @@ test("2 · un proceso nuevo de Talentia se publica en Vínculo desde el puente",
   await page.goto(`${PUE}/procesos`);
   const fila = page.locator(`[data-testid="fila-proceso"][data-proceso="${procesoId}"]`);
   await expect(fila).toContainText(titulo);
-  await fila.getByRole("button", { name: "Publicar en Vínculo" }).click();
-  await expect(page.locator(".alerta-exito")).toContainText(`Proceso ${procesoId} publicado en Vínculo con «Solicitud sencilla»`);
+  await fila.getByRole("button", { name: "Publicar en el Simulador LinkedIn" }).click();
+  await expect(page.locator(".alerta-exito")).toContainText(`Proceso ${procesoId} publicado en el Simulador LinkedIn con «Solicitud sencilla»`);
   await expect(page.locator(`[data-testid="fila-proceso"][data-proceso="${procesoId}"]`).getByTestId("estado-publicacion")).toContainText("Publicada");
 });
 
@@ -155,7 +155,7 @@ test("4 · con la API Key revocada la transferencia se detiene con un mensaje cl
     await page.locator(`[data-testid="fila-operacion"][data-job-application-id="${ref}"]`).getByRole("link").click({ timeout: 1000 });
     await expect(page.getByTestId("estado-operacion")).toHaveText("Fallido (reintentable)", { timeout: 1000 });
   }).toPass({ timeout: 30_000 });
-  await expect(page.locator("main")).toContainText("La API Key de Talentia fue revocada o no es válida.");
+  await expect(page.locator("main")).toContainText("La API Key del Simulador BUK fue revocada o no es válida.");
   const urlOperacion = page.url();
 
   const nueva = await crearLlave(page, `Puente E2E nueva ${sufijo}`);

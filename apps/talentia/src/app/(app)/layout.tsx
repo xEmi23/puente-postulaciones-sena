@@ -22,7 +22,7 @@ export default async function LayoutTalentia({ children }: { children: React.Rea
             T
           </span>
           <span>
-            Talentia
+            Simulador BUK
             <small>ATS simulado · Andina Software</small>
           </span>
         </Link>

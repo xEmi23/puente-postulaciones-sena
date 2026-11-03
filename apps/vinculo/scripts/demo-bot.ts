@@ -24,7 +24,7 @@ const PERSONAS: Pick<PersonaFicticia, "nombre" | "apellido" | "correo" | "telefo
 async function main() {
   const reiniciar = process.argv.includes("--reiniciar");
   const andina = await prisma.empresa.findUnique({ where: { slug: "andina-software" } });
-  if (!andina) throw new Error("No existe la empresa demo «andina-software»: ejecuta npm run db:seed (o demo:reset) en Vínculo.");
+  if (!andina) throw new Error("No existe la empresa demo «andina-software»: ejecuta npm run db:seed (o demo:reset) en el Simulador LinkedIn.");
 
   let vacante = await prisma.vacante.findFirst({ where: { empresaId: andina.id, externalJobId: CODIGO_VACANTE } });
   if (!vacante) {

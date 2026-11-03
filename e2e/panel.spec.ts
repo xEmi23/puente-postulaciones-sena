@@ -58,7 +58,7 @@ test.describe("Panel del puente", () => {
     const linea = page.getByTestId("linea-tiempo");
     await expect(linea).toContainText("Postulación recibida y firma verificada.");
     await expect(linea).toContainText("CV descargado");
-    await expect(linea).toContainText("Postulación creada en la etapa Postulantes de Talentia.");
+    await expect(linea).toContainText("Postulación creada en la etapa Postulantes del Simulador BUK.");
     // El correo completo nunca aparece en el panel (solo enmascarado).
     await expect(page.locator("body")).not.toContainText(correo);
     await expect(page.locator("body")).toContainText("pa•••@demo.test");
@@ -73,9 +73,9 @@ test.describe("Panel del puente", () => {
     await iniciarSesionDemo(page);
     await page.goto(`${PUE}/procesos`);
     const fila = page.locator('[data-testid="fila-proceso"][data-proceso="9002"]');
-    const urlVacante = (await fila.getByRole("link", { name: /Ver en Vínculo/ }).getAttribute("href"))!;
-    await fila.getByRole("button", { name: "Cerrar en Vínculo" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText("cerrada en Vínculo");
+    const urlVacante = (await fila.getByRole("link", { name: /Ver en el Simulador LinkedIn/ }).getAttribute("href"))!;
+    await fila.getByRole("button", { name: "Cerrar en el Simulador LinkedIn" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("cerrada en el Simulador LinkedIn");
     try {
       await expect(page.locator('[data-testid="fila-proceso"][data-proceso="9002"]').getByTestId("estado-publicacion")).toContainText("Cerrada");
       await page.goto(urlVacante); // el buscador ya no la lista
@@ -83,7 +83,7 @@ test.describe("Panel del puente", () => {
     } finally {
       await page.goto(`${PUE}/procesos`);
       await page.locator('[data-testid="fila-proceso"][data-proceso="9002"]').getByRole("button", { name: "Publicar de nuevo" }).click();
-      await expect(page.locator(".alerta-exito")).toContainText("publicado en Vínculo con «Solicitud sencilla»");
+      await expect(page.locator(".alerta-exito")).toContainText("publicado en el Simulador LinkedIn con «Solicitud sencilla»");
     }
     await abrirVacante(page, "9002");
     await expect(page.getByRole("link", { name: "Solicitud sencilla" })).toBeVisible();
@@ -130,8 +130,8 @@ test.describe("Panel del puente", () => {
     await page.goto(`${PUE}/pruebas`);
     await page.getByRole("button", { name: "Quitar todos los fallos" }).click();
     await page.goto(url);
-    await page.getByRole("button", { name: "Reconciliar con Talentia" }).click();
-    await expect(page.locator(".alerta-exito")).toContainText("Talentia ya tenía la postulación");
+    await page.getByRole("button", { name: "Reconciliar con el Simulador BUK" }).click();
+    await expect(page.locator(".alerta-exito")).toContainText("Simulador BUK ya tenía la postulación");
     await expect(page.getByTestId("linea-tiempo")).toContainText("Reconciliado desde el panel");
     await expect(page.getByTestId("estado-operacion")).toHaveText("Completado");
   });

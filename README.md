@@ -4,6 +4,8 @@ Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: lle
 
 > **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK, ni certificación o compatibilidad comprobada con ellos. **Vínculo** (red profesional) y **Talentia** (ATS) son **simulados**; el **Puente** es el producto que se propone. El adaptador de BUK está **deshabilitado** (sin documentación ni llave). Todos los datos son ficticios (`@demo.test`).
 
+> Actualizado por Claude Code (2026-11-03, D-74). En pantalla, **Vínculo** se llama **«Simulador LinkedIn»** y **Talentia** **«Simulador BUK»** (siempre con «Simulador»; franja «No es LinkedIn ni BUK: simulación académica»). En el Puente la fuente `vinculo-bot` se ve como «LinkedIn (bot, simulador)» y `importador` como «Importador manual». Los nombres de carpetas, esquemas, URL, variables y comandos no cambian: este README los usa como nombres internos.
+
 **El producto es el Puente:** un middleware que recibe postulaciones de **cualquier fuente** con un contrato común (`PostulacionCanonica v1`), las valida, evita duplicados, verifica el CV y las registra en el ATS a través de una interfaz (`ConectorATS`), con estados visibles, revisión humana y auditoría. Cambiar de fuente o de ATS no toca el núcleo.
 
 ```

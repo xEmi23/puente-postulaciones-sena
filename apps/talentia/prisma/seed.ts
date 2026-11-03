@@ -11,7 +11,7 @@ async function main() {
       return;
     }
     await sembrarDemo(prisma);
-    console.log("Talentia: datos de demostración sembrados.");
+    console.log("Simulador BUK: datos de demostración sembrados.");
   } finally {
     await prisma.$disconnect();
   }

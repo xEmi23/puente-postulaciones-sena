@@ -40,6 +40,6 @@ test("ningún texto visible dice «LinkedIn Easy Apply»", async ({ page }) => {
   if (await enlace.count()) {
     await enlace.click();
     await expect(page.locator("body")).not.toContainText("LinkedIn Easy Apply");
-    await expect(page.locator("body")).toContainText("Portal simulado (tipo LinkedIn)");
+    await expect(page.locator("body")).toContainText("Simulador LinkedIn (Apply Connect)");
   }
 });

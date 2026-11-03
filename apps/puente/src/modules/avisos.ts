@@ -22,7 +22,7 @@ export async function procesarAvisos(opciones: { fetchImpl?: typeof fetch; baseB
       await avisarCicloDeVida(f.jobApplicationId, "RESUME_DOWNLOADED", opciones.fetchImpl);
       await prisma.$transaction([
         prisma.recepcion.update({ where: { id: f.id }, data: { avisoEstado: "ENVIADO", avisoIntentos: intento, avisoError: null, avisoProximoEn: null } }),
-        prisma.eventoRecepcion.create({ data: { recepcionId: f.id, tipo: "AVISO", detalle: "Vínculo informó al candidato «CV descargado» (RESUME_DOWNLOADED)." } }),
+        prisma.eventoRecepcion.create({ data: { recepcionId: f.id, tipo: "AVISO", detalle: "El Simulador LinkedIn informó al candidato «CV descargado» (RESUME_DOWNLOADED)." } }),
       ]);
     } catch (e) {
       const mensaje = e instanceof Error ? e.message : String(e);
@@ -35,7 +35,7 @@ export async function procesarAvisos(opciones: { fetchImpl?: typeof fetch; baseB
             ? { avisoEstado: "FALLIDO", avisoIntentos: intento, avisoError: mensaje, avisoProximoEn: null }
             : { avisoIntentos: intento, avisoError: mensaje, avisoProximoEn: new Date(Date.now() + espera) },
         }),
-        prisma.eventoRecepcion.create({ data: { recepcionId: f.id, tipo: "AVISO", detalle: `Aviso a Vínculo, intento ${intento}: ${mensaje}${definitivo ? " No se reintenta más." : ""}` } }),
+        prisma.eventoRecepcion.create({ data: { recepcionId: f.id, tipo: "AVISO", detalle: `Aviso al Simulador LinkedIn, intento ${intento}: ${mensaje}${definitivo ? " No se reintenta más." : ""}` } }),
       ]);
     }
   }

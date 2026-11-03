@@ -13,7 +13,7 @@ export type Rol = (typeof ROLES)[number];
 export const COOKIE_SESION = "tal_sesion";
 
 export const auth = betterAuth({
-  appName: "Talentia",
+  appName: "Simulador BUK",
   baseURL: urlPublica(),
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),

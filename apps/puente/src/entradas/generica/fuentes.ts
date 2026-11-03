@@ -67,11 +67,14 @@ export function tokenDeSolicitud(req: Request): string | null {
   return h.startsWith("Bearer ") ? h.slice(7).trim() : null;
 }
 
-/** La fuente del sistema de Apply Connect existe siempre (la siembra también la migración). */
+const DESCRIPCION_SISTEMA = "Apply Connect (Simulador LinkedIn): webhook firmado con HMAC";
+
+/** La fuente del sistema de Apply Connect existe siempre (la siembra también la migración). Su descripción se
+ *  reescribe porque la migración guardó el nombre visible anterior (D-74). */
 export async function asegurarFuenteSistema() {
   await prisma.fuente.upsert({
     where: { nombre: "apply-connect" },
-    create: { nombre: "apply-connect", descripcion: "Apply Connect (Vínculo, simulado): webhook firmado con HMAC", sistema: true },
-    update: {},
+    create: { nombre: "apply-connect", descripcion: DESCRIPCION_SISTEMA, sistema: true },
+    update: { descripcion: DESCRIPCION_SISTEMA },
   });
 }

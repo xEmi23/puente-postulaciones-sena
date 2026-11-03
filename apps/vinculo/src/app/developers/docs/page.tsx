@@ -9,7 +9,7 @@ export const metadata = { title: "Documentación de la API" };
 export default function DocsApi() {
   return (
     <>
-      <h1>Documentación de la API de Vínculo</h1>
+      <h1>Documentación de la API del Simulador LinkedIn</h1>
       <p className="v-subtitulo">
         Modelada sobre Apply Connect de LinkedIn (formato de la entrega, firma, desafío y descarga del CV, según su documentación pública). Las rutas
         propias del simulador están marcadas así. Documento: <a href="/api/openapi.json">/api/openapi.json</a> · <Link href="/developers">Mis aplicaciones</Link>.

@@ -7,7 +7,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export async function cvDemo(nombre: string, apellido: string, cargo: string, correo: string) {
   const pdf = await PDFDocument.create();
   pdf.setTitle(`CV ficticio · ${nombre} ${apellido}`);
-  pdf.setProducer("Talentia (simulado)");
+  pdf.setProducer("Simulador BUK");
   const pagina = pdf.addPage([595, 842]);
   const normal = await pdf.embedFont(StandardFonts.Helvetica);
   const negrita = await pdf.embedFont(StandardFonts.HelveticaBold);

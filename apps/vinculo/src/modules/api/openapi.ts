@@ -77,10 +77,10 @@ export function documentoOpenApi(servidor: string) {
   return {
     openapi: "3.1.0",
     info: {
-      title: "API de Vínculo para integradores (simulador)",
+      title: "API del Simulador LinkedIn para integradores",
       version: "1.0.0",
       description:
-        "Entorno de simulación con datos ficticios. Vínculo es una red profesional simulada; esta API está **modelada sobre Apply Connect de LinkedIn** (formato de la entrega, firma `X-LI-Signature`, desafío del webhook, códigos de error y descarga del CV con Bearer, según la documentación pública). Las rutas de token, publicación, cierre, autorizaciones y ciclo de vida son **contrato del simulador**: no son rutas oficiales de LinkedIn.",
+        "Entorno de simulación con datos ficticios. El Simulador LinkedIn es una red profesional simulada; esta API está **modelada sobre Apply Connect de LinkedIn** (formato de la entrega, firma `X-LI-Signature`, desafío del webhook, códigos de error y descarga del CV con Bearer, según la documentación pública). Las rutas de token, publicación, cierre, autorizaciones y ciclo de vida son **contrato del simulador**: no son rutas oficiales de LinkedIn.",
     },
     servers: [{ url: servidor }],
     tags: [{ name: "Autenticación" }, { name: "Vacantes" }, { name: "Postulaciones" }],
@@ -133,14 +133,14 @@ export function documentoOpenApi(servidor: string) {
           operationId: "publicarVacante",
           summary: "Publicar o actualizar una vacante desde el ATS",
           description:
-            "Idempotente por (aplicación, externalJobId): repetir actualiza. Con `onsiteApply`, Vínculo valida el webhook por desafío antes de publicar; si falla, la vacante queda como «postulación en el sitio de la empresa» (`applyMethod = COMPANY_SITE`).",
+            "Idempotente por (aplicación, externalJobId): repetir actualiza. Con `onsiteApply`, el Simulador LinkedIn valida el webhook por desafío antes de publicar; si falla, la vacante queda como «postulación en el sitio de la empresa» (`applyMethod = COMPANY_SITE`).",
           requestBody: { required: true, content: { "application/json": { schema: ref("JobPosting"), example: EJEMPLOS.jobPosting } } },
           responses: {
             200: { description: "Vacante actualizada.", content: { "application/json": { schema: ref("JobPostingPublicada"), example: { ...ejemploRespuesta, webhookValidation: "El webhook respondió el desafío correctamente." } } } },
             201: { description: "Vacante creada.", content: { "application/json": { schema: ref("JobPostingPublicada"), example: { ...ejemploRespuesta, webhookValidation: "El webhook respondió el desafío correctamente." } } } },
             400: err("Datos inválidos.", "INVALID_REQUEST", "Datos inválidos.", 400),
             403: err("La empresa no autorizó a la aplicación.", "COMPANY_NOT_AUTHORIZED", "La empresa no ha autorizado a esta aplicación (Conectar ATS).", 403),
-            404: err("La empresa no existe.", "COMPANY_NOT_FOUND", "La empresa no existe en Vínculo.", 404),
+            404: err("La empresa no existe.", "COMPANY_NOT_FOUND", "La empresa no existe en el Simulador LinkedIn.", 404),
             409: err("El externalJobId ya se usa para otra empresa.", "EXTERNAL_JOB_ID_IN_USE", "Ese externalJobId ya se usa para otra empresa.", 409),
             ...no401,
           },
@@ -198,7 +198,7 @@ export function documentoOpenApi(servidor: string) {
         get: {
           summary: "Validación del webhook por desafío (Verificado: guía de webhooks de LinkedIn)",
           description:
-            "Vínculo llama `GET {webhook}?challengeCode=<uuid>&applicationId=<clientId>` al registrar la URL y antes de publicar una vacante con Solicitud sencilla. Responde 200 en menos de 3 s con `challengeResponse = hex(HMAC-SHA256(challengeCode, clientSecret))`.",
+            "El Simulador LinkedIn llama `GET {webhook}?challengeCode=<uuid>&applicationId=<clientId>` al registrar la URL y antes de publicar una vacante con Solicitud sencilla. Responde 200 en menos de 3 s con `challengeResponse = hex(HMAC-SHA256(challengeCode, clientSecret))`.",
           parameters: [
             { name: "challengeCode", in: "query", required: true, schema: { type: "string", format: "uuid" } },
             { name: "applicationId", in: "query", required: true, schema: { type: "string" } },
@@ -210,7 +210,7 @@ export function documentoOpenApi(servidor: string) {
         post: {
           summary: "Entrega de una postulación (EXPORT_JOB_APPLICATION, Verificado: Apply Connect)",
           description:
-            "Encabezado `X-LI-Signature = hex(HMAC-SHA256(\"hmacsha256=\" + cuerpo crudo, clientSecret))` (D-04). 2xx = recibido. Con otro código Vínculo reintenta: hasta 6 intentos con espera exponencial desde 30 s (unos 15 minutos), salvo los códigos que LinkedIn no reintenta (SIGNATURE_MISMATCH, MISSING_REQUIRED_RESPONSE, INPUT_VALIDATION_FAILED, JOB_POSTING_CLOSED, DUPLICATE_APPLICATION_RECEIVED).",
+            "Encabezado `X-LI-Signature = hex(HMAC-SHA256(\"hmacsha256=\" + cuerpo crudo, clientSecret))` (D-04). 2xx = recibido. Con otro código el Simulador LinkedIn reintenta: hasta 6 intentos con espera exponencial desde 30 s (unos 15 minutos), salvo los códigos que LinkedIn no reintenta (SIGNATURE_MISMATCH, MISSING_REQUIRED_RESPONSE, INPUT_VALIDATION_FAILED, JOB_POSTING_CLOSED, DUPLICATE_APPLICATION_RECEIVED).",
           parameters: [{ name: "X-LI-Signature", in: "header", required: true, schema: { type: "string", pattern: "^[0-9a-f]{64}$" } }],
           requestBody: { required: true, content: { "application/json": { schema: ref("EntregaPostulacion"), example: entregaEjemplo } } },
           responses: { 200: { description: "Recibida." } },

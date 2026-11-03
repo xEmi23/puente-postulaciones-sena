@@ -14,7 +14,7 @@ export async function probarVinculo(fetchImpl?: typeof fetch): Promise<Resultado
     const a = await autorizaciones(fetchImpl);
     const empresa = a.elements[0];
     if (!empresa) {
-      const detalle = `Token obtenido para «${a.application.name}», pero ninguna empresa la ha autorizado todavía (Vínculo → Integraciones → Conectar ATS).`;
+      const detalle = `Token obtenido para «${a.application.name}», pero ninguna empresa la ha autorizado todavía (Simulador LinkedIn → Integraciones → Conectar ATS).`;
       await marcarPrueba("VINCULO", false, detalle, { empresaId: null, empresaNombre: null });
       return { ok: false, detalle };
     }

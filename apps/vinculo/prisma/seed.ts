@@ -11,7 +11,7 @@ async function main() {
       return;
     }
     await sembrarDemo(prisma);
-    console.log("Vínculo: datos de demostración sembrados.");
+    console.log("Simulador LinkedIn: datos de demostración sembrados.");
   } finally {
     await prisma.$disconnect();
   }

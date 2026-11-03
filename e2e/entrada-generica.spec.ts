@@ -4,7 +4,7 @@ import { PUE, TAL } from "./procesos";
 import { CV, iniciarSesionPuente, iniciarSesionTalentia, sufijoUnico } from "./utilidades";
 
 // V4 F2 por las pantallas: Fuentes → token (una vez) → Correspondencias (fuente, vacante) → entrada genérica con el
-// token → «Requiere revisión» (sin correo) → completar y aprobar → Postulantes de Talentia.
+// token → «Requiere revisión» (sin correo) → completar y aprobar → Postulantes del Simulador BUK.
 test.describe.configure({ mode: "serial" });
 
 const sufijo = sufijoUnico();
@@ -41,8 +41,8 @@ test("3 · la vacante de la fuente se vincula a un proceso en Correspondencias",
   await iniciarSesionPuente(page, "admin");
   await page.goto(`${PUE}/correspondencias`);
   await page.getByLabel("Fuente", { exact: true }).selectOption(fuente);
-  await page.getByLabel("Código de la vacante en Vínculo").fill(vacante);
-  await page.getByLabel("Proceso de Talentia").selectOption("9002");
+  await page.getByLabel("Código de la vacante en el Simulador LinkedIn").fill(vacante);
+  await page.getByLabel("Proceso del Simulador BUK").selectOption("9002");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.locator(".alerta-exito")).toContainText(`Vacante ${vacante} vinculada al proceso 9002 (fuente ${fuente})`);
 });

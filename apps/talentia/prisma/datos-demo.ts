@@ -19,7 +19,7 @@ export const PROCESOS = [
   { id: 9006, titulo: "Diseñador/a UX/UI", prioridad: "Media", dias: 5, area: "Producto", ciudad: "Cali" },
 ] as const;
 
-const DESCRIPCION = "Proceso ficticio de la demostración. Las postulaciones llegan solas desde Vínculo a través del puente.";
+const DESCRIPCION = "Proceso ficticio de la demostración. Las postulaciones llegan solas desde el Simulador LinkedIn a través del puente.";
 
 // 15 postulantes ficticios repartidos en etapas para que el tablero se vea vivo (proceso, orden de etapa).
 const POSTULANTES: [string, string, number, number][] = [
@@ -96,7 +96,7 @@ export async function sembrarDemo(prisma: PrismaClient) {
           create: {
             procesoId,
             etapaId: etapa.id,
-            fuente: i % 3 === 0 ? "Referido interno" : "Portal simulado (tipo LinkedIn)",
+            fuente: i % 3 === 0 ? "Referido interno" : "Simulador LinkedIn (Apply Connect)",
             vista: true,
             creadaEn: creada,
             historial: {

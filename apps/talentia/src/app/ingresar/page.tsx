@@ -33,7 +33,7 @@ export default async function Ingresar({ searchParams }: { searchParams: Promise
           <span className="a-marca-logo" aria-hidden="true">
             T
           </span>{" "}
-          Talentia
+          Simulador BUK
         </p>
         <h1 id="t-ingreso">Ingresar</h1>
         <p className="nota">ATS de Andina Software S.A.S. (empresa ficticia).</p>

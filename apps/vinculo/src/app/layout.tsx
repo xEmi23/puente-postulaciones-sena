@@ -10,7 +10,7 @@ import "./globals.css";
 import "./vinculo.css";
 
 export const metadata: Metadata = {
-  title: { default: "Vínculo · Entorno de simulación", template: "%s · Vínculo" },
+  title: { default: "Simulador LinkedIn · Entorno de simulación", template: "%s · Simulador LinkedIn" },
   description: "Red profesional simulada (tipo LinkedIn) para el prototipo del puente de postulaciones. Datos ficticios.",
   robots: { index: false, follow: false },
 };
@@ -30,7 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Saltar al contenido
         </a>
         <div className="aviso-simulacion" role="note" aria-label="Aviso de entorno">
-          <strong>Entorno de simulación</strong> · Datos ficticios. No hay conexión con LinkedIn ni con BUK.
+          <strong>Entorno de simulación</strong> · No es LinkedIn ni BUK: simulación académica. Datos ficticios.
         </div>
         <header className="v-cabecera">
           <div className="v-cabecera-interior">
@@ -38,7 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <span className="v-logo-marca" aria-hidden="true">
                 v
               </span>
-              Vínculo
+              Simulador LinkedIn
             </Link>
             <form action="/empleos" className="v-buscar-cabecera" role="search">
               <label htmlFor="buscar-cabecera" className="visualmente-oculto">
@@ -99,7 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
         <footer className="v-pie">
-          Vínculo es una red profesional ficticia para un prototipo académico. No es LinkedIn ni está afiliada a LinkedIn.
+          El Simulador LinkedIn es una red profesional ficticia para un prototipo académico. No es LinkedIn ni está afiliada a LinkedIn.
           {apiHabilitada() && (
             <>
               {" "}

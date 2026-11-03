@@ -1,3 +1,4 @@
+import { etiquetaFuente } from "@/nucleo/fuentes";
 import { prisma } from "@/lib/db";
 import { fechaHora } from "@/lib/fechas";
 import { exigirUsuario } from "@/lib/sesion-servidor";
@@ -61,7 +62,7 @@ export default async function Fuentes() {
               {fuentes.map((f) => (
                 <tr key={f.id} data-testid="fila-fuente" data-fuente={f.nombre}>
                   <td>
-                    <span className="mono">{f.nombre}</span>
+                    <strong>{etiquetaFuente(f.nombre)}</strong> <span className="mono p-nota">{f.nombre}</span>
                     {f.descripcion && <div className="p-nota">{f.descripcion}</div>}
                   </td>
                   <td>{f.sistema ? "Del sistema (firma HMAC)" : f.activa && f.tokenHash ? "Activa" : f.revocadaEn ? "Revocada" : "Sin token"}</td>

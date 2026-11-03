@@ -74,7 +74,7 @@ export async function conApi(req: Request, ruta: string, permiso: Permiso, manej
     }
   } catch (e) {
     console.error("[talentia:api] error inesperado", e instanceof Error ? e.message : e);
-    r = error(500, "ERROR_INTERNO", "Error inesperado en Talentia.");
+    r = error(500, "ERROR_INTERNO", "Error inesperado en el Simulador BUK.");
   }
   const duracionMs = Date.now() - inicio;
   await prisma

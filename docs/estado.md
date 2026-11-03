@@ -606,3 +606,11 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - Guion final para PowerShell: `docs/guion-demo.md`. Casos de fallo en la demo: `docs/manuales/bot.md`.
 - Puerta de calidad, dos corridas seguidas e idénticas: lint 0 · typecheck 0 · Vitest 29 + 30 + 143 + 29 · Playwright 53 (2 omitidas, capturas) = **284**, sin pruebas inestables.
 - Pendiente (pregunta): los nombres visibles «Simulador LinkedIn» y «Simulador BUK» no están hechos y contradicen CLAUDE.md.
+
+## V4 F4-V · Nombres visibles Simulador LinkedIn/BUK (2026-11-03)
+
+> Actualizado por Claude Code (2026-11-03). D-74, decisión del equipo. Detalle en `docs/v4/REPORTE_F4V.md`.
+
+- En pantalla: «Simulador LinkedIn», «Simulador BUK» y la franja «No es LinkedIn ni BUK: simulación académica»; en el Puente, la fuente del bot es «LinkedIn (bot, simulador)» y el importador es «Importador manual». Nada interno cambió.
+- Puerta de calidad dos veces: lint 0, typecheck 0, Vitest 234, Playwright 56 (2 omitidas), build 0.
+- Siguiente paso: reiniciar `npm run dev` antes de la demo (el worker del Puente no se recarga solo) y ensayar con la ventana visible y `bot:login` manual.

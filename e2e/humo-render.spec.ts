@@ -78,13 +78,13 @@ test("3 · Puente: el admin configura y prueba las dos conexiones", async ({ pag
   await ingresar(page, PUE, "admin@puente.demo.test");
   await page.goto(`${PUE}/conexiones`);
   const v = page.getByTestId("conexion-vinculo");
-  await v.getByLabel("URL base de Vínculo").fill(VIN);
+  await v.getByLabel("URL base del Simulador LinkedIn").fill(VIN);
   await v.getByLabel("Client ID").fill(clientId);
   await v.getByLabel("Client Secret").fill(clientSecret);
   await v.getByRole("button", { name: "Guardar y probar" }).click();
   await expect(page.getByTestId("resultado-guardar-vin")).toContainText("autorizada por «Andina Software S.A.S.»", { timeout: 120_000 });
   const t = page.getByTestId("conexion-talentia");
-  await t.getByLabel("URL base de Talentia").fill(TAL);
+  await t.getByLabel("URL base del Simulador BUK").fill(TAL);
   await t.getByLabel("API Key").fill(apiKey);
   await t.getByRole("button", { name: "Guardar y probar" }).click();
   await expect(page.getByTestId("resultado-guardar-tal")).toContainText("Lectura sí, Modificación sí", { timeout: 120_000 });
@@ -104,8 +104,8 @@ test("5 · Puente: «Publicar en Vínculo» el proceso con Solicitud sencilla", 
   await ingresar(page, PUE, "admin@puente.demo.test");
   await page.goto(`${PUE}/procesos`);
   const fila = page.locator(`[data-testid="fila-proceso"][data-proceso="${PROCESO}"]`);
-  await fila.getByRole("button", { name: /Publicar en Vínculo|Publicar de nuevo/ }).click();
-  await expect(page.locator(".alerta-exito")).toContainText(`Proceso ${PROCESO} publicado en Vínculo con «Solicitud sencilla»`, { timeout: 120_000 });
+  await fila.getByRole("button", { name: /Publicar en el Simulador LinkedIn|Publicar de nuevo/ }).click();
+  await expect(page.locator(".alerta-exito")).toContainText(`Proceso ${PROCESO} publicado en el Simulador LinkedIn con «Solicitud sencilla»`, { timeout: 120_000 });
 });
 
 test("6 · la candidata demo postula con Solicitud sencilla y un PDF", async ({ page }) => {

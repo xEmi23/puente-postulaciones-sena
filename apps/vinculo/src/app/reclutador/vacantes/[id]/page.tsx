@@ -79,7 +79,7 @@ export default async function VacanteReclutador({ params, searchParams }: { para
       </div>
       <p className="v-meta">
         Código <code>{v.externalJobId}</code> · {v.estado === "PUBLICADA" ? "Publicada" : v.estado === "CERRADA" ? "Cerrada" : "Borrador"} ·{" "}
-        {v.solicitudSencilla ? (conectada ? `Solicitud sencilla, entregada a «${v.aplicacion!.nombre}»` : "Solicitud sencilla en Vínculo") : "Postulación en el sitio de la empresa"}
+        {v.solicitudSencilla ? (conectada ? `Solicitud sencilla, entregada a «${v.aplicacion!.nombre}»` : "Solicitud sencilla en el Simulador LinkedIn") : "Postulación en el sitio de la empresa"}
         {v.estado !== "BORRADOR" && (
           <>
             {" "}

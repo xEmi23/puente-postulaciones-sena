@@ -2,6 +2,8 @@
 
 > Actualizado por Claude Code (2026-11-02, V4 F4-V). El bot es un **adaptador experimental** del Puente (ESPECIFICACION_V4 §8.3). Hoy funciona **solo contra Vínculo**, la red profesional **simulada** del proyecto. El perfil de LinkedIn es un esqueleto que **se niega a correr** hasta que la Puerta 0 diga «Bot = sí» (`docs/v4/PUERTA0.md`). Todos los datos son ficticios (`@demo.test`).
 
+> Actualizado por Claude Code (2026-11-03, D-74). En pantalla, Vínculo se ve como **«Simulador LinkedIn»** y Talentia como **«Simulador BUK»**; en el Puente la fuente del bot aparece como **«LinkedIn (bot, simulador)»** (su identificador sigue siendo `vinculo-bot`, el que usan `.env`, comandos y filtros por URL). Los mensajes del bot dicen «El Simulador LinkedIn muestra…». Este manual usa los nombres internos para carpetas y comandos.
+
 ## Qué hace
 
 Una persona lo ejecuta (no hay modo programado), con la ventana del navegador visible. En cada corrida el bot:
@@ -71,10 +73,10 @@ Las opciones funcionan igual en PowerShell, cmd y bash. En PowerShell, npm se qu
 | Mensaje | Qué hacer |
 |---|---|
 | «Se requiere intervención humana: … pantalla de ingreso» o «… panel del reclutador completo» | La sesión venció (siempre pasa después de `npm run demo:reset`, que vuelve a crear las cuentas) o hay otra ventana del bot abierta: ciérrala, `npm run bot:login -w apps/bot-linkedin` y vuelve a correr. |
-| «Vínculo muestra «Algo salió mal»» | Error del sitio: mira la ventana de `npm run dev`. Si es la base de datos, `npm run pg:start`. |
+| «El Simulador LinkedIn muestra «Algo salió mal»» | Error del sitio: mira la ventana de `npm run dev`. Si es la base de datos, `npm run pg:start`. |
 | «Falta PUENTE_BOT_TOKEN» | Ejecuta `npm run demo:bot`. |
 | «El Puente rechazó el token de la fuente (401)» | El token fue rotado: `npm run demo:bot` genera uno nuevo. |
-| «El Puente no tiene vacantes vinculadas a esta fuente» | Falta la correspondencia en el Puente (la crea `demo:bot`, o Puente → Correspondencias con la fuente «vinculo-bot»). |
+| «El Puente no tiene vacantes vinculadas a esta fuente» | Falta la correspondencia en el Puente (la crea `demo:bot`, o Puente → Correspondencias con la fuente «LinkedIn (bot, simulador)», identificador `vinculo-bot`). |
 | Los postulantes no llegan a Talentia | Revisa Puente → Conexiones (Talentia) y Operaciones. |
 
 ## Si algo falla en la demo
@@ -86,10 +88,10 @@ Las opciones funcionan igual en PowerShell, cmd y bash. En PowerShell, npm se qu
 | Se cierra la ventana del bot a mitad de la corrida | «Se cerró la ventana del bot antes de terminar…» | Vuelve a ejecutar `npm run bot -w apps/bot-linkedin`. Lo enviado sale «duplicada» y sigue con lo que faltaba. |
 | Quedó abierta la ventana de `bot:login`, o hay otra corrida con el mismo perfil | «Se requiere intervención humana: … (si hay otra ventana del bot abierta, ciérrala primero)» o «El perfil del bot ya está abierto en otra ventana…» | Cierra la otra ventana del bot y vuelve a ejecutar. Dos corridas a la vez no duplican nada en Talentia (probado). |
 | Otra pestaña de Vínculo abierta con la misma cuenta, en tu navegador normal | Nada: es otro navegador y otra sesión | Puedes dejarla abierta para mostrar la vacante. No cierres sesión en ella durante la demo (no se ensayó si afecta la sesión del bot). |
-| La sesión del bot venció (por ejemplo, después de `demo:reset`) | «Se requiere intervención humana: Vínculo muestra la pantalla de ingreso…» | `npm run bot:login -w apps/bot-linkedin`, inicia sesión a mano y cierra la ventana. |
+| La sesión del bot venció (por ejemplo, después de `demo:reset`) | «Se requiere intervención humana: El Simulador LinkedIn muestra la pantalla de ingreso…» | `npm run bot:login -w apps/bot-linkedin`, inicia sesión a mano y cierra la ventana. |
 | Los puertos 3001, 3002 o 3003 están ocupados al hacer `npm run dev` | «✖ El puerto 3001 (vinculo) ya está en uso…» | Ya hay otra ventana con `npm run dev` o `npm start`: úsala, o ciérrala con Ctrl+C. Para ver qué programa es: `netstat -ano | findstr :3001`. |
 | PostgreSQL apagado | `npm run dev` lo enciende solo. `demo:bot` dice «PostgreSQL no responde…»; el sitio muestra «Algo salió mal» y el bot se detiene diciendo qué revisar | `npm run pg:start` y repite el paso. |
-| Las apps están apagadas | Bot: «El sitio no responde (http://localhost:3001)…»; `demo:bot`: «Vínculo no responde en …» | Abre la ventana 1 con `npm run dev` y espera a que diga las tres URL. |
+| Las apps están apagadas | Bot: «El sitio no responde (http://localhost:3001)…»; `demo:bot`: «Simulador LinkedIn no responde en …» | Abre la ventana 1 con `npm run dev` y espera a que diga las tres URL. |
 | El Puente está apagado mientras corre el bot | «… el Puente no responde; reintento en 2 s…» (hasta unos 2 minutos) y luego «No se pudo contactar al Puente…» | Ctrl+C, enciende las apps y vuelve a ejecutar. |
 | El computador entró en suspensión y volvió (no ensayado) | `npm run dev` y PostgreSQL siguen corriendo; si una página se quedó a medias, «El sitio tardó demasiado…» | Recarga las pestañas; si algo no responde, Ctrl+C en la ventana 1 y `npm run dev` otra vez. Repite `bot:login` solo si el bot lo pide. |
 | Falta Chromium de Playwright (otro computador) | «Falta el navegador Chromium de Playwright…» | `npx playwright install chromium` (necesita internet). |

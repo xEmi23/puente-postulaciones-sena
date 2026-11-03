@@ -1,8 +1,10 @@
-// Texto visible de cada fuente en el ATS y en el panel. Ningún texto afirma conexión con LinkedIn (CLAUDE.md, D-19).
+// Texto visible de cada fuente en el ATS y en el panel. Se rotula siempre como simulador: ningún texto afirma conexión
+// con LinkedIn ni con BUK (CLAUDE.md, D-74). El identificador interno (p. ej., «vinculo-bot») no cambia.
 
 const ETIQUETAS: Record<string, string> = {
-  "apply-connect": "Portal simulado (tipo LinkedIn)",
-  importador: "Importador manual del Puente",
+  "apply-connect": "Simulador LinkedIn (Apply Connect)",
+  importador: "Importador manual",
+  "vinculo-bot": "LinkedIn (bot, simulador)",
   "linkedin-bot": "Bot experimental (LinkedIn)",
 };
 

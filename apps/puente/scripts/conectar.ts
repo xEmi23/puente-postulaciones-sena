@@ -14,20 +14,20 @@ async function main() {
   const e = process.env;
   if (!e.CONECTAR_VINCULO_URL) {
     const t = await guardarTalentia({ urlBase: e.CONECTAR_TALENTIA_URL, apiKey: e.CONECTAR_API_KEY });
-    if (!t.ok) throw new Error(`Talentia: ${t.error}`);
+    if (!t.ok) throw new Error(`Simulador BUK: ${t.error}`);
     const pt = await probarTalentia();
-    console.log(`Talentia: ${pt.ok ? "✔" : "✖"} ${pt.detalle}`);
+    console.log(`Simulador BUK: ${pt.ok ? "✔" : "✖"} ${pt.detalle}`);
     if (!pt.ok) process.exit(3);
     return;
   }
   const v = await guardarVinculo({ urlBase: e.CONECTAR_VINCULO_URL, clientId: e.CONECTAR_CLIENT_ID, clientSecret: e.CONECTAR_CLIENT_SECRET });
-  if (!v.ok) throw new Error(`Vínculo: ${v.error}`);
+  if (!v.ok) throw new Error(`Simulador LinkedIn: ${v.error}`);
   const t = await guardarTalentia({ urlBase: e.CONECTAR_TALENTIA_URL, apiKey: e.CONECTAR_API_KEY });
-  if (!t.ok) throw new Error(`Talentia: ${t.error}`);
+  if (!t.ok) throw new Error(`Simulador BUK: ${t.error}`);
   const pv = await probarVinculo();
   const pt = await probarTalentia();
-  console.log(`Vínculo: ${pv.ok ? "✔" : "✖"} ${pv.detalle}`);
-  console.log(`Talentia: ${pt.ok ? "✔" : "✖"} ${pt.detalle}`);
+  console.log(`Simulador LinkedIn: ${pv.ok ? "✔" : "✖"} ${pv.detalle}`);
+  console.log(`Simulador BUK: ${pt.ok ? "✔" : "✖"} ${pt.detalle}`);
   if (!pv.ok || !pt.ok) process.exit(3);
   for (const id of (e.CONECTAR_PUBLICAR ?? "").split(",").map(Number).filter(Boolean)) {
     const r = await publicarProceso(id);

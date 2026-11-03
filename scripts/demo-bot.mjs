@@ -18,7 +18,7 @@ const envDe = (app) => ({ ...process.env, ...parse(readFileSync(path.join(RAIZ, 
 const proceso = Number(valor("proceso") ?? 9005);
 const reiniciar = bandera("reiniciar");
 if (!Number.isInteger(proceso) || proceso <= 0) {
-  console.error("✖ --proceso debe ser el número de un proceso de Talentia (por ejemplo 9005).");
+  console.error("✖ --proceso debe ser el número de un proceso del Simulador BUK (por ejemplo 9005).");
   process.exit(2);
 }
 if (reiniciar) console.log("Se reinician las postulaciones de la vacante de la demo (--reiniciar).");
@@ -26,7 +26,7 @@ if (reiniciar) console.log("Se reinician las postulaciones de la vacante de la d
 const urlVinculo = envDe("vinculo").APP_BASE_URL || "http://localhost:3001";
 const urlTalentia = envDe("talentia").APP_BASE_URL || "http://localhost:3002";
 const urlPuente = envDe("puente").APP_BASE_URL || "http://localhost:3003";
-for (const [nombre, u] of Object.entries({ Vínculo: urlVinculo, Talentia: urlTalentia, Puente: urlPuente })) {
+for (const [nombre, u] of Object.entries({ "Simulador LinkedIn": urlVinculo, "Simulador BUK": urlTalentia, Puente: urlPuente })) {
   try {
     await fetch(`${u}/api/salud`, { signal: AbortSignal.timeout(90_000) });
   } catch {
@@ -43,7 +43,7 @@ try {
   writeFileSync(
     path.join(RAIZ, "apps", "bot-linkedin", ".env"),
     [
-      "# Generado por npm run demo:bot. No se versiona. Sin contraseñas: la sesión de Vínculo se inicia a mano (bot:login).",
+      "# Generado por npm run demo:bot. No se versiona. Sin contraseñas: la sesión del Simulador LinkedIn se inicia a mano (bot:login).",
       'BOT_SITIO="vinculo"',
       `BOT_URL_SITIO="${urlVinculo}"`,
       `PUENTE_URL="${urlPuente}"`,
@@ -53,11 +53,11 @@ try {
       "",
     ].join("\n"),
   );
-  console.log(`✔ Vínculo: vacante ${r.vacante} «${r.titulo}» de Andina Software S.A.S. con 3 postulaciones ficticias (con CV).`);
-  console.log(`✔ Puente: fuente «vinculo-bot» y correspondencia ${r.vacante} → proceso ${r.proceso} de Talentia.`);
-  console.log("✔ Talentia: API Key nueva; conexión del Puente con Talentia guardada y probada.");
-  console.log("✔ Vínculo: VINCULO_API_HABILITADA=false en apps/vinculo/.env (sin API ni webhooks, como el LinkedIn real para la empresa).");
-  if (apiViva) console.log("  ⚠ El Vínculo que está corriendo aún tiene la API prendida: reinicia las apps (Ctrl+C y npm run dev).");
+  console.log(`✔ Simulador LinkedIn: vacante ${r.vacante} «${r.titulo}» de Andina Software S.A.S. con 3 postulaciones ficticias (con CV).`);
+  console.log(`✔ Puente: fuente «vinculo-bot» y correspondencia ${r.vacante} → proceso ${r.proceso} del Simulador BUK.`);
+  console.log("✔ Simulador BUK: API Key nueva; conexión del Puente con el Simulador BUK guardada y probada.");
+  console.log("✔ Simulador LinkedIn: VINCULO_API_HABILITADA=false en apps/vinculo/.env (sin API ni webhooks, como el LinkedIn real para la empresa).");
+  if (apiViva) console.log("  ⚠ El Simulador LinkedIn que está corriendo aún tiene la API prendida: reinicia las apps (Ctrl+C y npm run dev).");
   console.log("");
   console.log("Token de la fuente «vinculo-bot» (se muestra UNA vez; ya quedó en apps/bot-linkedin/.env):");
   console.log(`  ${r.token}`);
@@ -70,7 +70,7 @@ try {
   if (/Can't reach database|ECONNREFUSED|P1001|connect ECONN|Connection refused/i.test(m)) {
     console.error("✖ PostgreSQL no responde. Enciéndelo con «npm run pg:start» (o deja abierto «npm run dev», que lo enciende) y vuelve a ejecutar.");
   } else if (/conectar.ts|crear-llave.ts/.test(m)) {
-    console.error("✖ No se pudo conectar el Puente con Talentia. ¿Está encendido «npm run dev»?");
+    console.error("✖ No se pudo conectar el Puente con el Simulador BUK. ¿Está encendido «npm run dev»?");
   }
   console.error(`✖ ${m.length > 1500 ? `${m.slice(0, 1500)}…` : m}`);
   process.exit(1);

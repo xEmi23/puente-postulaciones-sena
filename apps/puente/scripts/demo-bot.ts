@@ -9,6 +9,7 @@ import { auditar } from "../src/nucleo/auditoria";
 // Correspondencias. Entrada: CONECTAR_VACANTE, CONECTAR_PROCESO. Imprime JSON: { token, fuente, vacante, proceso }.
 
 const FUENTE = "vinculo-bot";
+const DESCRIPCION = "Bot asistido del Puente sobre el Simulador LinkedIn (red simulada)";
 const actor = { tipo: "sistema" as const, id: "demo:bot" };
 
 async function main() {
@@ -17,8 +18,11 @@ async function main() {
   if (!vacante || !proceso) throw new Error("Faltan CONECTAR_VACANTE y CONECTAR_PROCESO.");
   await asegurarFuenteSistema();
   if (!(await prisma.fuente.findUnique({ where: { nombre: FUENTE } }))) {
-    const r = await crearFuente(FUENTE, "Bot asistido del Puente sobre Vínculo (red simulada)", actor);
+    const r = await crearFuente(FUENTE, DESCRIPCION, actor);
     if (!r.ok) throw new Error(r.mensaje);
+  } else {
+    // Una fuente creada antes de D-74 conserva la descripción con el nombre visible anterior: se reescribe.
+    await prisma.fuente.update({ where: { nombre: FUENTE }, data: { descripcion: DESCRIPCION } });
   }
   const t = await generarToken(FUENTE, actor);
   if (!t.ok || !t.token) throw new Error(t.mensaje);

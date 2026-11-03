@@ -53,7 +53,7 @@ export function FormularioNuevaApp() {
         <div className="v-campo">
           <label htmlFor="webhookUrl">URL del webhook (opcional)</label>
           <input id="webhookUrl" name="webhookUrl" type="url" placeholder="https://…/api/webhooks/vinculo" />
-          <p className="v-ayuda">Vínculo la valida con un desafío firmado con el Client Secret. Puedes agregarla después.</p>
+          <p className="v-ayuda">El Simulador LinkedIn la valida con un desafío firmado con el Client Secret. Puedes agregarla después.</p>
         </div>
         <button type="submit" className="v-boton" disabled={enviando}>
           {enviando ? "Creando…" : "Crear aplicación"}

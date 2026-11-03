@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Puente · Entorno de simulación", template: "%s · Puente" },
-  description: "Puente de postulaciones: traslada cada postulación de Vínculo a Talentia por API.",
+  description: "Puente de postulaciones: traslada cada postulación del Simulador LinkedIn al Simulador BUK por API.",
   robots: { index: false, follow: false },
 };
 
@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Saltar al contenido
         </a>
         <div className="aviso-simulacion" role="note" aria-label="Aviso de entorno">
-          <strong>Entorno de simulación</strong> · Datos ficticios. No hay conexión con LinkedIn ni con BUK.
+          <strong>Entorno de simulación</strong> · No es LinkedIn ni BUK: simulación académica. Datos ficticios.
         </div>
         {children}
       </body>

@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { destinoSeguro } from "@/lib/sesion-servidor";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Únete a Vínculo" };
+export const metadata: Metadata = { title: "Únete al Simulador LinkedIn" };
 
 const esquema = z.object({
   nombre: z.string().trim().min(3, "Escribe tu nombre completo.").max(80).regex(/^[\p{L}][\p{L} '.-]*\s[\p{L}][\p{L} '.-]*$/u, "Escribe nombre y apellido."),
@@ -34,7 +34,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
   return (
     <div className="v-ingreso">
       <section className="v-tarjeta" aria-labelledby="t-registro">
-        <h1 id="t-registro">Únete a Vínculo</h1>
+        <h1 id="t-registro">Únete al Simulador LinkedIn</h1>
         <p className="v-subtitulo">Crea tu cuenta de candidato para postularte con «Solicitud sencilla». Usa solo datos ficticios.</p>
         {q.error && (
           <div className="alerta alerta-error" role="alert">
@@ -57,7 +57,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
             <p className="v-ayuda">Mínimo 8 caracteres. Se guarda cifrada con hash.</p>
           </div>
           <p className="v-ayuda">
-            Al crear la cuenta aceptas que Vínculo use tus datos para mostrar tu perfil y enviar tus solicitudes a las empresas que elijas (tratamiento de datos personales, Ley 1581 de 2012). Es un entorno de simulación: usa solo datos ficticios.
+            Al crear la cuenta aceptas que el Simulador LinkedIn use tus datos para mostrar tu perfil y enviar tus solicitudes a las empresas que elijas (tratamiento de datos personales, Ley 1581 de 2012). Es un entorno de simulación: usa solo datos ficticios.
           </p>
           <button type="submit" className="v-boton">
             Crear cuenta

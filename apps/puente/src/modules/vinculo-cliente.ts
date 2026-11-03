@@ -33,7 +33,7 @@ export function olvidarToken() {
 
 async function conexion(): Promise<ConexionVinculo> {
   const c = await conexionVinculo();
-  if (!c) throw new ErrorVinculo("sin_conexion", "El puente no tiene configurada la conexión con Vínculo (ver Conexiones).");
+  if (!c) throw new ErrorVinculo("sin_conexion", "El puente no tiene configurada la conexión con el Simulador LinkedIn (ver Conexiones).");
   return c;
 }
 
@@ -46,7 +46,7 @@ async function pedir(c: ConexionVinculo, ruta: string, init: RequestInit, fetchI
     return r;
   } catch (e) {
     const nombre = e instanceof Error ? e.name : "";
-    throw new ErrorVinculo("red", nombre === "TimeoutError" ? "Vínculo no respondió a tiempo." : "No fue posible conectar con Vínculo.");
+    throw new ErrorVinculo("red", nombre === "TimeoutError" ? "El Simulador LinkedIn no respondió a tiempo." : "No fue posible conectar con el Simulador LinkedIn.");
   }
 }
 
@@ -65,10 +65,10 @@ export async function obtenerToken(fetchImpl: typeof fetch = fetch, opciones: { 
     },
     fetchImpl,
   );
-  if (r.status === 400 || r.status === 401) throw new ErrorVinculo("credenciales", "Vínculo rechazó el Client ID o el Client Secret del puente.", r.status);
-  if (!r.ok) throw new ErrorVinculo("servidor", `Vínculo respondió ${r.status} al pedir el token.`, r.status);
+  if (r.status === 400 || r.status === 401) throw new ErrorVinculo("credenciales", "El Simulador LinkedIn rechazó el Client ID o el Client Secret del puente.", r.status);
+  if (!r.ok) throw new ErrorVinculo("servidor", `El Simulador LinkedIn respondió ${r.status} al pedir el token.`, r.status);
   const datos = (await r.json()) as { access_token?: string; expires_in?: number };
-  if (!datos.access_token) throw new ErrorVinculo("servidor", "Vínculo no devolvió un access token.");
+  if (!datos.access_token) throw new ErrorVinculo("servidor", "El Simulador LinkedIn no devolvió un access token.");
   cache = { clave, token: datos.access_token, venceEn: Date.now() + (datos.expires_in ?? 3600) * 1000 };
   return cache.token;
 }
@@ -94,11 +94,11 @@ async function llamar<T>(metodo: "GET" | "POST", ruta: string, cuerpo: unknown, 
     if (r.ok) return json as T;
     const e = json as { code?: string; message?: string } | null;
     if (r.status === 401 && intento === 0) continue;
-    if (r.status === 401 || r.status === 403) throw new ErrorVinculo("credenciales", e?.message ?? "Vínculo rechazó las credenciales del puente.", r.status, e?.code);
-    if (r.status === 429 || r.status >= 500) throw new ErrorVinculo("servidor", `Vínculo respondió ${r.status}.`, r.status, e?.code);
-    throw new ErrorVinculo("validacion", e?.message ?? `Vínculo rechazó la solicitud (${r.status}).`, r.status, e?.code);
+    if (r.status === 401 || r.status === 403) throw new ErrorVinculo("credenciales", e?.message ?? "El Simulador LinkedIn rechazó las credenciales del puente.", r.status, e?.code);
+    if (r.status === 429 || r.status >= 500) throw new ErrorVinculo("servidor", `El Simulador LinkedIn respondió ${r.status}.`, r.status, e?.code);
+    throw new ErrorVinculo("validacion", e?.message ?? `El Simulador LinkedIn rechazó la solicitud (${r.status}).`, r.status, e?.code);
   }
-  throw new ErrorVinculo("credenciales", "Vínculo rechazó el token del puente.");
+  throw new ErrorVinculo("credenciales", "El Simulador LinkedIn rechazó el token del puente.");
 }
 
 export interface Autorizaciones {

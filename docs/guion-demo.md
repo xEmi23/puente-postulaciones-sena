@@ -17,7 +17,7 @@
 | 0:45–1:30 | `/origen/admin` → «Publicar vacante»; `/ats` → «Nuevo proceso»; `/puente/correspondencias` → vincular | **Criterio 1.** «Preparamos la vacante en el origen y el proceso en el ATS, y los vinculamos. El puente no adivina procesos.» (Si el tiempo es corto, usar la vacante sembrada RT-2026-101 → 9001.) |
 | 1:30–2:30 | `/origen` → vacante → formulario con datos ficticios y el PDF | **Criterio 2.** «Postulación sin cuenta. La validación es del servidor: probemos un archivo que no es PDF…» (mostrar el error) «…y ahora el PDF correcto.» |
 | 2:30–3:15 | La confirmación cambia sola a «Entregada a la empresa»; pestaña del panel: operación **Completado** y sus 4 pasos | **Criterio 3.** «Nadie copió nada: el portal firmó el evento con HMAC, el puente verificó la firma, descargó el CV y llamó al ATS paso a paso. Aquí se ve cada paso con su hora.» |
-| 3:15–4:00 | Pestaña del ATS: encabezado con prioridad, inicio, vigencia y estado «Iniciado»; aviso «1 postulante nuevo fue agregado al proceso», tarjeta en **Postulantes**, «Sin calificar», fuente «Portal simulado (tipo LinkedIn)» | **Criterio 4.** «Llega al proceso correcto, en la primera columna, como en el ATS de la empresa.» |
+| 3:15–4:00 | Pestaña del ATS: encabezado con prioridad, inicio, vigencia y estado «Iniciado»; aviso «1 postulante nuevo fue agregado al proceso», tarjeta en **Postulantes**, «Sin calificar», fuente «Simulador LinkedIn (Apply Connect)» | **Criterio 4.** «Llega al proceso correcto, en la primera columna, como en el ATS de la empresa.» |
 | 4:00–4:40 | Detalle del candidato → «Descargar CV» → comparar el SHA-256 en pantalla con el de `certutil` | **Criterio 5.** «El archivo es idéntico byte a byte: el ATS recalcula el hash y lo compara.» |
 | 4:40–5:20 | `/origen/admin` → «Reenviar evento» → `HTTP 200 · DUPLICADO`; el ATS sigue con una tarjeta; el panel suma «Duplicados evitados» | **Criterio 6.** «LinkedIn puede reenviar. No se duplica nada: lo garantiza una restricción única en la base, no un "consultar antes de insertar".» |
 | 5:20–6:00 | `/origen/admin/consola`: «Firma inválida» → 401 `SIGNATURE_MISMATCH`; «Vacante sin correspondencia» → 422 `JOB_POSTING_CLOSED`; `/puente/rechazos` | **Criterio 7.** «Entradas inválidas: se rechazan con el código que documenta LinkedIn y cero escrituras en el ATS.» |
@@ -56,7 +56,7 @@
 | 0:45–1:45 | Talentia → API Keys (llave con Lectura y Modificación); Vínculo → Desarrolladores (aplicación, Client ID); Puente → **Conexiones**: las tres marcas, «Probar conexión» | **Criterios 2, 4 y 5.** «El puente no tiene nada quemado: estas credenciales se pegan aquí, se guardan cifradas y se prueban contra los dos sistemas. El webhook pasó el desafío firmado.» |
 | 1:45–2:30 | Puente → **Procesos** → «Publicar en Vínculo» el 9003 → «Ver en Vínculo» | **Criterio 6.** «Desde el ATS se publica la vacante con Solicitud sencilla; su id externo es el id del proceso, así que nadie tiene que vincular nada a mano.» |
 | 2:30–3:30 | Vínculo como Valentina → la vacante → Solicitud sencilla (2 pasos) con el PDF | **Criterio 7.** «Dos pasos, datos del perfil y el PDF.» (Opcional: mostrar el rechazo de un archivo que no es PDF.) |
-| 3:30–4:15 | Puente → Operaciones: **Completado** con los 4 pasos y su hora; Talentia → proceso 9003: la tarjeta en **Postulantes**, «Sin calificar», fuente «Portal simulado (tipo LinkedIn)» | «Recibido no es transferido: solo cuenta cuando Talentia confirma la postulación. Llegó en segundos al proceso correcto.» |
+| 3:30–4:15 | Puente → Operaciones: **Completado** con los 4 pasos y su hora; Talentia → proceso 9003: la tarjeta en **Postulantes**, «Sin calificar», fuente «Simulador LinkedIn (Apply Connect)» | «Recibido no es transferido: solo cuenta cuando Talentia confirma la postulación. Llegó en segundos al proceso correcto.» |
 | 4:15–4:45 | Talentia → ficha → descargar el CV y comparar su SHA-256 | «El archivo es idéntico byte a byte.» |
 | 4:45–5:15 | Vínculo → Mis postulaciones: **CV descargado** | **Criterio 8.** «El puente le avisa a la red profesional y el candidato ve que su hoja de vida llegó.» |
 | 5:15–6:00 | Vínculo → Desarrolladores → la aplicación → «Reenviar evento» → `DUPLICADO`; consola: firma inválida → 401 | **Criterios 9 y 13.** «Reenvíos sin duplicados; entradas inválidas rechazadas con el código documentado y cero escrituras.» |
@@ -90,7 +90,7 @@
 | 0:30–1:00 | Diagrama de capas (README) | «El producto es el Puente: recibe de cualquier fuente con un contrato común y escribe en el ATS por una interfaz. Talentia simula BUK; BUK real está preparado pero deshabilitado.» |
 | 1:00–2:00 | **Importador:** Importar → proceso → 3 PDF → la tabla con correo y teléfono sugeridos → corregir uno → Confirmar → «3 enviada(s) al ATS» → Talentia → Postulantes | «Sin IA: el Puente lee el PDF y una persona confirma. Cero digitación, y no automatiza nada en LinkedIn.» Reimportar uno: «Duplicada». |
 | 2:00–2:45 | **Opcional, solo con la API prendida** (`npm run vinculo:api -- on`, reiniciar, `npm run demo:conectar`). **Apply Connect simulado:** Vínculo → Solicitud sencilla → llega sola a Talentia → «CV descargado» | «Así sería la integración por API, si algún día se habilita para la empresa: mismas piezas, otra fuente.» |
-| 2:45–3:30 | **Confiabilidad:** Operaciones con filtro por fuente (las del bot aparecen como «vinculo-bot», «Completado», «Postulación creada»); requiere haber preparado antes una postulación sin correo en «Requiere revisión» → completar → aprobar; un posible duplicado en revisión; Métricas por fuente | «Nada incompleto llega al ATS y nada se fusiona solo.» |
+| 2:45–3:30 | **Confiabilidad:** Operaciones con filtro por fuente (las del bot aparecen como «LinkedIn (bot, simulador)», «Completado», «Postulación creada»); requiere haber preparado antes una postulación sin correo en «Requiere revisión» → completar → aprobar; un posible duplicado en revisión; Métricas por fuente | «Nada incompleto llega al ATS y nada se fusiona solo.» |
 | 3:30–4:15 | **Entrada genérica:** Fuentes → token (se ve una vez) → `curl.exe` con un PDF → 202 RECIBIDA | «Un bot o cualquier otra fuente se conecta así, sin tocar el núcleo.» |
 | 4:15–5:00 | **Honestidad:** qué es simulado (Talentia, Vínculo), qué es experimental (el bot: funciona contra Vínculo; LinkedIn real espera la Puerta 0) y qué falta para BUK real (`/apidocs` y API Key de la empresa) | Mensaje central de la §15.3. |
 
@@ -104,17 +104,19 @@
 
 | Tiempo | Qué se muestra | Qué se dice |
 |---|---|---|
-| 0:00–0:20 | Vínculo: la vacante con 3 postulantes; «Ver ficha» de una; el menú sin «Desarrolladores» | «Así lo ve hoy el reclutador: sin API, a mano, uno por uno.» |
+| 0:00–0:20 | Simulador LinkedIn: la vacante con 3 postulantes; «Ver ficha» de una; el menú sin «Desarrolladores» | «Así lo ve hoy el reclutador: sin API, a mano, uno por uno.» |
 | 0:20–1:10 | `npm run bot -w apps/bot-linkedin` con la ventana visible: el bot abre la vacante y cada ficha, con pausas; la consola dice «3 recibida(s)» | «Lo ejecuta una persona, con su sesión; no guarda contraseñas, se detiene ante cualquier verificación y tiene un tope de 25.» |
-| 1:10–1:40 | Talentia → proceso 9005 → Postulantes: las 3 tarjetas, cada una con su CV | «Mismo archivo, byte a byte; entra por la misma puerta que el importador.» |
-| 1:40–2:00 | Segunda corrida: «3 duplicada(s)»; Talentia sigue con 3 | «Idempotente: correrlo dos veces no duplica.» |
-| 2:00–2:20 | Puente (operador) → Operaciones → filtro «vinculo-bot»: 3 filas «Completado», último paso «Postulación creada», vacante «VIN-DEMO-BOT → 9005» y el correo enmascarado | «Recibido no es transferido: solo cuenta cuando el ATS confirma la postulación.» |
+| 1:10–1:40 | Simulador BUK → proceso 9005 → Postulantes: las 3 tarjetas, cada una con su CV | «Mismo archivo, byte a byte; entra por la misma puerta que el importador.» |
+| 1:40–2:00 | Segunda corrida: «3 duplicada(s)»; el Simulador BUK sigue con 3 | «Idempotente: correrlo dos veces no duplica.» |
+| 2:00–2:20 | Puente (operador) → Operaciones → filtro «LinkedIn (bot, simulador)»: 3 filas con fuente «LinkedIn (bot, simulador)», «Completado», último paso «Postulación creada», vacante «VIN-DEMO-BOT → 9005» y el correo enmascarado | «Recibido no es transferido: solo cuenta cuando el ATS confirma la postulación.» |
 
 **Si sale «Se requiere intervención humana»:** la sesión venció (o hay otra ventana del bot abierta) → ciérrala, `npm run bot:login -w apps/bot-linkedin` y repetir. Más casos: `docs/manuales/bot.md`, «Si algo falla en la demo». **Si piden ver la vía oficial:** `npm run vinculo:api -- on`, reiniciar `npm run dev` y `npm run demo:conectar`; se ve el portal de desarrolladores y Apply Connect simulado.
 
 ## V4 · Guion final para PowerShell (demo del bot y del importador)
 
 > Actualizado por Claude Code (2026-11-03, auditoría F4-V). Ensayado completo en PowerShell 7.6 contra la base de desarrollo, salvo el inicio de sesión manual: en el ensayo se usó la sesión de pruebas. Cada comando del bot tardó de 11 a 13 s. Todo es simulado: Vínculo no es LinkedIn y Talentia no es BUK.
+
+> Actualizado por Claude Code (2026-11-03, D-74). En pantalla Vínculo se ve como **«Simulador LinkedIn»** y Talentia como **«Simulador BUK»**; la franja dice «No es LinkedIn ni BUK: simulación académica». Los comandos no cambian. Ensayado otra vez completo en PowerShell con los nombres nuevos.
 
 **Ventana 1** (dejarla abierta toda la demo):
 
@@ -136,7 +138,7 @@ npm run bot:login -w apps/bot-linkedin
 
 En la ventana que abre `bot:login`: correo `reclutadora@andina.demo.test`, contraseña `Demo2026!`. Cuando veas el panel del reclutador, **cierra esa ventana**.
 
-**En el navegador, antes de correr el bot:** abre http://localhost:3001 → Ingresar (`reclutadora@andina.demo.test` / `Demo2026!`) → Panel de reclutador → «Analista de Integraciones (demo del bot)»: 3 postulantes; abre «Ver ficha» de uno. El menú no tiene «Desarrolladores»: no hay API.
+**En el navegador, antes de correr el bot:** abre http://localhost:3001 (pestaña «Simulador LinkedIn») → «Ingresar al Simulador LinkedIn» (`reclutadora@andina.demo.test` / `Demo2026!`) → Panel de reclutador → «Analista de Integraciones (demo del bot)»: 3 postulantes; abre «Ver ficha» de uno. El menú no tiene «Desarrolladores»: no hay API.
 
 **El bot (ventana visible):**
 
@@ -145,17 +147,17 @@ npm run bot -w apps/bot-linkedin -- --seco    # opcional: muestra lo que haría,
 npm run bot -w apps/bot-linkedin              # «3 recibida(s)»
 ```
 
-**En Talentia:** http://localhost:3002 → `reclutador@andina.demo.test` / `Demo2026!` → proceso 9005 → Postulantes: 3 tarjetas, cada una con su CV.
+**En el Simulador BUK:** http://localhost:3002 → `reclutador@andina.demo.test` / `Demo2026!` → proceso 9005 → Postulantes: 3 tarjetas, cada una con su CV.
 
 **Otra vez, para mostrar que no duplica:**
 
 ```powershell
-npm run bot -w apps/bot-linkedin              # «3 duplicada(s)»; Talentia sigue con 3
+npm run bot -w apps/bot-linkedin              # «3 duplicada(s)»; el Simulador BUK sigue con 3
 ```
 
-**En el Puente:** http://localhost:3003 → `operador@puente.demo.test` / `Demo2026!` → Operaciones → filtro «vinculo-bot»: 3 filas «Completado», último paso «Postulación creada».
+**En el Puente:** http://localhost:3003 → `operador@puente.demo.test` / `Demo2026!` → Operaciones → filtro «LinkedIn (bot, simulador)»: 3 filas «Completado», último paso «Postulación creada».
 
-**Importador (segunda entrada):** Puente → Importar → proceso **9001** → «Hojas de vida»: los 3 PDF de `C:\Users\<tu usuario>\Desktop\talent-bridge-v2\fixtures\cv\` (`cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`) → «Leer y sugerir datos» → revisa la tabla → «Confirmar e importar»: «Enviada al ATS» ×3. Talentia → proceso 9001 → Postulantes.
+**Importador (segunda entrada):** Puente → Importar → proceso **9001** → «Hojas de vida»: los 3 PDF de `C:\Users\<tu usuario>\Desktop\talent-bridge-v2\fixtures\cv\` (`cv-camila-ejemplo.pdf`, `cv-andres-prueba.pdf`, `cv-sofia-demo.pdf`) → «Leer y sugerir datos» → revisa la tabla → «Confirmar e importar»: «Enviada al ATS» ×3 (fuente «Importador manual»). Simulador BUK → proceso 9001 → Postulantes.
 
 **Notas:**
 - Para repetir la demo el mismo día, vuelve a empezar desde `npm run demo:reset` y **repite `bot:login`**: `demo:reset` crea de nuevo las cuentas y la sesión del bot deja de valer. Sin `demo:reset`, el bot dará «duplicada» (ya se enviaron); con `--reiniciar` y sin `demo:reset`, las personas ya estarán en Talentia antes de correr el bot.

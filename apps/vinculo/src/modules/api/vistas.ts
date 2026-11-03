@@ -10,7 +10,7 @@ export const esquemaJobPostingRespuesta = z.object({
   companyName: z.string(),
   title: z.string(),
   state: z.enum(["DRAFT", "LISTED", "CLOSED"]),
-  applyMethod: z.enum(["ONSITE_APPLY", "COMPANY_SITE"]).describe("ONSITE_APPLY = «Solicitud sencilla» en Vínculo"),
+  applyMethod: z.enum(["ONSITE_APPLY", "COMPANY_SITE"]).describe("ONSITE_APPLY = «Solicitud sencilla» en el Simulador LinkedIn"),
   jobApplicationWebhookUrl: z.string().nullable(),
   companyApplyUrl: z.string().nullable(),
   notOnsiteReason: z.string().nullable(),

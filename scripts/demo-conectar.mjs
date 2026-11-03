@@ -24,7 +24,7 @@ for (const [nombre, u] of Object.entries(urls)) {
 // D-68: la API tipo Apply Connect de Vínculo está apagada por defecto (como el LinkedIn real para la empresa).
 const openapi = await fetch(`${urls.vinculo}/api/openapi.json`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
 if (openapi?.status === 404) {
-  console.error("✖ La API de Vínculo está apagada (VINCULO_API_HABILITADA=false, D-68). Para mostrar la vía oficial futura:");
+  console.error("✖ La API del Simulador LinkedIn está apagada (VINCULO_API_HABILITADA=false, D-68). Para mostrar la vía oficial futura:");
   console.error("  npm run vinculo:api -- on   y reinicia las apps (Ctrl+C y npm run dev); luego vuelve a ejecutar demo:conectar.");
   process.exit(3);
 }

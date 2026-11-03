@@ -166,14 +166,14 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           {puedeReconciliar && (
             <form action={accionReconciliar}>
               <button className="p-boton" type="submit">
-                Reconciliar con Talentia
+                Reconciliar con el Simulador BUK
               </button>
             </form>
           )}
           <span className="p-nota">
             {puedeReintentar
-              ? "Seguro: cada escritura en Talentia usa Idempotency-Key y el postulante se busca por correo."
-              : "Consulta a Talentia por la referencia externa antes de volver a escribir."}
+              ? "Seguro: cada escritura en el Simulador BUK usa Idempotency-Key y el postulante se busca por correo."
+              : "Consulta al Simulador BUK por la referencia externa antes de volver a escribir."}
           </span>
         </div>
       )}
@@ -191,7 +191,7 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
         <dl className="p-datos">
           <dt>Fuente</dt>
           <dd data-testid="fuente-operacion">
-            {rec.fuente} · {etiquetaFuente(rec.fuente)}
+            {etiquetaFuente(rec.fuente)} <span className="mono p-nota">({rec.fuente})</span>
           </dd>
           <dt>Estado (V4)</dt>
           <dd data-testid="estado-v4">{ETIQUETA_ESTADO_V4[estadoV4(rec.estado, rec.trabajo?.estado)]}</dd>
@@ -201,7 +201,7 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           <dd className="mono">{rec.jobApplicationId}</dd>
           <dt>Vacante (externalJobId)</dt>
           <dd className="mono">{rec.externalJobId}</dd>
-          <dt>Proceso de Talentia</dt>
+          <dt>Proceso del Simulador BUK</dt>
           <dd>{rec.procesoAtsId ?? "—"}</dd>
           <dt>Postulante</dt>
           <dd>
@@ -219,7 +219,7 @@ export default async function DetalleOperacion({ params, searchParams }: Props) 
           </dd>
           <dt>Duplicados evitados</dt>
           <dd>{rec.duplicadosEvitados}</dd>
-          <dt>Aviso «CV descargado» a Vínculo</dt>
+          <dt>Aviso «CV descargado» al Simulador LinkedIn</dt>
           <dd data-testid="estado-aviso">
             {ETIQUETA_AVISO[rec.avisoEstado] ?? rec.avisoEstado}
             {rec.avisoError && rec.avisoEstado !== "ENVIADO" ? ` · ${rec.avisoError}` : ""}

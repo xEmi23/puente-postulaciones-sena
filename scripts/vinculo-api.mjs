@@ -12,10 +12,10 @@ const orden = (process.argv[2] ?? "estado").toLowerCase();
 const actual = () => ["true", "1"].includes(String(parse(readFileSync(path.join(RAIZ, "apps", "vinculo", ".env"))).VINCULO_API_HABILITADA ?? "").toLowerCase());
 
 if (orden === "estado") {
-  console.log(`API de Vínculo en apps/vinculo/.env: ${actual() ? "PRENDIDA (vía oficial futura)" : "APAGADA (como el LinkedIn real para la empresa)"}`);
+  console.log(`API del Simulador LinkedIn en apps/vinculo/.env: ${actual() ? "PRENDIDA (vía oficial futura)" : "APAGADA (como el LinkedIn real para la empresa)"}`);
 } else if (orden === "on" || orden === "off") {
   fijarApiVinculo(RAIZ, orden === "on");
-  console.log(`✔ API de Vínculo ${orden === "on" ? "PRENDIDA" : "APAGADA"} en apps/vinculo/.env. Reinicia las apps (Ctrl+C y npm run dev) para que tome efecto.`);
+  console.log(`✔ API del Simulador LinkedIn ${orden === "on" ? "PRENDIDA" : "APAGADA"} en apps/vinculo/.env. Reinicia las apps (Ctrl+C y npm run dev) para que tome efecto.`);
   if (orden === "on") console.log("  Luego: npm run demo:conectar (conecta el Puente por la API y publica 9001 y 9002).");
 } else {
   console.error("Uso: npm run vinculo:api -- on|off|estado");

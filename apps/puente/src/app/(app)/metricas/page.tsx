@@ -1,3 +1,4 @@
+import { etiquetaFuente } from "@/nucleo/fuentes";
 import { prisma } from "@/lib/db";
 import { exigirUsuario } from "@/lib/sesion-servidor";
 import { calcularMetricas } from "@/modules/operaciones";
@@ -16,7 +17,7 @@ export default async function Metricas() {
   const titulo = new Map(publicaciones.map((p) => [p.procesoId, p.titulo]));
   const tarjetas: [string, string, string | number, string?][] = [
     ["recibidas", "Recibidas", m.recibidas],
-    ["completadas", "Completadas (postulación creada en Talentia)", m.completadas],
+    ["completadas", "Completadas (postulación creada en el Simulador BUK)", m.completadas],
     ["rechazadas", "Rechazadas", m.rechazadasEntrada + m.rechazadasProcesamiento, `${m.rechazadasEntrada} en la entrada · ${m.rechazadasProcesamiento} al procesar`],
     ["duplicados", "Duplicados evitados", m.duplicadosEvitados],
     ["reintento", "En reintento", m.enReintento],
@@ -27,7 +28,7 @@ export default async function Metricas() {
     <>
       <ActualizarCada ms={5000} />
       <h1>Métricas</h1>
-      <p className="p-sub">Calculadas sobre las operaciones guardadas. Solo cuenta como transferida una postulación creada en Talentia (recibido ≠ completado).</p>
+      <p className="p-sub">Calculadas sobre las operaciones guardadas. Solo cuenta como transferida una postulación creada en el Simulador BUK (recibido ≠ completado).</p>
       <dl className="p-metricas" data-testid="metricas">
         {tarjetas.map(([clave, etiqueta, valor, nota]) => (
           <div className="p-metrica" key={clave}>
@@ -62,7 +63,7 @@ export default async function Metricas() {
               <tbody>
                 {m.porFuente.map((x) => (
                   <tr key={x.fuente} data-testid="metrica-fuente" data-fuente={x.fuente}>
-                    <td className="mono">{x.fuente}</td>
+                    <td title={`Fuente «${x.fuente}»`}>{etiquetaFuente(x.fuente)}</td>
                     <td>{x.recibidas}</td>
                     <td>{x.completadas}</td>
                     <td>{x.enRevision}</td>

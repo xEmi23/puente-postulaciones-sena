@@ -1,3 +1,4 @@
+import { etiquetaFuente } from "@/nucleo/fuentes";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -66,7 +67,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
     <>
       <h1>Correspondencias de vacantes</h1>
       <p className="p-sub">
-        Para vacantes creadas directamente en Vínculo (las que publica el puente ya están asociadas a su proceso): qué vacante (externalJobId) corresponde a qué proceso de Talentia. Sin correspondencia activa ni publicación, el puente responde
+        Para vacantes creadas directamente en el Simulador LinkedIn (las que publica el puente ya están asociadas a su proceso): qué vacante (externalJobId) corresponde a qué proceso del Simulador BUK. Sin correspondencia activa ni publicación, el puente responde
         JOB_POSTING_CLOSED y no adivina el proceso.
       </p>
       <div role="status" aria-live="polite">
@@ -85,18 +86,17 @@ export default async function Correspondencias({ searchParams }: { searchParams:
               <select id="fuente" name="fuente" defaultValue="apply-connect">
                 {fuentes.map((x) => (
                   <option key={x.id} value={x.nombre}>
-                    {x.nombre}
-                    {x.sistema ? " (Vínculo, simulado)" : ""}
+                    {etiquetaFuente(x.nombre)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="p-campo">
-              <label htmlFor="externalJobId">Código de la vacante en Vínculo (o en la fuente elegida)</label>
+              <label htmlFor="externalJobId">Código de la vacante en el Simulador LinkedIn (o en la fuente elegida)</label>
               <input id="externalJobId" name="externalJobId" placeholder="RT-2026-103" required />
             </div>
             <div className="p-campo">
-              <label htmlFor="procesoAtsId">Proceso de Talentia</label>
+              <label htmlFor="procesoAtsId">Proceso del Simulador BUK</label>
               <select id="procesoAtsId" name="procesoAtsId" required defaultValue="">
                 <option value="" disabled>
                   Elige un proceso…
@@ -137,7 +137,7 @@ export default async function Correspondencias({ searchParams }: { searchParams:
               <tbody>
                 {lista.map((c) => (
                   <tr key={c.id} data-testid="fila-correspondencia">
-                    <td className="mono">{c.fuente}</td>
+                    <td title={`Fuente «${c.fuente}»`}>{etiquetaFuente(c.fuente)}</td>
                     <td className="mono">{c.vacanteExterna ?? c.externalJobId}</td>
                     <td>
                       {c.procesoAtsId} · {nombre.get(String(c.procesoAtsId)) ?? "proceso no encontrado en el ATS"}

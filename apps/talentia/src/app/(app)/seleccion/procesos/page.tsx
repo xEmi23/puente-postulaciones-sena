@@ -20,7 +20,7 @@ export default async function Procesos({ searchParams }: { searchParams: Promise
       <div className="a-encabezado">
         <div>
           <h1>Procesos de selección</h1>
-          <p className="a-sub">Andina Software S.A.S. · Las postulaciones de Vínculo llegan solas a la etapa «Postulantes» a través del puente.</p>
+          <p className="a-sub">Andina Software S.A.S. · Las postulaciones del Simulador LinkedIn llegan solas a la etapa «Postulantes» a través del puente.</p>
         </div>
         <Link href="/seleccion/procesos/nuevo" className="a-boton">
           Nuevo proceso

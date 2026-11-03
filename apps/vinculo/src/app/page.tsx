@@ -55,7 +55,7 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
           </ul>
         </section>
         <aside className="v-tarjeta" aria-labelledby="t-empresas">
-          <h2 id="t-empresas">Empresas en Vínculo</h2>
+          <h2 id="t-empresas">Empresas en el Simulador LinkedIn</h2>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "0.6rem" }}>
             {empresas.map((e) => (
               <li key={e.id} style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>

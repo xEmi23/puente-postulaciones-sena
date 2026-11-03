@@ -53,7 +53,7 @@ export default async function PanelReclutador({ searchParams }: { searchParams: 
                   </td>
                   <td>{ESTADO[v.estado]}</td>
                   <td>
-                    {v.solicitudSencilla ? (v.aplicacion ? `Solicitud sencilla → ${v.aplicacion.nombre}` : "Solicitud sencilla (en Vínculo)") : "Sitio de la empresa"}
+                    {v.solicitudSencilla ? (v.aplicacion ? `Solicitud sencilla → ${v.aplicacion.nombre}` : "Solicitud sencilla (en el Simulador LinkedIn)") : "Sitio de la empresa"}
                   </td>
                   <td>
                     {v._count.postulaciones}

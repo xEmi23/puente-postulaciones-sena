@@ -19,7 +19,7 @@ afterEach(() => {
 
 describe("F1-4 · ATS_DESTINO=buk: el procesador no arranca y /api/salud lo informa", () => {
   it("por defecto el destino es talentia (simulado) y /api/salud responde 200", async () => {
-    expect(estadoDestino()).toMatchObject({ destino: "talentia", implementado: true });
+    expect(estadoDestino()).toMatchObject({ destino: "talentia", implementado: true, mensaje: "ATS Simulador BUK activo" });
     const r = salud();
     expect(r.status).toBe(200);
     expect((await r.json()).ats).toMatchObject({ destino: "talentia", implementado: true });

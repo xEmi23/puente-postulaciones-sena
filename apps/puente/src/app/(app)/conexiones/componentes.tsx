@@ -47,7 +47,7 @@ export function FormularioConexion({ tipo, nombre, urlBase, clientId, secretoMas
     <form action={accion} className="p-form-conexion">
       <input type="hidden" name="tipo" value={tipo} />
       <div className="p-campo">
-        <label htmlFor={`${prefijo}-url`}>URL base de {nombre}</label>
+        <label htmlFor={`${prefijo}-url`}>URL base del {nombre}</label>
         <input id={`${prefijo}-url`} name="urlBase" type="url" required defaultValue={urlBase} disabled={!editable} placeholder="https://…" />
       </div>
       {tipo === "VINCULO" && (
@@ -83,7 +83,7 @@ export function FormularioConexion({ tipo, nombre, urlBase, clientId, secretoMas
       </div>
       {lento && (
         <p className="p-despertando" role="status">
-          Despertando {nombre}… En el plan gratuito puede tardar cerca de un minuto.
+          Despertando el {nombre}… En el plan gratuito puede tardar cerca de un minuto.
         </p>
       )}
       <Resultado estado={estado} testid={`resultado-guardar-${prefijo}`} />
