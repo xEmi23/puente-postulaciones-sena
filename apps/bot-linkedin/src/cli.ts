@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
+import { leerArgumentos } from "./argumentos";
 import { cargarPerfil } from "./sitios";
 import { dentroDelHorario, leerConfig } from "./config";
 import { ErrorNavegador, abrirNavegador } from "./navegacion/navegador";
@@ -14,16 +15,6 @@ import { ErrorIntervencionHumana } from "./guardias";
 //   npm run bot -w apps/bot-linkedin -- --vacante <id> → solo esa vacante
 //   npm run bot -w apps/bot-linkedin -- --seco        → no envía nada (muestra lo que enviaría)
 // Sin modo programado: lo ejecuta una persona, con la ventana visible.
-
-function argumentos(argv: string[]) {
-  const o: { login: boolean; seco: boolean; vacante?: string } = { login: false, seco: false };
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "login") o.login = true;
-    else if (argv[i] === "--seco") o.seco = true;
-    else if (argv[i] === "--vacante") o.vacante = argv[++i];
-  }
-  return o;
-}
 
 async function login(dirPerfil: string, url: string) {
   mkdirSync(dirPerfil, { recursive: true });
@@ -42,12 +33,14 @@ async function login(dirPerfil: string, url: string) {
 }
 
 async function main() {
-  const args = argumentos(process.argv.slice(2));
+  const args = leerArgumentos(process.argv.slice(2));
   const perfil = cargarPerfil(process.env.BOT_SITIO || "vinculo");
   const cfg = leerConfig(perfil);
   console.log(`Bot del Puente · sitio «${perfil.nombre}» (${perfil.nombre === "vinculo" ? "red simulada" : "experimental"}) · ${cfg.urlSitio}`);
 
   if (args.login) return login(cfg.dirPerfil, perfil.urlLogin(cfg.urlSitio));
+  if (args.seco) console.log("Modo seco: recorre y muestra lo que enviaría; NO envía nada al Puente.");
+  if (args.vacante) console.log(`Solo la vacante «${args.vacante}».`);
 
   if (!cfg.token) throw new Error("Falta PUENTE_BOT_TOKEN (ejecuta `npm run demo:bot` o pega el token de Puente → Fuentes en apps/bot-linkedin/.env).");
   if (!dentroDelHorario(cfg.horario)) {

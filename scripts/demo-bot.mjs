@@ -10,13 +10,18 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parse } from "dotenv";
+import { bandera, valor } from "./argumentos.mjs";
 import { fijarApiVinculo, prepararDemoBot } from "./demo-bot-lib.mjs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const envDe = (app) => ({ ...process.env, ...parse(readFileSync(path.join(RAIZ, "apps", app, ".env"))) });
-const i = process.argv.indexOf("--proceso");
-const proceso = i > 0 ? Number(process.argv[i + 1]) : 9005;
-const reiniciar = process.argv.includes("--reiniciar");
+const proceso = Number(valor("proceso") ?? 9005);
+const reiniciar = bandera("reiniciar");
+if (!Number.isInteger(proceso) || proceso <= 0) {
+  console.error("✖ --proceso debe ser el número de un proceso de Talentia (por ejemplo 9005).");
+  process.exit(2);
+}
+if (reiniciar) console.log("Se reinician las postulaciones de la vacante de la demo (--reiniciar).");
 
 const urlVinculo = envDe("vinculo").APP_BASE_URL || "http://localhost:3001";
 const urlTalentia = envDe("talentia").APP_BASE_URL || "http://localhost:3002";

@@ -4,13 +4,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parse } from "dotenv";
+import { valor } from "./argumentos.mjs";
 import { conectar } from "./conectar-lib.mjs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const envDe = (app) => ({ ...process.env, ...parse(readFileSync(path.join(RAIZ, "apps", app, ".env"))) });
 const url = (app, porDefecto) => envDe(app).APP_BASE_URL || porDefecto;
-const i = process.argv.indexOf("--publicar");
-const publicar = (i > 0 ? process.argv[i + 1] : "9001,9002").split(",").map(Number).filter(Boolean);
+const publicar = (valor("publicar") ?? "9001,9002").split(",").map(Number).filter(Boolean);
 
 const urls = { vinculo: url("vinculo", "http://localhost:3001"), talentia: url("talentia", "http://localhost:3002"), puente: url("puente", "http://localhost:3003") };
 for (const [nombre, u] of Object.entries(urls)) {
