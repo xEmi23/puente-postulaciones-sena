@@ -23,7 +23,7 @@ function detectarBloqueo(html: string, url: string): Bloqueo | null {
   const ruta = new URL(url).pathname;
   const raiz = parse(html);
   if (ruta.startsWith(RUTAS.ingreso) || raiz.querySelector(SELECTORES.formularioIngreso)) {
-    return { tipo: "sesion_cerrada", detalle: "Vínculo muestra la pantalla de ingreso: la sesión del bot se cerró o nunca se inició." };
+    return { tipo: "sesion_cerrada", detalle: "Vínculo muestra la pantalla de ingreso: la sesión del bot se cerró o nunca se inició. Ejecuta «npm run bot:login -w apps/bot-linkedin» (si hay otra ventana del bot abierta, ciérrala primero) y vuelve a correr el bot." };
   }
   // Una página del panel sin su menú no es la que el bot conoce (otra pantalla, error o carga a medias): no adivinar.
   if (ruta.startsWith(RUTAS.inicio) && !raiz.querySelector(SELECTORES.menuPanel)) {

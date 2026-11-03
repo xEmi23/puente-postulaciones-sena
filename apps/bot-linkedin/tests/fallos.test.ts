@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { perfilVinculo } from "../src/sitios/vinculo";
-import { MENSAJE_INTERVENCION } from "../src/guardias";
 import { aCanonica } from "../src/mapeo";
 import { enviarPostulacion, vacantesPermitidas } from "../src/envio";
 import { recorrer, type Navegador } from "../src/navegacion/recorrido";
@@ -145,7 +144,7 @@ describe("recorrido: casos de la página", () => {
         },
         { urlSitio: BASE, maxPorEjecucion: 25 },
       ),
-    ).rejects.toThrow(MENSAJE_INTERVENCION);
+    ).rejects.toThrow(/Se requiere intervención humana: .*bot:login.*otra ventana del bot abierta/);
     expect(enviados).toHaveLength(0);
   });
 });
