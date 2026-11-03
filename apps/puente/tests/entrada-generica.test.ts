@@ -92,6 +92,16 @@ describe("G-2 · repetirla → 200 DUPLICADA y no crea nada", () => {
     expect(await prisma.recepcion.count()).toBe(1);
     expect(talentia.conteo()).toEqual({ candidatos: 1, documentos: 1, postulaciones: 1 });
   });
+
+  it("dos bots a la vez con la misma postulación (F4-V auditoría): una RECIBIDA, las demás DUPLICADA, una sola en el ATS", async () => {
+    const r = await Promise.all(Array.from({ length: 4 }, () => enviar(datos("bot-simultaneo"))));
+    expect(r.filter((x) => x.status === 202 && x.body.estado === "RECIBIDA")).toHaveLength(1);
+    expect(r.filter((x) => x.status === 200 && x.body.estado === "DUPLICADA")).toHaveLength(3);
+    await drenar();
+    expect(await prisma.recepcion.count()).toBe(1);
+    expect(talentia.conteo()).toEqual({ candidatos: 1, documentos: 1, postulaciones: 1 });
+    expect(talentia.documentos[0].sha256).toBe(sha(leerCv()));
+  });
 });
 
 describe("G-3 · sin correo o sin CV → 202 REQUIERE_REVISION y no llega al ATS hasta aprobarla", () => {

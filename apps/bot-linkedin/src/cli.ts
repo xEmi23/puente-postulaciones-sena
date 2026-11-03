@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 import { cargarPerfil } from "./sitios";
 import { dentroDelHorario, leerConfig } from "./config";
-import { abrirNavegador } from "./navegacion/navegador";
+import { ErrorNavegador, abrirNavegador } from "./navegacion/navegador";
 import { recorrer } from "./navegacion/recorrido";
 import { crearPausa } from "./navegacion/pausas";
 import { enviarPostulacion, vacantesPermitidas } from "./envio";
@@ -27,9 +27,14 @@ function argumentos(argv: string[]) {
 
 async function login(dirPerfil: string, url: string) {
   mkdirSync(dirPerfil, { recursive: true });
-  const contexto = await chromium.launchPersistentContext(dirPerfil, { headless: false, viewport: { width: 1280, height: 860 }, locale: "es-CO" });
+  const contexto = await chromium.launchPersistentContext(dirPerfil, { headless: false, viewport: { width: 1280, height: 860 }, locale: "es-CO" }).catch((e) => {
+    throw new ErrorNavegador(e);
+  });
   const pagina = contexto.pages()[0] ?? (await contexto.newPage());
-  await pagina.goto(url);
+  await pagina.goto(url).catch(async (e) => {
+    await contexto.close().catch(() => undefined);
+    throw new ErrorNavegador(e, url);
+  });
   console.log("Inicia sesión A MANO en la ventana que se abrió (el bot no guarda contraseñas).");
   console.log("Cuando veas el panel del reclutador, CIERRA la ventana: la sesión queda en el perfil del bot.");
   await new Promise<void>((ok) => contexto.on("close", () => ok()));
@@ -50,7 +55,11 @@ async function main() {
   }
   const nav = await abrirNavegador(cfg.dirPerfil, cfg.headless);
   try {
-    const envio = { puenteUrl: cfg.puenteUrl, token: cfg.token };
+    const envio = {
+      puenteUrl: cfg.puenteUrl,
+      token: cfg.token,
+      alReintentar: (motivo: string, ms: number) => console.log(`  … ${motivo}; reintento en ${Math.round(ms / 1000)} s (Ctrl+C para cancelar).`),
+    };
     const resumen = await recorrer(
       perfil,
       nav,

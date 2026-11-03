@@ -21,6 +21,8 @@ export interface OpcionesEnvio {
   reloj?: Reloj;
   /** Esperas entre intentos (ms). Por defecto suman ~120 s. */
   esperas?: number[];
+  /** Aviso en cada reintento, para que la persona vea qué pasa y no crea que el bot se colgó. */
+  alReintentar?: (motivo: string, esperaMs: number) => void;
 }
 
 const ESPERAS = [2000, 4000, 8000, 16000, 30000, 30000, 30000];
@@ -36,14 +38,19 @@ async function conReintentos(o: OpcionesEnvio, pedir: () => Promise<Response>): 
       ultimo = new Error(`el Puente respondió ${r.status}`);
       if (i === esperas.length) return r;
       const retry = Number(r.headers.get("retry-after"));
-      await reloj.dormir(Number.isFinite(retry) && retry > 0 ? retry * 1000 : esperas[i]);
+      const espera = Number.isFinite(retry) && retry > 0 ? retry * 1000 : esperas[i];
+      o.alReintentar?.(r.status === 429 ? "el Puente pide esperar (429)" : `el Puente respondió ${r.status}`, espera);
+      await reloj.dormir(espera);
     } catch (e) {
       ultimo = e;
       if (i === esperas.length) break;
+      o.alReintentar?.("el Puente no responde", esperas[i]);
       await reloj.dormir(esperas[i]);
     }
   }
-  throw new Error(`No se pudo contactar al Puente (${o.puenteUrl}): ${ultimo instanceof Error ? ultimo.message : ultimo}`);
+  throw new Error(
+    `No se pudo contactar al Puente (${o.puenteUrl}) después de reintentar: ${ultimo instanceof Error ? ultimo.message : ultimo}. ¿Está encendido? (npm run dev). Lo que ya se envió queda en el Puente: al volver a ejecutar sale como «duplicada».`,
+  );
 }
 
 const autorizacion = (token: string) => ({ authorization: `Bearer ${token}` });

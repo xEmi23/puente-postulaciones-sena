@@ -57,6 +57,9 @@ export async function recorrer(perfil: PerfilSitio, nav: Navegador, deps: Depend
   // Solo vacantes propias que el Puente tiene vinculadas a la fuente (y, si se pidió, solo una).
   const vacantes = perfil.extraerVacantes(inicio.html, o.urlSitio).filter((v) => permitidas.has(v.idExterno) && (!o.vacante || v.idExterno === o.vacante));
   if (o.vacante && vacantes.length === 0) deps.log(`La vacante «${o.vacante}» no está en el panel o no está vinculada a esta fuente en el Puente.`);
+  else if (vacantes.length === 0) {
+    deps.log(`Ninguna de las vacantes vinculadas en el Puente (${[...permitidas].join(", ")}) aparece en el panel del sitio. ¿Es la cuenta correcta? ¿Se ejecutó npm run demo:bot?`);
+  }
 
   for (const v of vacantes) {
     r.vacantes++;
