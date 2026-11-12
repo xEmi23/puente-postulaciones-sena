@@ -59,4 +59,6 @@ Captura: [11_manual_de_uso.md](11_manual_de_uso.md), figura del aviso.
 
 ## 7.4 Lo que NO se versiona (verificado el 11/11/2026)
 
+*Figura 7.1 (pendiente de insertar): variables de entorno del Puente en Render, con los valores secretos ocultos ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) g).*
+
 `.env` y `.env.*` (salvo `.env.example`), perfiles del navegador del bot (`.bot-perfil*`), la ficha del reto (`docs/ficha/`), los insumos internos del equipo (`docs/insumos/`), `PROMPT_DOCUMENTACION.md`, `datos.json`, páginas originales de LinkedIn (`fixtures/linkedin/originales/`), capturas de trabajo (`capturas/`) y configuraciones locales de herramientas de IA. Comprobación con `git check-ignore` y `git ls-files` en [06_pruebas_y_resultados.md](06_pruebas_y_resultados.md) §6.6.

@@ -24,6 +24,13 @@
 | 10 | [10 · Trabajo futuro](entrega/10_trabajo_futuro.md) | Viabilidad |
 | 11 | [11 · Manual de uso](entrega/11_manual_de_uso.md) | Documentación |
 | 12 | [12 · Demo](entrega/12_demo.md) | Sustentación |
+| 13 | [13 · Glosario](entrega/13_glosario.md) | Documentación |
+| 14 | [14 · Preguntas de sustentación](entrega/14_preguntas_sustentacion.md) | Sustentación |
+| 15 | [15 · Lecciones aprendidas](entrega/15_lecciones_aprendidas.md) | Rigor metodológico |
+| 16 | [16 · Anexo: decisiones](entrega/16_anexo_decisiones.md) | Rigor metodológico (trazabilidad) |
+| — | [Guía de ejecución (Windows, local y Render, video)](entrega/GUIA_EJECUCION.md) | Viabilidad, sustentación |
+| — | [Guía de capturas manuales](entrega/GUIA_CAPTURAS.md) y [carpeta de evidencia](evidencia/) | Rigor metodológico |
+| — | [Descargables (.docx, PDF, paquete para Drive)](entrega/descargables/) | Documentación |
 | — | [Postman: guía, colección y ejemplos](entrega/postman/GUIA.md) | Pertinencia (postulaciones simuladas en JSON) |
 | — | [Evidencia pendiente del equipo](entrega/EVIDENCIA_PENDIENTE.md) | Rigor metodológico |
 

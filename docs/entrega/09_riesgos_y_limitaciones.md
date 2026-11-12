@@ -16,6 +16,8 @@
 | La API v1 del Simulador BUK es un contrato propio | Los nombres de campo y rutas no son los de BUK | Rehacer el adaptador con el `/apidocs` real |
 | Las cifras de tiempo se midieron en local | No representan la latencia de Render ni de BUK real | Repetir la medición contra el entorno de pruebas de BUK |
 
+*Figura 9.1 (pendiente de insertar): aviso de LinkedIn que pide esperar la verificación de la cuenta antes de publicar ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) b1).*
+
 ## 9.2 Matriz de riesgos (flujo final)
 
 | # | Riesgo | P | I | Criticidad | Mitigación en el prototipo | Plan alternativo |

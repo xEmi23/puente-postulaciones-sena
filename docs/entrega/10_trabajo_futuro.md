@@ -1,6 +1,8 @@
-# 10. Trabajo futuro
+# 10. Trabajo futuro y costos
 
-> En orden de prioridad para que la empresa retadora pueda usarlo. Cada paso dice de qué depende.
+> §10.1: en orden de prioridad, lo que falta para que la empresa retadora pueda usarlo. §10.2: costos.
+
+## 10.1 Próximos pasos
 
 | # | Paso | Depende de | Esfuerzo estimado |
 |---|---|---|---|
@@ -15,3 +17,18 @@
 | 9 | Apply Connect oficial (la «vía oficial futura», hoy demostrada con el Simulador LinkedIn) si BUK lo ofrece y la empresa lo activa | BUK y LinkedIn | Depende del fabricante |
 
 **Lo que no se recomienda:** retomar el bot sobre LinkedIn real (D-75) ni agregar IA al traslado (el valor está en que sea determinista y auditable).
+
+## 10.2 Costos
+
+| Concepto | Hasta el 13/11/2026 | Si se mantiene | Fuente |
+|---|---|---|---|
+| Render: 3 servicios web y PostgreSQL | **US$0** (plan gratuito; la base vence el 28/11/2026) | Unos **US$27/mes** (3 servicios de US$7 y PostgreSQL de US$6) | ESPECIFICACION_V4 §16 (precios de render.com consultados entre el 25/10 y el 01/11; volver a verificar) |
+| GitHub (repositorio privado) | US$0 | US$0 | — |
+| Dominio propio | No se compró | Según el proveedor | — |
+| LinkedIn: vacante | Vacante gratuita en el plan, **no publicada aún** (la cuenta espera verificación) | Recruiter solo si la empresa quiere su exportación | ESPECIFICACION_V4 §16 |
+| LinkedIn: promoción pagada de la oferta | **PENDIENTE: el equipo debe confirmar si hubo** (no consta ningún pago) | — | — |
+| Herramientas de IA (Claude, ChatGPT) | **PENDIENTE: el equipo debe confirmar qué planes usó y si pagó** | — | — |
+| Licencias de software del proyecto | US$0 (todo es de código abierto) | US$0 | `package.json` |
+| BUK | Lo paga la empresa (fuera del alcance) | — | — |
+
+**Tiempo:** la especificación estimó de 14 a 22 horas de Claude Code y de 6 a 9 horas del equipo para la V4. Las horas reales: **PENDIENTE** (por integrante).

@@ -12,6 +12,8 @@ Comandos: `npm run lint` · `npm run typecheck` · `npm test` (Vitest de las 4 a
 | 2 | `6b95cb1` (= `v4`) | 0 | 0 | **261/261** | 0 | **67 pasadas**, 2 omitidas, 0 fallos · 6,5 min | 0 |
 | 3 | `ffcafcf` (con los 2 arreglos de §6.7) | 0 errores | 0 | 29 + 30 + 178 + 29 = **266/266** | 0 | **67 pasadas**, 2 omitidas, 0 fallos · 6,5 min | 0 |
 
+*Figura 6.1 (pendiente de insertar): terminal con las pruebas en verde y el `git log` ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) e).*
+
 Las vueltas 1 y 2 fueron idénticas. Total por vuelta: 261 + 67 = **328 pruebas** (vuelta 3: 266 + 67 = **333**).
 
 ## 6.2 Flujo final en local (formulario → Puente → Simulador BUK)

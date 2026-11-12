@@ -666,3 +666,14 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - **Instalación limpia:** clon de `entrega` en una carpeta vacía → `npm install` → `npm run setup` → `npm run dev` → `npm run demo:bot` → enlace, formulario, «Completado» y Postulantes: funciona (detalle en `docs/entrega/06_pruebas_y_resultados.md` §6.10).
 - **Pendientes (no cumplidos):** llave y API reales de BUK; validación legal del aviso; `PRIVACIDAD_CORREO` real; verificación de la cuenta de LinkedIn de la empresa; encabezado de IP confiable en Render (D-76); evidencia del equipo para la metodología (`docs/entrega/EVIDENCIA_PENDIENTE.md`); la base gratuita de Render vence el 2026-11-28.
 - **Siguiente paso:** que el equipo revise `docs/entrega/`, aporte la evidencia pendiente y ensaye `docs/entrega/12_demo.md`. Si se quiere que Render tenga los dos arreglos, llevar `entrega` a `v4` (eso redespliega).
+
+## Segunda entrega de documentación (2026-11-12)
+
+> Actualizado por Claude Code (2026-11-12). Rama `entrega`. Sin cambios de código del producto; `v4` y Render sin tocar.
+
+- **Honestidad de las fuentes:** el equipo no se comunicó por correo ni por mensaje con la empresa. Las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según la ficha del reto» o «según lo entendido por el equipo; sin evidencia escrita». Lista completa en `docs/entrega/EVIDENCIA_PENDIENTE.md` §E.
+- **Declaración de IA:** apoyo mayoritario de IA, con tabla «qué hizo la IA / qué hizo el equipo», en el README, `01_resumen` y `08_uso_de_ia`.
+- **Documentos nuevos:** `13_glosario`, `14_preguntas_sustentacion`, `15_lecciones_aprendidas`, `16_anexo_decisiones`, `GUIA_CAPTURAS`, `GUIA_EJECUCION`, `RESUMEN_DOCENTE`, `docs/evidencia/README.md`; `03_metodologia` reescrito (cronograma real desde git, alternativas, hipótesis declaradas como retrospectivas); costos en `10`.
+- **Guía de ejecución comprobada** en PowerShell y CMD: `npm run pg:start`, `npm run dev`, `npm run demo:bot`, `/api/salud` y la entrada JSON con `curl` (RECIBIDA, luego DUPLICADA; sin token, 401; la postulación llegó a Postulantes del 9001).
+- **Descargables** en `docs/entrega/descargables/` (sin pandoc: `marked` + `html-to-docx` + Chromium; `scripts/generar-descargables.mjs`): documento completo (.docx y PDF de 88 páginas), resumen para el docente (1 página), guías (.docx y PDF) y `Entrega_Drive.zip`. Verificados con `python-docx` y `pypdf`: abren, 20 imágenes insertadas, sin enlaces relativos y sin datos de la empresa.
+- **Pendiente:** las capturas manuales (`GUIA_CAPTURAS.md`), la evidencia de `EVIDENCIA_PENDIENTE.md`, y lo ya listado el 11/11.
