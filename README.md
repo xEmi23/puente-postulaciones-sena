@@ -10,7 +10,7 @@ Un ***middleware*** (Next.js + PostgreSQL) que **recibe postulaciones y las regi
 
 ## El problema
 
-Hoy el equipo de selección de la empresa retadora entra a cada vacante de LinkedIn, descarga uno por uno los CV y los vuelve a digitar en su ATS (BUK). Según la ficha del reto, eso retrasa el avance de los candidatos entre 2 y 4 días hábiles y consume horas en tareas repetitivas. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn) y el equipo no tiene una llave de la API de BUK (según lo entendido por el equipo, no se entregaría; sin evidencia escrita). Detalle: [docs/entrega/02_problema_y_contexto.md](docs/entrega/02_problema_y_contexto.md).
+Hoy el equipo de selección de la empresa retadora entra a cada vacante de LinkedIn, descarga uno por uno los CV y los vuelve a digitar en su ATS (BUK). Según la ficha del reto, eso retrasa el avance de los candidatos entre 2 y 4 días hábiles y consume horas en tareas repetitivas. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn) Según la ficha del reto, numeral 2.8, no se conectará la API directa de LinkedIn y las postulaciones se simulan con *payloads* JSON; la integración con BUK sería solo por su API REST, con acceso controlado y guiado por un gestor acompañante. El equipo no tiene una llave de la API de BUK. Detalle: [docs/entrega/02_problema_y_contexto.md](docs/entrega/02_problema_y_contexto.md).
 
 ## La solución
 

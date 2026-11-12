@@ -8,8 +8,8 @@
 
 | # | Afirmación | Fuente actual | Qué debe confirmar el equipo |
 |---|---|---|---|
-| A1 | El equipo no tendrá la llave de la API de BUK (no se entregaría por seguridad) | Según lo entendido por el equipo; sin evidencia escrita | **PENDIENTE: cómo se supo** (¿socialización del 15/10, control del 29/10, mentor, docente?) y en qué fecha |
-| A2 | No habrá API de LinkedIn para la empresa y la postulación debe seguir empezando en LinkedIn (29/10) | Según lo entendido por el equipo; sin evidencia escrita. La ficha sí dice que no se conectará la API de LinkedIn | **PENDIENTE: cómo se supo** lo de «la postulación debe seguir en LinkedIn» |
+| A1 | El equipo no tiene una llave de la API de BUK | **Resuelto (12/11):** según la ficha del reto, numeral 2.8, el acceso a la API REST de BUK es controlado y guiado por un gestor acompañante. No se afirma que la empresa se haya negado | — |
+| A2 | No habrá API de LinkedIn; la postulación debe seguir empezando en LinkedIn (29/10) | Lo primero: según la ficha del reto, numeral 2.8. Lo segundo: según lo entendido por el equipo; sin evidencia escrita | **PENDIENTE: cómo se supo** lo de «la postulación debe seguir en LinkedIn» |
 | A3 | El ATS de la empresa tiene las etapas descritas en `referencia-ats.md` | Fotos tomadas por el equipo en la socialización del 15/10 (no se versionan) | Conservar las fotos fuera del repositorio; confirmar la fecha |
 | A4 | La aceptación de simular ambos extremos (D-01) por parte de la empresa y del mentor | No consta | **PENDIENTE**: si hubo una indicación oral, decir de quién y cuándo; si no, dejarlo como no confirmado |
 
@@ -74,3 +74,7 @@
 | `PROMPTS_CLAUDE_CODE.md` | «…la empresa no la facilitará por seguridad…» | **No se reescribió** (es el texto del prompt tal como se usó); se agregó una nota al inicio que lo aclara |
 
 En cada documento del equipo modificado se agregó una nota «Actualizado por Claude Code (2026-11-12)».
+
+### Ajuste del 12/11/2026 (fuentes de la ficha)
+
+La ficha del reto, numeral 2.8 (Restricciones), dice que no se conectará la API directa de LinkedIn por limitaciones normativas y de acceso a credenciales, que las postulaciones se simulan con *payloads* JSON, y que la integración con BUK es solo por su API REST bajo acceso controlado y guiado por un gestor acompañante. Por eso, en el README, `01_resumen`, `02`, `03`, `14`, `RESUMEN_DOCENTE`, este documento (A1 y A2), `decisiones.md` (D-01), `guion-demo.md`, `v2/SOLUCION.md` (2 frases), `v4/CONTEXTO_V4.md` (2 frases), `v4/ESPECIFICACION_V4.md` y la nota de `PROMPTS_CLAUDE_CODE.md`, lo relativo a la API de LinkedIn y a la llave de BUK ya no dice «sin evidencia escrita» ni «no se entregaría por seguridad»: cita «según la ficha del reto, numeral 2.8» y que el equipo no tiene llave. **No se afirma que la empresa se haya negado.** Sigue sin evidencia escrita solo que la postulación deba seguir empezando en LinkedIn (A2).

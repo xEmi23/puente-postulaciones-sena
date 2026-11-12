@@ -1,6 +1,6 @@
 # Solución v2: puente de postulaciones red profesional → ATS
 
-> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Ajuste posterior del mismo día: lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
 
 > Documento del equipo (28/10/2026). Fuente de verdad del **qué** y el **por qué**. El **cómo** detallado está en `docs/v2/ESPECIFICACION.md`.
 > Etiquetas: **Verificado** (con fuente y fecha) · **Decisión interna** · **Supuesto pendiente**.
@@ -15,7 +15,7 @@ Construimos **tres sistemas independientes** que reproducen el mundo real:
 
 **El problema.** Hoy el reclutador de la empresa entra a cada vacante en LinkedIn, descarga todos los CV y los vuelve a subir a BUK, vacante por vacante. Según la ficha del reto, eso retrasa de 2 a 4 días hábiles a cada candidato.
 
-**Por qué no lo conectamos a los sistemas reales.** LinkedIn solo abre sus APIs de reclutamiento a desarrolladores aprobados como socios de Talent Solutions (fabricantes de ATS), y BUK solo da acceso con una API Key que la empresa genera y que el equipo no tiene (según lo entendido por el equipo, no se entregaría por seguridad; sin evidencia escrita).
+**Por qué no lo conectamos a los sistemas reales.** LinkedIn solo abre sus APIs de reclutamiento a desarrolladores aprobados como socios de Talent Solutions (fabricantes de ATS), y BUK solo da acceso con una API Key que la empresa genera; según la ficha del reto, numeral 2.8, ese acceso es controlado y guiado por un gestor acompañante, y el equipo no tiene una llave.
 
 **Lo que hicimos.** Simulamos los dos sistemas **con sus contratos reales**: Vínculo entrega las postulaciones con el formato, la firma y las reglas públicas de Apply Connect de LinkedIn; Talentia se accede igual que la API documentada de BUK (API Key con permisos de Selección). Cada sistema tiene su propia dirección, su propia base de datos (esquema) y su propio inicio de sesión.
 
@@ -30,7 +30,7 @@ Construimos **tres sistemas independientes** que reproducen el mundo real:
 | ¿Tiene API para esto? | Sí: Apply Connect entrega cada postulación al ATS en tiempo real (**Verificado**) | Sí: API del módulo de Selección (postulantes, postulaciones, procesos) (**Verificado**) |
 | ¿Quién puede usarla? | Solo desarrolladores aprobados por LinkedIn como socios de Talent Solutions, tras cumplir criterios y firmar un acuerdo de API con restricciones de datos (**Verificado**) | Quien tenga una API Key creada en Administración de la cuenta de la empresa, con permisos de Lectura y Modificación de Selección (**Verificado**) |
 | ¿Quién la tendría aquí? | El socio sería el fabricante del ATS (BUK), no la empresa ni un tercero. Algunas funciones exigen licencia LinkedIn Recruiter (**Verificado**) | La empresa, dueña de la cuenta |
-| ¿Por qué no la usamos? | Un equipo SENA no puede ser socio de LinkedIn, y la empresa tampoco puede pedirla directamente | Según lo entendido por el equipo, la API Key no se entregaría por seguridad; sin evidencia escrita (**PENDIENTE: el equipo debe confirmar cómo se supo**) |
+| ¿Por qué no la usamos? | Un equipo SENA no puede ser socio de LinkedIn, y la empresa tampoco puede pedirla directamente | Según la ficha del reto, numeral 2.8, el acceso a la API REST de BUK es controlado y guiado por un gestor acompañante; el equipo no tiene una llave |
 | ¿Qué hicimos? | Vínculo, que habla con el formato y las reglas públicas de Apply Connect | Talentia, que se usa igual que la API documentada de BUK |
 
 **Lo que existe hoy entre BUK y LinkedIn (Verificado).** BUK permite publicar la vacante en LinkedIn con un enlace a su formulario: el candidato sale de LinkedIn y aplica en BUK. No trae a quienes usan la postulación rápida de LinkedIn, que es justo de donde vienen los CV que hoy se descargan a mano.

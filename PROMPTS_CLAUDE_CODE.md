@@ -1,6 +1,6 @@
 # Prompts para Claude Code — talent-bridge
 
-> Nota (2026-11-12, Claude Code): este archivo es el texto de los prompts tal como se usaron y no se reescribe. Donde dice que la empresa «no la facilitará por seguridad», es lo entendido por el equipo; no hay evidencia escrita (el equipo no se comunicó por escrito con la empresa).
+> Nota (2026-11-12, Claude Code): este archivo es el texto de los prompts tal como se usaron y no se reescribe. Donde dice que la empresa «no la facilitará por seguridad», no consta que la empresa se haya negado: según la ficha del reto, numeral 2.8, el acceso a la API REST de BUK es controlado y guiado por un gestor acompañante, y el equipo no tiene una llave.
 
 Cómo usar:
 1. Crea la carpeta `talent-bridge`, copia ahí `CLAUDE.md` y `docs/referencia-ats.md`, y pon la ficha del reto en `docs/ficha/` (la ficha NO se publica en un repositorio público).

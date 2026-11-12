@@ -6,10 +6,10 @@
 No. Funciona con el Simulador BUK, un ATS propio que se maneja por API. Para BUK real hace falta la llave de su API y su documentación (`/apidocs`); con eso se escribe el adaptador de salida sin tocar el resto (`ConectorATS`).
 
 **¿Por qué no usaron la API de BUK?**
-El equipo no tiene una llave. Según lo entendido por el equipo, no se entregaría por seguridad; **no hay evidencia escrita**, porque el equipo no se comunicó por escrito con la empresa. La ficha condiciona el acceso a un acompañamiento de la empresa.
+Según la ficha del reto, numeral 2.8, la integración con BUK es solo por su API REST, con acceso controlado y guiado por un gestor acompañante. El equipo no tiene una llave, así que el destino de la demo es el Simulador BUK. No afirmamos que la empresa se haya negado.
 
 **¿Por qué no usaron la API de LinkedIn?**
-Sus API de reclutamiento son solo para socios aprobados (verificado en Microsoft Learn). La propia ficha dice que no se conectará la API de LinkedIn y que se simulen las postulaciones con JSON.
+Sus API de reclutamiento son solo para socios aprobados (verificado en Microsoft Learn). Además, según la ficha del reto, numeral 2.8, no se conectará la API directa de LinkedIn por limitaciones normativas y de acceso a credenciales, y las postulaciones se simulan con *payloads* JSON.
 
 **Entonces, ¿qué hace exactamente lo que se entrega?**
 Recibe postulaciones simuladas (por JSON con Postman, por un formulario o por PDF importados), las valida y las registra solas en «Postulantes» del proceso correcto del ATS simulado, sin duplicados y con el CV íntegro.

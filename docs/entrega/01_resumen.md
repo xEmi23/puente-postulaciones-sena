@@ -4,7 +4,7 @@
 
 ## El problema
 
-Según la ficha del reto, el equipo de selección de la empresa publica vacantes en LinkedIn y gestiona el proceso en su ATS (BUK), y entre los dos no hay conexión: por cada vacante, un reclutador descarga uno por uno los CV y vuelve a digitar los datos en el ATS. La ficha dice que eso retrasa el avance de los candidatos entre 2 y 4 días hábiles. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn) y el equipo no tiene una llave de la API de BUK.
+Según la ficha del reto, el equipo de selección de la empresa publica vacantes en LinkedIn y gestiona el proceso en su ATS (BUK), y entre los dos no hay conexión: por cada vacante, un reclutador descarga uno por uno los CV y vuelve a digitar los datos en el ATS. La ficha dice que eso retrasa el avance de los candidatos entre 2 y 4 días hábiles. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn) y, según la ficha del reto (numeral 2.8), no se conectará la API directa de LinkedIn; la integración con BUK sería solo por su API REST, con acceso controlado y guiado por un gestor acompañante. El equipo no tiene una llave de la API de BUK.
 
 ## La solución
 

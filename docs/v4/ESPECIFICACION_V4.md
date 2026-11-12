@@ -1,6 +1,6 @@
 # Especificación V4 — Puente de postulaciones (fuente de verdad para Claude Code)
 
-> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Ajuste posterior del mismo día: lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
 
 > Documento del equipo (01/11/2026). Reemplaza a docs/v3/ESPECIFICACION_BOT.md como especificación vigente; docs/v3 queda como historia.
 > Etiquetas: **Comprobado** · **Hipótesis** · **Recomendación** · **Simulado**. Lo marcado **[V4]** es nuevo frente a la V3.
@@ -43,7 +43,7 @@ Los cambios frente a la V3 llevan la marca **\[V4\]** y se explican en la pesta�
 | --- | --- |
 | Sin API de LinkedIn: es solo para socios aprobados (**Comprobado**, Microsoft Learn) | Cualquier entrada desde LinkedIn es manual, un bot o la integración oficial que active el fabricante del ATS |
 | Sin API Key de BUK; no se puede modificar BUK | El destino de la demo es Talentia (**Simulado**). BUK real queda preparado, pero deshabilitado |
-| Según lo entendido por el equipo después del 29/10 (sin evidencia escrita: **Hipótesis**), la postulación debe seguir ocurriendo en LinkedIn y no depender de su API | Se descartan las fuentes que sacan al candidato de LinkedIn |
+| Que no dependa de la API de LinkedIn: según la ficha del reto, numeral 2.8. Que la postulación siga ocurriendo en LinkedIn: según lo entendido por el equipo después del 29/10 (sin evidencia escrita: **Hipótesis**) | Se descartan las fuentes que sacan al candidato de LinkedIn |
 | 12 días hasta la entrega; prototipo sin aprobaciones externas | Alcance mínimo y demostrable; fechas de decisión fijas |
 | El repositorio se publica anonimizado | Sin el nombre de la empresa en código ni en documentos públicos |
 
