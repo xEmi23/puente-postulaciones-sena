@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "recibidaEn": "2026-11-11T09:30:00-05:00",
+  "candidato": {
+    "nombres": "Laura  Daniela",
+    "apellidos": "Ejemplo Ficticia",
+    "correo": "Laura.Ejemplo.{{idUnico}}@Demo.Test",
+    "telefono": "300 555 0142",
+    "ciudad": "Medellín",
+    "perfilUrl": "https://www.linkedin.com/in/laura-ejemplo-ficticia"
+  },
+  "origenDatos": "fuente"
+}

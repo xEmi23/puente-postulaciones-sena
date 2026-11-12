@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "candidato": {
+    "nombres": "Pedro",
+    "apellidos": "Sin Correo",
+    "telefono": "+57 310 555 0199",
+    "ciudad": "Bello"
+  }
+}

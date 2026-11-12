@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "VACANTE-QUE-NO-EXISTE",
+  "candidato": {
+    "nombres": "Nora",
+    "apellidos": "Sin Vacante",
+    "correo": "nora.{{idUnico}}@demo.test"
+  }
+}

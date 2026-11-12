@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "candidato": {
+    "nombres": "Marta",
+    "apellidos": "Telefono Malo",
+    "correo": "marta.{{idUnico}}@demo.test",
+    "telefono": "12"
+  }
+}

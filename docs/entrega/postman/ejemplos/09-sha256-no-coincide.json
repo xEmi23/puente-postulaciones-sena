@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "candidato": {
+    "nombres": "Iván",
+    "apellidos": "Hash Distinto",
+    "correo": "ivan.{{idUnico}}@demo.test"
+  },
+  "cv": {
+    "nombreArchivo": "cv.pdf",
+    "tipo": "application/pdf",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "bytes": 2359
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "salario": 5000000,
+  "candidato": {
+    "nombres": "Elena",
+    "correo": "elena.{{idUnico}}@demo.test"
+  }
+}

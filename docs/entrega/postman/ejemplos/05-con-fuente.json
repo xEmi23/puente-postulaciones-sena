@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "fuente": "otra-fuente",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "candidato": {
+    "nombres": "Julián",
+    "correo": "julian.{{idUnico}}@demo.test"
+  }
+}

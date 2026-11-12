@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "idExterno": "{{idUnico}}",
+  "vacanteExterna": "{{vacanteExterna}}",
+  "candidato": {
+    "apellidos": "Sin Nombres",
+    "correo": "sin.nombres.{{idUnico}}@demo.test"
+  }
+}

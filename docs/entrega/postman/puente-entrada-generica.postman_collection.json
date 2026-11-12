@@ -1,0 +1,940 @@
+{
+  "info": {
+    "name": "Puente de postulaciones · entrada genérica (V4)",
+    "description": "Entrada genérica del Puente: POST /api/entradas/v1/postulaciones (multipart: «datos» = JSON de la PostulacionCanonica v1 sin «fuente»; «cv» = PDF ≤ 5 MB). Contrato: docs/contratos.md §8. Guía: docs/entrega/postman/GUIA.md.\n\nAntes de usarla: Puente → Fuentes → crear una fuente y «Generar token»; Puente → Correspondencias → vincular la vacante {{vacanteExterna}} de esa fuente a un proceso del Simulador BUK. Pega el token en la variable «token» (nunca lo guardes en el repositorio). En Postman → Settings → Working directory = la raíz del repositorio, para que encuentre fixtures/cv/*.pdf.\n\nTodo es simulado y con datos ficticios (@demo.test).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3003",
+      "description": "Puente local (o https://puente-postulaciones.onrender.com)"
+    },
+    {
+      "key": "token",
+      "value": "PEGA_AQUI_EL_TOKEN_DE_LA_FUENTE",
+      "description": "Token de la fuente (Puente → Fuentes). Se muestra una sola vez."
+    },
+    {
+      "key": "vacanteExterna",
+      "value": "VAC-DEMO-1",
+      "description": "Vacante de la fuente vinculada en Correspondencias"
+    },
+    {
+      "key": "idUnico",
+      "value": "",
+      "description": "Lo pone cada solicitud antes de enviarse (postman-<timestamp>)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Válidos",
+      "item": [
+        {
+          "name": "01 · Válida con CV → 202 RECIBIDA",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 202', () => pm.response.to.have.status(202));",
+                  "pm.test('estado RECIBIDA', () => pm.expect(pm.response.json().estado).to.eql('RECIBIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "Llega a Postulantes del proceso vinculado."
+          }
+        },
+        {
+          "name": "01 bis · Repetir la anterior → 200 DUPLICADA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('estado DUPLICADA', () => pm.expect(pm.response.json().estado).to.eql('DUPLICADA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "Mismo idExterno: no se crea nada. Ejecutar justo después de la 01."
+          }
+        },
+        {
+          "name": "02 · Sin correo → 202 REQUIERE_REVISION",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 202', () => pm.response.to.have.status(202));",
+                  "pm.test('estado REQUIERE_REVISION', () => pm.expect(pm.response.json().estado).to.eql('REQUIERE_REVISION'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"nombres\": \"Pedro\",\n    \"apellidos\": \"Sin Correo\",\n    \"telefono\": \"+57 310 555 0199\",\n    \"ciudad\": \"Bello\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "Queda en revisión humana (Operaciones)."
+          }
+        },
+        {
+          "name": "01 sin CV → 202 REQUIERE_REVISION",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 202', () => pm.response.to.have.status(202));",
+                  "pm.test('estado REQUIERE_REVISION', () => pm.expect(pm.response.json().estado).to.eql('REQUIERE_REVISION'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "Sin la parte «cv»: motivo sin_cv."
+          }
+        },
+        {
+          "name": "Vacantes de la fuente → 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/vacantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "vacantes"
+              ]
+            },
+            "description": "Correspondencias activas de la fuente del token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inválidos",
+      "item": [
+        {
+          "name": "03 · Falta candidato.nombres → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"apellidos\": \"Sin Nombres\",\n    \"correo\": \"sin.nombres.{{idUnico}}@demo.test\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "04 · Teléfono inválido → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"nombres\": \"Marta\",\n    \"apellidos\": \"Telefono Malo\",\n    \"correo\": \"marta.{{idUnico}}@demo.test\",\n    \"telefono\": \"12\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "05 · Trae «fuente» en el cuerpo → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"fuente\": \"otra-fuente\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"nombres\": \"Julián\",\n    \"correo\": \"julian.{{idUnico}}@demo.test\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "La fuente la fija el token."
+          }
+        },
+        {
+          "name": "06 · Campo desconocido → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"salario\": 5000000,\n  \"candidato\": {\n    \"nombres\": \"Elena\",\n    \"correo\": \"elena.{{idUnico}}@demo.test\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": "El contrato es estricto."
+          }
+        },
+        {
+          "name": "07 · Versión 2 → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"2\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"nombres\": \"Raúl\",\n    \"correo\": \"raul.{{idUnico}}@demo.test\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "08 · Vacante sin correspondencia → 422",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+                  "pm.test('estado VACANTE_SIN_CORRESPONDENCIA', () => pm.expect(pm.response.json().estado).to.eql('VACANTE_SIN_CORRESPONDENCIA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"VACANTE-QUE-NO-EXISTE\",\n  \"candidato\": {\n    \"nombres\": \"Nora\",\n    \"apellidos\": \"Sin Vacante\",\n    \"correo\": \"nora.{{idUnico}}@demo.test\"\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "09 · SHA-256 declarado distinto → 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('estado INVALIDA', () => pm.expect(pm.response.json().estado).to.eql('INVALIDA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"candidato\": {\n    \"nombres\": \"Iván\",\n    \"apellidos\": \"Hash Distinto\",\n    \"correo\": \"ivan.{{idUnico}}@demo.test\"\n  },\n  \"cv\": {\n    \"nombreArchivo\": \"cv.pdf\",\n    \"tipo\": \"application/pdf\",\n    \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n    \"bytes\": 2359\n  }\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "10 · Archivo que no es PDF → 415",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 415', () => pm.response.to.have.status(415));",
+                  "pm.test('estado NO_ES_PDF', () => pm.expect(pm.response.json().estado).to.eql('NO_ES_PDF'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/no-es-pdf.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "11 · Token inválido → 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('estado NO_AUTORIZADO', () => pm.expect(pm.response.json().estado).to.eql('NO_AUTORIZADO'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer pf_0000000000.no-es-un-token-valido-0000"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "12 · Sin Authorization → 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idUnico', 'postman-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('estado NO_AUTORIZADO', () => pm.expect(pm.response.json().estado).to.eql('NO_AUTORIZADO'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "datos",
+                  "type": "text",
+                  "value": "{\n  \"version\": \"1\",\n  \"idExterno\": \"{{idUnico}}\",\n  \"vacanteExterna\": \"{{vacanteExterna}}\",\n  \"recibidaEn\": \"2026-11-11T09:30:00-05:00\",\n  \"candidato\": {\n    \"nombres\": \"Laura  Daniela\",\n    \"apellidos\": \"Ejemplo Ficticia\",\n    \"correo\": \"Laura.Ejemplo.{{idUnico}}@Demo.Test\",\n    \"telefono\": \"300 555 0142\",\n    \"ciudad\": \"Medellín\",\n    \"perfilUrl\": \"https://www.linkedin.com/in/laura-ejemplo-ficticia\"\n  },\n  \"origenDatos\": \"fuente\"\n}\n",
+                  "description": "PostulacionCanonica v1 sin «fuente» (JSON)"
+                },
+                {
+                  "key": "cv",
+                  "type": "file",
+                  "src": "fixtures/cv/cv-camila-ejemplo.pdf",
+                  "description": "PDF de hasta 5 MB (ruta relativa a la raíz del repositorio)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/entradas/v1/postulaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "entradas",
+                "v1",
+                "postulaciones"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ],
+      "description": "413 (CV de más de 5 MB) y 429 (más de 60 peticiones por minuto por token) no van como solicitud fija: 413 necesita un PDF grande (ver GUIA.md) y 429 se provoca con el Runner (61 iteraciones). Ambos se comprobaron con scripts/probar-ejemplos.mjs."
+    }
+  ]
+}
