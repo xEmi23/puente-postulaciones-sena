@@ -79,6 +79,12 @@ describe("G-1 · postulación válida → 202 RECIBIDA y llega a Talentia", () =
     expect(talentia.postulaciones[0]).toMatchObject({ procesoId: 9001, fuente: "Bot experimental (LinkedIn)" });
     expect(talentia.documentos[0].sha256).toBe(sha(leerCv()));
   });
+
+  it("al completar no programa el aviso «CV descargado» al Simulador LinkedIn (solo aplica a Apply Connect)", async () => {
+    await enviar(datos("bot-aviso"));
+    await drenar();
+    expect(await prisma.recepcion.findFirstOrThrow()).toMatchObject({ estado: "COMPLETADO", avisoEstado: "NO_APLICA", avisoProximoEn: null });
+  });
 });
 
 describe("G-2 · repetirla → 200 DUPLICADA y no crea nada", () => {

@@ -168,6 +168,14 @@ describe("envío correcto", () => {
     expect(rec).toMatchObject({ estado: "COMPLETADO", telefono: "+525512345678", jobApplicant: `formulario-publico:${rec.idExterno}` });
   });
 
+  // Entrega (2026-11-11): al completar, el procesador programaba el aviso «CV descargado» al Simulador LinkedIn para
+  // CUALQUIER fuente. Solo una postulación de Apply Connect existe allí; para el formulario el panel mostraba «Fallido».
+  it("no programa el aviso «CV descargado» al Simulador LinkedIn (solo aplica a Apply Connect)", async () => {
+    await enviar();
+    await drenar();
+    expect(await prisma.recepcion.findFirstOrThrow()).toMatchObject({ estado: "COMPLETADO", avisoEstado: "NO_APLICA", avisoProximoEn: null });
+  });
+
   it("modo JSON (página con JavaScript): 200 con la referencia", async () => {
     const r = await enviar({}, { json: true });
     const rec = await prisma.recepcion.findFirstOrThrow();

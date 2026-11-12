@@ -194,9 +194,10 @@ export async function completar(rec: Recepcion, atsPostulacionId: string, detall
         ...(rec.advertencia ? {} : { cvContenido: null }),
         errorCodigo: null,
         errorDetalle: null,
-        // Aviso RESUME_DOWNLOADED a Vínculo: se envía aparte y no bloquea el COMPLETADO (§4.3, paso 7).
-        avisoEstado: "PENDIENTE",
-        avisoProximoEn: new Date(),
+        // Aviso RESUME_DOWNLOADED a Vínculo: se envía aparte y no bloquea el COMPLETADO (§4.3, paso 7). Solo existe para
+        // Apply Connect: las demás fuentes (formulario, entrada genérica, importador, bot) no tienen allí una solicitud
+        // que avisar, así que quedan en NO_APLICA (entrega 2026-11-11).
+        ...(rec.fuente === "apply-connect" ? { avisoEstado: "PENDIENTE", avisoProximoEn: new Date() } : {}),
       },
     }),
     prisma.trabajo.update({ where: { recepcionId: rec.id }, data: { estado: "HECHO", leaseHasta: null, ultimoError: null } }),
