@@ -93,3 +93,17 @@ Ambos quedaron en «Problemas frecuentes» de [docs/README_TECNICO.md](../README
 | Playwright (67 + 2) | Formulario de punta a punta (escritorio y móvil), entrada genérica, importador, panel y roles, tres sistemas, accesibilidad (axe), móvil | `e2e/` |
 
 Historial de resultados de todas las versiones: [docs/resultados-pruebas.md](../resultados-pruebas.md).
+
+## 6.10 Instalación limpia siguiendo el README
+
+El 11/11/2026 (21:57–22:00) se clonó la rama `entrega` en una carpeta temporal vacía y se siguieron los pasos de «Ejecutarlo en 5 minutos» del [README](../../README.md):
+
+| Paso | Resultado |
+|---|---|
+| `npm install` | 686 paquetes en 34 s |
+| `npm run setup` | `.env` con secretos nuevos, PostgreSQL propio (tomó el puerto **5436** porque el 5435 estaba ocupado), migraciones y datos demo de las 4 apps, en 34 s |
+| `npm run dev` | Simulador LinkedIn :3001, Simulador BUK :3002 y Puente :3003 respondiendo (`/api/salud` ok) |
+| `npm run demo:bot` | Conexión del Puente con el Simulador BUK guardada y probada, en 11 s |
+| Pasos 1–4 por las pantallas (`node scripts/capturas-entrega.mjs`) | «Crear enlace» del proceso 9003 → formulario sin sesión → confirmación → Operaciones «Completado» (4 pasos, 2,5 s) → tarjeta en «Postulantes» del Simulador BUK con el mismo SHA-256 |
+
+No se probó con Docker (no está instalado en esta máquina).
