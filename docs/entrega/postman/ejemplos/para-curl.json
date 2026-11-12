@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "idExterno": "curl-guia-001",
+  "vacanteExterna": "VAC-DEMO-1",
+  "candidato": {
+    "nombres": "Ana",
+    "apellidos": "Guia Ficticia",
+    "correo": "ana.guia.curl@demo.test",
+    "telefono": "300 555 0101",
+    "ciudad": "Medellín"
+  }
+}
