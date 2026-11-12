@@ -113,9 +113,32 @@ function aErrores(error: z.ZodError) {
   return error.issues.slice(0, 20).map((i) => ({ campo: i.path.join(".") || "(raíz)", mensaje: i.message }));
 }
 
+/**
+ * Mensajes en español para los errores genéricos de Zod (obligatorio ausente, tipo equivocado, campo desconocido…).
+ * Los mensajes propios de cada campo (p. ej. «Los nombres son obligatorios.») tienen prioridad sobre estos.
+ */
+const mensajesEnEspanol = (iss: z.core.$ZodRawIssue): string | undefined => {
+  switch (iss.code) {
+    case "invalid_type":
+      return iss.input === undefined ? "Campo obligatorio." : `Tipo de dato inválido (se espera ${iss.expected}).`;
+    case "unrecognized_keys":
+      return `Campo no permitido por el contrato: ${iss.keys.join(", ")}.`;
+    case "too_big":
+      return `Supera el máximo permitido (${String(iss.maximum)}).`;
+    case "too_small":
+      return `No alcanza el mínimo permitido (${String(iss.minimum)}).`;
+    case "invalid_value":
+      return "Valor no permitido.";
+    case "invalid_format":
+      return "Formato inválido.";
+    default:
+      return undefined;
+  }
+};
+
 /** Valida y normaliza una canónica completa. */
 export function validarCanonica(valor: unknown): ResultadoValidacion<PostulacionCanonica> {
-  const r = esquemaCanonica.safeParse(valor);
+  const r = esquemaCanonica.safeParse(valor, { error: mensajesEnEspanol });
   return r.success ? { ok: true, datos: r.data } : { ok: false, errores: aErrores(r.error) };
 }
 
@@ -124,6 +147,6 @@ export function validarEntrada(valor: unknown, fuente: string): ResultadoValidac
   if (valor && typeof valor === "object" && "fuente" in valor) {
     return { ok: false, errores: [{ campo: "fuente", mensaje: "La fuente la fija el token; no se envía en el cuerpo." }] };
   }
-  const r = esquemaEntrada.safeParse(valor);
+  const r = esquemaEntrada.safeParse(valor, { error: mensajesEnEspanol });
   return r.success ? { ok: true, datos: { ...r.data, fuente } } : { ok: false, errores: aErrores(r.error) };
 }

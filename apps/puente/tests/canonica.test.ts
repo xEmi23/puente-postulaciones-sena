@@ -69,6 +69,51 @@ describe("PostulacionCanonica v1 · casos inválidos", () => {
   });
 });
 
+// Entrega (2026-11-11): un obligatorio AUSENTE o un campo desconocido devolvían el mensaje genérico de Zod en inglés
+// («Invalid input: expected string, received undefined», «Unrecognized key: …») a quien llama la entrada genérica.
+describe("mensajes de validación en español", () => {
+  const sinFuente = () => {
+    const { fuente: _f, ...resto } = base();
+    void _f;
+    return resto;
+  };
+  const errores = (r: ReturnType<typeof validarEntrada>) => (r.ok ? [] : r.errores);
+  const enIngles = /invalid input|expected|received|unrecognized|too (big|small)/i;
+
+  it("un obligatorio ausente (candidato.nombres, idExterno, vacanteExterna, version) se explica en español", () => {
+    const c = sinFuente();
+    for (const [cuerpo, campo] of [
+      [{ ...c, candidato: { apellidos: "Sin Nombres" } }, "candidato.nombres"],
+      [{ ...c, idExterno: undefined }, "idExterno"],
+      [{ ...c, vacanteExterna: undefined }, "vacanteExterna"],
+      [{ ...c, version: undefined }, "version"],
+      [{ ...c, candidato: undefined }, "candidato"],
+    ] as const) {
+      const e = errores(validarEntrada(JSON.parse(JSON.stringify(cuerpo)), "linkedin-bot"));
+      const del = e.find((x) => x.campo === campo);
+      expect(del, campo).toBeDefined();
+      expect(del!.mensaje, campo).not.toMatch(enIngles);
+    }
+    const nombres = errores(validarEntrada({ ...c, candidato: { apellidos: "Sin Nombres" } }, "linkedin-bot")).find((x) => x.campo === "candidato.nombres");
+    expect(nombres!.mensaje).toBe("Campo obligatorio.");
+  });
+
+  it("un campo desconocido o un tipo equivocado se explican en español y nombran el campo", () => {
+    const e = errores(validarEntrada({ ...sinFuente(), salario: 5000000 }, "linkedin-bot"));
+    expect(e[0].mensaje).toBe("Campo no permitido por el contrato: salario.");
+    const t = errores(validarEntrada({ ...sinFuente(), candidato: { nombres: 123 } }, "linkedin-bot"));
+    expect(t[0].campo).toBe("candidato.nombres");
+    expect(t[0].mensaje).not.toMatch(enIngles);
+  });
+
+  it("los mensajes propios de cada campo siguen teniendo prioridad", () => {
+    const e = errores(validarEntrada({ ...sinFuente(), version: "2" }, "linkedin-bot"));
+    expect(e[0].mensaje).toBe("Versión del contrato no soportada (se espera «1»).");
+    const n = errores(validarEntrada({ ...sinFuente(), candidato: { nombres: "   " } }, "linkedin-bot"));
+    expect(n[0].mensaje).toBe("Los nombres son obligatorios.");
+  });
+});
+
 describe("normalización", () => {
   it("correo en minúsculas y sin espacios", () => {
     expect(normalizarCorreo("  Camila.Ejemplo @Demo.TEST ")).toBe("camila.ejemplo@demo.test");
