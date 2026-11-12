@@ -1,4 +1,6 @@
-# Puente de postulaciones (V4)
+# Puente de postulaciones (V4) · README técnico
+
+> Actualizado por Claude Code (2026-11-11): este era el README de la raíz hasta la entrega. Se conserva completo como referencia técnica; el README para evaluadores está en la raíz ([../README.md](../README.md)). Sus enlaces se ajustaron a la nueva ubicación.
 
 Prototipo académico para el **Reto #1 SENA · Innovación Abierta 2026-2**: llevar los postulantes a «Postulantes» del proceso correcto del ATS, sin descargar hojas de vida ni volver a digitar datos.
 
@@ -19,7 +21,7 @@ Apply Connect (Vínculo :3001, sim.) ─┘      │ dedup, revisión, pasos rea
                                             └──────────────────────────────────────┘
 ```
 
-Más detalle en [docs/arquitectura.md](docs/arquitectura.md) (sección «V4 · capas»). Especificación del equipo: `docs/v4/ESPECIFICACION_V4.md`.
+Más detalle en [docs/arquitectura.md](arquitectura.md) (sección «V4 · capas»). Especificación del equipo: `docs/v4/ESPECIFICACION_V4.md`.
 
 ## Cómo probar cada entrada (local)
 
@@ -28,9 +30,9 @@ Con `npm run dev` en marcha y `npm run demo:bot -- --reiniciar` (conecta el Puen
 | Entrada | Cómo | Dónde se ve |
 |---|---|---|
 | **Formulario público (D-75)** | Puente → **Formulario público** → «Crear enlace» en un proceso → «Copiar» → abrir el enlace sin sesión → nombres, apellidos, correo, teléfono, PDF y la casilla de autorización → «Enviar postulación» | Operaciones (fuente «Formulario público»); Simulador BUK → Postulantes (mismo SHA-256 en la ficha) |
-| **Importador manual** | Puente → **Importar** → elegir proceso → adjuntar PDF (p. ej. `fixtures/cv/*.pdf`) → revisar → **Confirmar e importar** ([manual](docs/manuales/importador.md)) | Puente → Operaciones (fuente `importador`); Talentia → Postulantes |
+| **Importador manual** | Puente → **Importar** → elegir proceso → adjuntar PDF (p. ej. `fixtures/cv/*.pdf`) → revisar → **Confirmar e importar** ([manual](manuales/importador.md)) | Puente → Operaciones (fuente `importador`); Talentia → Postulantes |
 | **Entrada genérica** | Puente → **Fuentes** → crear fuente y **Generar token**; **Correspondencias** → fuente, vacante y proceso; luego `POST /api/entradas/v1/postulaciones` (ejemplo en PowerShell en `docs/v4/REPORTE_F2.md`; contrato en `docs/contratos.md` §8) | Operaciones (fuente propia); sin correo o sin CV queda en «Requiere revisión» |
-| **Bot asistido (experimental, solo Vínculo)** | `npm run bot:login -w apps/bot-linkedin` y `npm run bot -w apps/bot-linkedin` ([manual](docs/manuales/bot.md)) | Operaciones (fuente `vinculo-bot`); Talentia 9005 → Postulantes |
+| **Bot asistido (experimental, solo Vínculo)** | `npm run bot:login -w apps/bot-linkedin` y `npm run bot -w apps/bot-linkedin` ([manual](manuales/bot.md)) | Operaciones (fuente `vinculo-bot`); Talentia 9005 → Postulantes |
 | **Apply Connect (simulado, solo con la API prendida)** | Vínculo → «Solicitud sencilla» en una vacante publicada por el Puente | Operaciones (fuente `apply-connect`); el candidato ve «CV descargado» |
 
 `ATS_DESTINO=talentia` (por defecto). Con `ATS_DESTINO=buk` el procesador no arranca y `/api/salud` responde 503 «ATS buk no implementado».
@@ -94,7 +96,7 @@ Contraseña de todas: **`Demo2026!`** (también se muestran en cada pantalla de 
 
 ## Demo en 7 pasos
 
-Guion completo con tiempos y plan B: [docs/guion-demo.md](docs/guion-demo.md) (sección «V4», unos 5 minutos: importador, Apply Connect simulado y confiabilidad). Estos 7 pasos muestran la entrada de Apply Connect:
+Guion completo con tiempos y plan B: [docs/guion-demo.md](guion-demo.md) (sección «V4», unos 5 minutos: importador, Apply Connect simulado y confiabilidad). Estos 7 pasos muestran la entrada de Apply Connect:
 
 1. **Restablecer:** `npm run demo:reset` y luego `npm run demo:conectar` (con `npm run dev` corriendo).
 2. **Conexiones:** en el Puente → «Conexiones», las tres marcas en verde; «Probar conexión» contra Vínculo y Talentia.
@@ -140,18 +142,18 @@ npm run db:migrate && npm run db:seed
 
 ## Despliegue
 
-Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/despliegue.md](docs/despliegue.md).
+Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/despliegue.md](despliegue.md).
 
 ## Documentación
 
-- [docs/arquitectura.md](docs/arquitectura.md): los tres sistemas, secuencia y estados (Mermaid).
-- [docs/contratos.md](docs/contratos.md): Vínculo frente a Apply Connect, Talentia frente a BUK, entrada genérica (§8) y ConectorATS (§9), cada punto etiquetado.
-- [docs/mapeo-datos.md](docs/mapeo-datos.md): Vínculo → Puente → Talentia.
-- [docs/decisiones.md](docs/decisiones.md): decisiones con alternativa descartada y motivo.
-- [docs/manuales/](docs/manuales/): un manual por rol, incluido el [importador](docs/manuales/importador.md).
-- [docs/v4/](docs/v4/): especificación V4 del equipo, informe F0 y reportes de cada fase.
-- [docs/seguridad.md](docs/seguridad.md): llaves, cifrado, sesiones, datos personales.
-- [docs/despliegue.md](docs/despliegue.md), [docs/guion-demo.md](docs/guion-demo.md), [docs/resultados-pruebas.md](docs/resultados-pruebas.md), [docs/estado.md](docs/estado.md), [docs/uso-ia.md](docs/uso-ia.md).
+- [docs/arquitectura.md](arquitectura.md): los tres sistemas, secuencia y estados (Mermaid).
+- [docs/contratos.md](contratos.md): Vínculo frente a Apply Connect, Talentia frente a BUK, entrada genérica (§8) y ConectorATS (§9), cada punto etiquetado.
+- [docs/mapeo-datos.md](mapeo-datos.md): Vínculo → Puente → Talentia.
+- [docs/decisiones.md](decisiones.md): decisiones con alternativa descartada y motivo.
+- [docs/manuales/](manuales/): un manual por rol, incluido el [importador](manuales/importador.md).
+- [docs/v4/](v4/): especificación V4 del equipo, informe F0 y reportes de cada fase.
+- [docs/seguridad.md](seguridad.md): llaves, cifrado, sesiones, datos personales.
+- [docs/despliegue.md](despliegue.md), [docs/guion-demo.md](guion-demo.md), [docs/resultados-pruebas.md](resultados-pruebas.md), [docs/estado.md](estado.md), [docs/uso-ia.md](uso-ia.md).
 
 ## Problemas frecuentes
 
@@ -163,3 +165,5 @@ Render, plan gratuito, con `render.yaml` (tres servicios web y una base): [docs/
 - **Una postulación quedó en «Requiere revisión»:** le falta el correo o el CV, los datos vinieron sin confirmar o es un posible duplicado. Ábrela en Operaciones, complétala y apruébala (o descártala).
 - **La entrada genérica responde 422:** vincula la vacante de esa fuente en Correspondencias. **401:** el token se revocó o se rotó (Fuentes).
 - **Un puerto está ocupado:** cambia el puerto en `apps/<app>/package.json` y `APP_BASE_URL` en su `.env`, y vuelve a conectar.
+- **El formulario o una pantalla nueva responde 500 en `npm run dev` («table … does not exist»):** la base de desarrollo no tiene las migraciones más recientes (`npm run dev` no migra). Ejecuta `npm run db:migrate`. *(Actualizado por Claude Code, 2026-11-11.)*
+- **En `npm run dev` una página se recarga sola sin parar (en la consola del navegador, «HMR hash mismatch»):** detén `npm run dev`, borra la caché de desarrollo de esa app (`apps/<app>/.next/dev`) y vuelve a arrancar. Suele pasar después de `npm run build` o `npm run test:e2e`. *(Actualizado por Claude Code, 2026-11-11.)*

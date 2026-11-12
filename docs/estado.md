@@ -652,3 +652,16 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - **Hacia el ATS:** ciudad → `ciudad`; perfil → «Referencia externa» del postulante. Solo en el Puente: consentimiento, ficha y fuente técnica.
 - **Pruebas:** `apps/puente/tests/formulario.test.ts` (27) y `e2e/formulario.spec.ts` (7 en escritorio y 2 en móvil).
 - **Puerta de calidad (una vez):** lint 0 · typecheck 0 · Vitest 29 + 30 + 173 + 29 = 261 · Playwright 67 (2 omitidas, capturas) · build 0 = **328 pruebas**.
+
+## Entrega final (2026-11-11)
+
+> Actualizado por Claude Code (2026-11-11). Rama `entrega` (desde `v4` = `6b95cb1`). **No** se hizo push a `v4` ni se tocó Render.
+
+- **Repositorio local:** el `.git` de esta carpeta apuntaba a un worktree dentro de la carpeta del v1, que hoy está vacía; el repositorio local ya no existía. Se clonó el remoto privado (`origin`, con las 35 confirmaciones de `v2` y `v4`) y su `.git` reemplazó el puntero roto (el puntero viejo quedó guardado fuera del repositorio). El árbol de trabajo era idéntico a `v4` salvo finales de línea.
+- **Puerta de calidad:** dos vueltas seguidas e idénticas sobre `v4`: lint 0 · typecheck 0 · Vitest 261 · build 0 · Playwright 67 (+2 omitidas) = **328**, sin inestables. Vuelta 3 tras los arreglos: lint 0 · typecheck 0 · Vitest 266 (5 pruebas nuevas) · build 0 · Playwright 67 (+2 omitidas) = **333**, sin inestables.
+- **Defectos corregidos (commits aparte, con prueba):** `e7a9871` mensajes de validación de la entrada genérica en español; `ffcafcf` el aviso «CV descargado» al Simulador LinkedIn solo para Apply Connect. **No están en Render** (Render despliega `v4`).
+- **Entorno local:** la base `tb2_dev` estaba sin las 2 migraciones del 03/11 (se aplicó `npm run db:migrate`); `npm run dev` del Puente entró en un bucle de recarga («HMR hash mismatch») que se resolvió borrando `apps/puente/.next/dev`. Ambos quedaron en «Problemas frecuentes» del README técnico.
+- **Medición de criterios, ejemplos de Postman, capturas y documentación de entrega:** `docs/entrega/` (índice en `docs/INDICE.md`). El README de la raíz ahora es para evaluadores; el anterior está en `docs/README_TECNICO.md`.
+- **Render:** `/api/salud` ok en Puente y Simulador BUK; humo del formulario 5/5.
+- **Pendientes (no cumplidos):** llave y API reales de BUK; validación legal del aviso; `PRIVACIDAD_CORREO` real; verificación de la cuenta de LinkedIn de la empresa; encabezado de IP confiable en Render (D-76); evidencia del equipo para la metodología (`docs/entrega/EVIDENCIA_PENDIENTE.md`); la base gratuita de Render vence el 2026-11-28.
+- **Siguiente paso:** que el equipo revise `docs/entrega/`, aporte la evidencia pendiente y ensaye `docs/entrega/12_demo.md`. Si se quiere que Render tenga los dos arreglos, llevar `entrega` a `v4` (eso redespliega).

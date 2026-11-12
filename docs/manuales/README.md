@@ -20,3 +20,5 @@
 | Persona que ejecuta el bot (experimental) | Vínculo (:3001) → Puente | [bot.md](bot.md) | `reclutadora@andina.demo.test` (inicio de sesión a mano) |
 
 El manual de desarrollador/a aplica solo con la API de Vínculo prendida (`npm run vinculo:api -- on`, D-68); por defecto está apagada.
+
+> Actualizado por Claude Code (2026-11-11, entrega). **Flujo final** (oferta con enlace externo → formulario público del Puente → Simulador BUK): manual de los cuatro roles con capturas en [../entrega/11_manual_de_uso.md](../entrega/11_manual_de_uso.md). Capturas: `img/entrega-*.png` (generadas con `node scripts/capturas-entrega.mjs`).

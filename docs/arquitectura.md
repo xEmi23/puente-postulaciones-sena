@@ -266,3 +266,30 @@ stateDiagram-v2
   EN_PROCESO --> REQUIERE_VERIFICACION: respuesta perdida al crear
   REQUIERE_VERIFICACION --> COMPLETADA: «Reconciliar»
 ```
+
+---
+
+## Entrega final · Flujo final y lugar de cada entrada
+
+> Actualizado por Claude Code (2026-11-11). Detalle con diagramas exportados: [docs/entrega/04_solucion_y_arquitectura.md](entrega/04_solucion_y_arquitectura.md).
+
+**Flujo final (D-75):** oferta en LinkedIn con **enlace externo** → **formulario público del Puente** (`/postular/<código>`) → núcleo (`registrarRecepcion`) → procesador → `ConectorATS` → **API v1 del Simulador BUK** → etapa «Postulantes».
+
+**Alcance pedido por el reto:** un *middleware* que recibe postulaciones simuladas (JSON) y las registra en el ATS por API. Lo cumple la **entrada genérica** (`POST /api/entradas/v1/postulaciones`: JSON de la canónica en la parte `datos` + PDF en `cv`) y, para el candidato, el formulario público. Ambos usan el mismo núcleo y la misma salida.
+
+| Entrada | Papel en la entrega |
+|---|---|
+| Formulario público | **Entrada principal** (candidato desde la oferta de LinkedIn) |
+| Entrada genérica (JSON + token) | **Alcance del reto**; cualquier fuente futura; Postman |
+| Importador manual | Alternativa cuando ya hay PDF descargados |
+| Apply Connect (Simulador LinkedIn) | Extensión: «vía oficial futura», solo con la API del simulador prendida |
+| Bot (`apps/bot-linkedin`) | **Descartado** como vía de entrada (D-75); alternativa evaluada, no desplegada |
+
+```mermaid
+flowchart LR
+  LI["Oferta en LinkedIn<br/>(enlace externo)"] --> F["Formulario público<br/>/postular/&lt;código&gt;"]
+  J["JSON + token<br/>(Postman, otra fuente)"] --> G["Entrada genérica"]
+  PDF["PDF descargados"] --> I["Importador"]
+  F & G & I --> N["Núcleo canónico"] --> W["Procesador"] --> C["ConectorATS"] --> T["Simulador BUK<br/>«Postulantes»"]
+  C -.-> B["BUK real (deshabilitado)"]
+```

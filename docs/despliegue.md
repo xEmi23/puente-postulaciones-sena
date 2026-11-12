@@ -164,3 +164,20 @@ Verifica cinco cosas:
   $env:RENDER_HUMO="1"; $env:RENDER_FICHA_PRUEBA="1"; npx playwright test -c playwright.render-formulario.config.ts
   ```
   Sin `RENDER_FICHA_PRUEBA`, la prueba de humo no cambia la ficha.
+
+---
+
+## Entrega final · Estado de Render (11/11/2026)
+
+> Actualizado por Claude Code (2026-11-11). Esta sesión **no** desplegó ni hizo push a `v4` (cada push a `v4` redespliega el Puente y el Simulador BUK). La entrega se publicó en la rama `entrega` del repositorio privado, que Render no usa.
+
+| Servicio | Rama | URL | Uso en la entrega |
+|---|---|---|---|
+| `puente-postulaciones` | `v4` | https://puente-postulaciones.onrender.com | Producto (formulario público, panel, entrada JSON) |
+| `talentia-simulado` | `v4` | https://talentia-simulado.onrender.com | Simulador BUK |
+| `vinculo-simulado` | `v2` | https://vinculo-simulado.onrender.com | Fuera de esta entrega |
+
+- **Vacante de prueba:** https://puente-postulaciones.onrender.com/postular/cnibi7tmi252 (proceso 9006).
+- **Base gratuita:** vence el **28/11/2026**.
+- **PENDIENTE:** `PRIVACIDAD_CORREO` real (Render → `puente-postulaciones` → Environment); verificar qué encabezado de IP es confiable detrás del proxy (D-76).
+- Resultado de `/api/salud` y de la prueba de humo del formulario el 11/11: [docs/entrega/06_pruebas_y_resultados.md](entrega/06_pruebas_y_resultados.md) §6.4.

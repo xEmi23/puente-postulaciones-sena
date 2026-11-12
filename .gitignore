@@ -40,3 +40,13 @@ fixtures/linkedin/originales/
 
 # V4 F4-V: perfiles del navegador del bot por sitio (sesión iniciada a mano; nunca versionar)
 .bot-perfil-*/
+
+# Entrega (2026-11-11): material interno del equipo que no se publica
+docs/insumos/
+PROMPT_DOCUMENTACION.md
+datos.json
+# Configuración local de herramientas de IA dentro de las apps
+apps/*/.agents/
+apps/*/.claude/
+apps/*/.windsurf/
+apps/*/skills-lock.json

@@ -178,3 +178,20 @@ Ninguna aserción de las 166 pruebas anteriores se cambió (R.2). Ajustes de inf
 | E2E importador (I-7) | `e2e/importador.spec.ts` | 4 |
 
 No se ejecutó: el bot (no construido; Puerta 0 pendiente), BUK real (sin documentación ni llave) y el despliegue de la V4 en Render (lo aprueba el equipo).
+
+---
+
+## Entrega final · Verificación del 11/11/2026
+
+> Actualizado por Claude Code (2026-11-11). Detalle completo, con método y evidencia: [docs/entrega/06_pruebas_y_resultados.md](entrega/06_pruebas_y_resultados.md).
+
+| Vuelta | Código | Lint | Typecheck | Vitest | Build | Playwright | Inestables |
+|---|---|---|---|---|---|---|---|
+| 1 | `6b95cb1` | 0 | 0 | 261/261 | 0 | 67 + 2 omitidas | 0 |
+| 2 | `6b95cb1` | 0 | 0 | 261/261 | 0 | 67 + 2 omitidas | 0 |
+| 3 | `ffcafcf` (2 arreglos) | 0 | 0 | 29 + 30 + 178 + 29 = **266/266** | 0 | **67 pasadas**, 2 omitidas, 0 fallos · 6,5 min | 0 |
+
+- **Render:** `/api/salud` ok en el Puente y el Simulador BUK; prueba de humo del formulario 5/5 (53 s).
+- **Entrada genérica:** 19/19 ejemplos con el código esperado (202, 200, 400, 401, 413, 415, 422, 429): [entrega/postman/resultados-ejemplos.md](entrega/postman/resultados-ejemplos.md).
+- **Importador:** 3/3 PDF de `fixtures/cv/` al proceso 9004, en Postulantes con el mismo SHA-256.
+- **Criterios de éxito:** 45/45 registradas sin error (100 %), mediana 1,16 s uno a la vez (máx. 1,28 s) y 9,6 s con 10 a la vez y el 429 del ATS (máx. 10,4 s), 450/450 campos correctos, 12/12 fallos provocados rechazados: [entrega/medicion/RESULTADO.md](entrega/medicion/RESULTADO.md).

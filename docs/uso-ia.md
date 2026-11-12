@@ -74,3 +74,14 @@ La IA no puede sustituir estas revisiones. Marquen cada una con nombre y fecha c
 - [ ] Las decisiones D-52 (estados V4 derivados), D-57 (5 intentos), D-58 (CV y retención) y D-61 (posible duplicado por proceso).
 - [ ] Probar el importador con CV reales descargados en la Puerta 0 (¿tienen texto legible?).
 - [ ] Revisar los textos de las pantallas nuevas (Importar, Fuentes, revisión) y `docs/manuales/importador.md`.
+
+---
+
+## Entrega final (11/11/2026)
+
+> Actualizado por Claude Code (2026-11-11). Versión para evaluadores, con prompts por fase y lo que decidió el equipo: [docs/entrega/08_uso_de_ia.md](entrega/08_uso_de_ia.md).
+
+- **Herramienta:** Claude Code (modelo Claude Opus), modo autónomo, prompt «ENTREGA FINAL» del equipo.
+- **Qué hizo:** recuperó el repositorio local (el `.git` apuntaba a un worktree que ya no existía) clonando el remoto privado, corrió dos veces la puerta de calidad completa, probó el flujo final, la entrada JSON (cada código de respuesta), el importador y Render; escribió y ejecutó `scripts/medir-criterios.mjs` (criterios de éxito), `scripts/probar-ejemplos.mjs` (ejemplos de Postman) y `scripts/capturas-entrega.mjs`; redactó `docs/entrega/` y revisó que nada sensible se publicara.
+- **Qué NO hizo:** no tocó la rama `v4` ni Render (salvo leer `/api/salud` y la prueba de humo del formulario), no abrió LinkedIn real, no cambió el código del producto salvo defectos reales (ver [docs/estado.md](estado.md)).
+- **Qué debe revisar el equipo:** [docs/entrega/EVIDENCIA_PENDIENTE.md](entrega/EVIDENCIA_PENDIENTE.md).
