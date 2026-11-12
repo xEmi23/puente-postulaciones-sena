@@ -664,7 +664,7 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 - **Medición de criterios, ejemplos de Postman, capturas y documentación de entrega:** `docs/entrega/` (índice en `docs/INDICE.md`). El README de la raíz ahora es para evaluadores; el anterior está en `docs/README_TECNICO.md`.
 - **Render:** `/api/salud` ok en Puente y Simulador BUK; humo del formulario 5/5.
 - **Instalación limpia:** clon de `entrega` en una carpeta vacía → `npm install` → `npm run setup` → `npm run dev` → `npm run demo:bot` → enlace, formulario, «Completado» y Postulantes: funciona (detalle en `docs/entrega/06_pruebas_y_resultados.md` §6.10).
-- **Pendientes (no cumplidos):** llave y API reales de BUK; validación legal del aviso; `PRIVACIDAD_CORREO` real; verificación de la cuenta de LinkedIn de la empresa; encabezado de IP confiable en Render (D-76); evidencia del equipo para la metodología (`docs/entrega/EVIDENCIA_PENDIENTE.md`); la base gratuita de Render vence el 2026-11-28.
+- **Pendientes (no cumplidos):** llave y API reales de BUK; validación legal del aviso; `PRIVACIDAD_CORREO` real; encabezado de IP confiable en Render (D-76); evidencia del equipo para la metodología (`docs/entrega/EVIDENCIA_PENDIENTE.md`); la base gratuita de Render vence el 2026-11-28.
 - **Siguiente paso:** que el equipo revise `docs/entrega/`, aporte la evidencia pendiente y ensaye `docs/entrega/12_demo.md`. Si se quiere que Render tenga los dos arreglos, llevar `entrega` a `v4` (eso redespliega).
 
 ## Segunda entrega de documentación (2026-11-12)
@@ -673,7 +673,18 @@ Observación: si `npm run dev` se interrumpe matando solo el proceso padre (no c
 
 - **Honestidad de las fuentes:** el equipo no se comunicó por correo ni por mensaje con la empresa. Las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según la ficha del reto» o «según lo entendido por el equipo; sin evidencia escrita». Lista completa en `docs/entrega/EVIDENCIA_PENDIENTE.md` §E.
 - **Declaración de IA:** apoyo mayoritario de IA, con tabla «qué hizo la IA / qué hizo el equipo», en el README, `01_resumen` y `08_uso_de_ia`.
-- **Documentos nuevos:** `13_glosario`, `14_preguntas_sustentacion`, `15_lecciones_aprendidas`, `16_anexo_decisiones`, `GUIA_CAPTURAS`, `GUIA_EJECUCION`, `RESUMEN_DOCENTE`, `docs/evidencia/README.md`; `03_metodologia` reescrito (cronograma real desde git, alternativas, hipótesis declaradas como retrospectivas); costos en `10`.
+- **Documentos nuevos:** `13_glosario`, `14_preguntas_sustentacion`, `15_lecciones_aprendidas`, `16_anexo_decisiones`, `GUIA_EJECUCION`, `RESUMEN_DOCENTE`; `03_metodologia` reescrito (cronograma real desde git, alternativas, hipótesis declaradas como retrospectivas); costos en `10`.
 - **Guía de ejecución comprobada** en PowerShell y CMD: `npm run pg:start`, `npm run dev`, `npm run demo:bot`, `/api/salud` y la entrada JSON con `curl` (RECIBIDA, luego DUPLICADA; sin token, 401; la postulación llegó a Postulantes del 9001).
-- **Descargables** en `docs/entrega/descargables/` (sin pandoc: `marked` + `html-to-docx` + Chromium; `scripts/generar-descargables.mjs`): documento completo (.docx y PDF de 88 páginas), resumen para el docente (1 página), guías (.docx y PDF) y `Entrega_Drive.zip`. Verificados con `python-docx` y `pypdf`: abren, 20 imágenes insertadas, sin enlaces relativos y sin datos de la empresa.
-- **Pendiente:** las capturas manuales (`GUIA_CAPTURAS.md`), la evidencia de `EVIDENCIA_PENDIENTE.md`, y lo ya listado el 11/11.
+- **Descargables** en `docs/entrega/descargables/` (sin pandoc: `marked` + `html-to-docx` + Chromium; `scripts/generar-descargables.mjs`): documento completo (.docx y PDF de 88 páginas), resumen para el docente (1 página), guía de ejecución (.docx y PDF) y `Entrega_Drive.zip`. Verificados con `python-docx` y `pypdf`: abren, 20 imágenes insertadas, sin enlaces relativos y sin datos de la empresa.
+- **Pendiente:** lo listado en `EVIDENCIA_PENDIENTE.md` y lo ya listado el 11/11.
+
+## Actualización final con los datos del equipo (2026-11-12)
+
+> Actualizado por Claude Code (2026-11-12). Rama `entrega`. Sin cambios de código del producto; `v4` y Render sin tocar.
+
+- **Equipo:** Emiliano Serna Ortega, Julián Pérez Ortiz, Moisés Elio Obregón y Katherine Acosta (integrantes del equipo); docente: Walver Rodríguez. 43 horas declaradas por el equipo.
+- **Auditoría externa que originó la V4:** Julián Pérez Ortiz, con Claude Pro.
+- **Fuentes:** no hubo correos, mensajes, entrevistas ni actas con la empresa. La API de LinkedIn y la llave de BUK citan la ficha del reto, numeral 2.8; que la postulación empieza en LinkedIn lo dedujo el equipo analizando las interfaces de LinkedIn.
+- **LinkedIn:** la oferta se publicó con el enlace externo al formulario (300.000 pesos colombianos). El equipo probó el formulario con personas y funcionó (cantidad y fecha no registradas). La Puerta 0 no se hizo y el bot sigue descartado como vía de entrada.
+- **Advertencia:** con la oferta publicada pueden llegar datos reales; su tratamiento, el correo real de privacidad en Render y la validación legal del aviso están pendientes (`docs/entrega/07_seguridad_y_privacidad.md` §7.0).
+- **Pendiente:** roles individuales, planes de IA y su costo, llave de BUK, validación legal del aviso y correo de privacidad (`docs/entrega/EVIDENCIA_PENDIENTE.md`).

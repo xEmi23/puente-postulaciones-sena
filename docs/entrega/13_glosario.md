@@ -32,5 +32,6 @@
 | **Vitest / Playwright** | Herramientas de pruebas automáticas: unitarias y de integración / de punta a punta en el navegador |
 | **Puerta de calidad** | lint + typecheck + Vitest + build + Playwright; se corre al cerrar cada fase |
 | **Ley 1581 de 2012** | Ley colombiana de protección de datos personales |
-| **Claude Code / Claude (chat) / ChatGPT** | Herramientas de IA generativa usadas en el proyecto (ver [08](08_uso_de_ia.md)) |
+| **Claude Code / Claude (chat) / Claude Pro / ChatGPT** | Herramientas de IA generativa usadas en el proyecto; con Claude Pro se hizo la auditoría externa que originó la V4 (ver [08](08_uso_de_ia.md)) |
+| **Oferta publicada** | La vacante publicada por el equipo en LinkedIn con el enlace externo al formulario del Puente; puede traer datos reales (ver [07](07_seguridad_y_privacidad.md) §7.0) |
 | **Design Thinking / Lean Startup** | Metodologías que pide la ruta del reto (ver [03](03_metodologia.md)) |

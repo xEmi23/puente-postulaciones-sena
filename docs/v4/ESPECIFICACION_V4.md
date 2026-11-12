@@ -1,6 +1,6 @@
 # Especificación V4 — Puente de postulaciones (fuente de verdad para Claude Code)
 
-> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Ajuste posterior del mismo día: lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+> Actualizado por Claude Code (2026-11-12): no hubo correos, mensajes, entrevistas ni actas con la empresa. Lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Que la postulación empieza en LinkedIn lo dedujo el equipo analizando las interfaces de LinkedIn.
 
 > Documento del equipo (01/11/2026). Reemplaza a docs/v3/ESPECIFICACION_BOT.md como especificación vigente; docs/v3 queda como historia.
 > Etiquetas: **Comprobado** · **Hipótesis** · **Recomendación** · **Simulado**. Lo marcado **[V4]** es nuevo frente a la V3.
@@ -43,7 +43,7 @@ Los cambios frente a la V3 llevan la marca **\[V4\]** y se explican en la pesta�
 | --- | --- |
 | Sin API de LinkedIn: es solo para socios aprobados (**Comprobado**, Microsoft Learn) | Cualquier entrada desde LinkedIn es manual, un bot o la integración oficial que active el fabricante del ATS |
 | Sin API Key de BUK; no se puede modificar BUK | El destino de la demo es Talentia (**Simulado**). BUK real queda preparado, pero deshabilitado |
-| Que no dependa de la API de LinkedIn: según la ficha del reto, numeral 2.8. Que la postulación siga ocurriendo en LinkedIn: según lo entendido por el equipo después del 29/10 (sin evidencia escrita: **Hipótesis**) | Se descartan las fuentes que sacan al candidato de LinkedIn |
+| Que no dependa de la API de LinkedIn: según la ficha del reto, numeral 2.8. Que la postulación siga ocurriendo en LinkedIn: lo dedujo el equipo analizando las interfaces de LinkedIn | Se descartan las fuentes que sacan al candidato de LinkedIn |
 | 12 días hasta la entrega; prototipo sin aprobaciones externas | Alcance mínimo y demostrable; fechas de decisión fijas |
 | El repositorio se publica anonimizado | Sin el nombre de la empresa en código ni en documentos públicos |
 
@@ -90,7 +90,7 @@ Los cambios frente a la V3 llevan la marca **\[V4\]** y se explican en la pesta�
 | **Apply Connect** (oficial, activado por el ATS) | Sí | Cumple | Sí | Que BUK lo ofrezca y la empresa lo active | **Objetivo futuro**; demostrado con Vínculo (**Simulado**) |
 | **Importar la exportación de Recruiter** («Export all to XLSX») | Sí | Cumple | No: un clic | Licencia de Recruiter (no Lite) | **Opcional.** Solo si la empresa tiene Recruiter; el importador acepta ese XLSX |
 | **Correo de notificación** de LinkedIn | Sí | Cumple si es correo propio | Sí | Que exista la opción y que el correo traiga el CV (**Hipótesis**) | **Condicionado** a la Puerta 0; no se programa sin evidencia |
-| Formulario propio, buzón o WhatsApp | No | Cumple | Sí | — | Descartado: según lo entendido por el equipo (sin evidencia escrita), la postulación debe empezar en LinkedIn |
+| Formulario propio, buzón o WhatsApp | No | Cumple | Sí | — | Descartado: la postulación debe empezar en LinkedIn (lo dedujo el equipo analizando las interfaces de LinkedIn) |
 | Bot en la nube, agente de IA o extensión de navegador | Sí | Infringe | Sí | — | Descartado: más riesgo de bloqueo y la sesión de LinkedIn fuera del PC del reclutador |
 
 **Por qué el importador es indispensable aunque no sea automático:** el dolor del reto es doble, descargar y volver a digitar. El importador elimina la digitación y la carga en BUK, cumple los términos, no depende de selectores y sigue funcionando si LinkedIn cambia o bloquea. Con él, la demo siempre muestra un recorrido completo y real hasta el ATS.

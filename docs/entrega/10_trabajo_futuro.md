@@ -25,10 +25,9 @@
 | Render: 3 servicios web y PostgreSQL | **US$0** (plan gratuito; la base vence el 28/11/2026) | Unos **US$27/mes** (3 servicios de US$7 y PostgreSQL de US$6) | ESPECIFICACION_V4 §16 (precios de render.com consultados entre el 25/10 y el 01/11; volver a verificar) |
 | GitHub (repositorio privado) | US$0 | US$0 | — |
 | Dominio propio | No se compró | Según el proveedor | — |
-| LinkedIn: vacante | Vacante gratuita en el plan, **no publicada aún** (la cuenta espera verificación) | Recruiter solo si la empresa quiere su exportación | ESPECIFICACION_V4 §16 |
-| LinkedIn: promoción pagada de la oferta | **PENDIENTE: el equipo debe confirmar si hubo** (no consta ningún pago) | — | — |
-| Herramientas de IA (Claude, ChatGPT) | **PENDIENTE: el equipo debe confirmar qué planes usó y si pagó** | — | — |
+| LinkedIn: oferta publicada | **300.000 pesos colombianos** | Según cuánto tiempo se mantenga publicada | Equipo |
+| Planes de IA (Claude Code, Claude, Claude Pro) | **Por confirmar** (planes y costo no informados) | — | — |
 | Licencias de software del proyecto | US$0 (todo es de código abierto) | US$0 | `package.json` |
 | BUK | Lo paga la empresa (fuera del alcance) | — | — |
 
-**Tiempo:** la especificación estimó de 14 a 22 horas de Claude Code y de 6 a 9 horas del equipo para la V4. Las horas reales: **PENDIENTE** (por integrante).
+**Tiempo:** **43 horas declaradas por el equipo.** La especificación V4 había estimado de 14 a 22 horas de Claude Code y de 6 a 9 horas del equipo solo para la V4.

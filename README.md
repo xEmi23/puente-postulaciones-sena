@@ -2,7 +2,19 @@
 
 **Prototipo académico · Reto #1 SENA · Innovación Abierta 2026-2 (CUEE 2.0, SENA Regional Antioquia) · Entrega del 13/11/2026.**
 
-> **Entorno de simulación.** No hay conexión con LinkedIn ni con BUK, ni compatibilidad comprobada con ellos. El ATS de la demostración es el **Simulador BUK** y la red profesional es el **Simulador LinkedIn**: dos aplicaciones propias. Todos los datos son ficticios (`@demo.test`). La empresa que propuso el reto se llama aquí **«la empresa retadora»** (publicación anonimizada).
+## Equipo
+
+| Nombre | Rol |
+|---|---|
+| Emiliano Serna Ortega | Integrante del equipo |
+| Julián Pérez Ortiz | Integrante del equipo |
+| Moisés Elio Obregón | Integrante del equipo |
+| Katherine Acosta | Integrante del equipo |
+| Walver Rodríguez | Docente |
+
+43 horas declaradas por el equipo.
+
+> **Entorno de simulación.** No hay conexión con la API de LinkedIn ni con BUK, ni compatibilidad comprobada con ellos. El ATS de la demostración es el **Simulador BUK** y la red profesional de las pruebas es el **Simulador LinkedIn**: dos aplicaciones propias. Los datos de las pruebas y de la demostración son ficticios (`@demo.test`). La oferta publicada en LinkedIn puede traer **datos reales** (ver [docs/entrega/07_seguridad_y_privacidad.md](docs/entrega/07_seguridad_y_privacidad.md) §7.0). La empresa que propuso el reto se llama aquí **«la empresa retadora»** (publicación anonimizada).
 
 ## Qué es
 
@@ -10,13 +22,13 @@ Un ***middleware*** (Next.js + PostgreSQL) que **recibe postulaciones y las regi
 
 ## El problema
 
-Hoy el equipo de selección de la empresa retadora entra a cada vacante de LinkedIn, descarga uno por uno los CV y los vuelve a digitar en su ATS (BUK). Según la ficha del reto, eso retrasa el avance de los candidatos entre 2 y 4 días hábiles y consume horas en tareas repetitivas. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn) Según la ficha del reto, numeral 2.8, no se conectará la API directa de LinkedIn y las postulaciones se simulan con *payloads* JSON; la integración con BUK sería solo por su API REST, con acceso controlado y guiado por un gestor acompañante. El equipo no tiene una llave de la API de BUK. Detalle: [docs/entrega/02_problema_y_contexto.md](docs/entrega/02_problema_y_contexto.md).
+Hoy el equipo de selección de la empresa retadora entra a cada vacante de LinkedIn, descarga uno por uno los CV y los vuelve a digitar en su ATS (BUK). Según la ficha del reto, eso retrasa el avance de los candidatos entre 2 y 4 días hábiles y consume horas en tareas repetitivas. La API de reclutamiento de LinkedIn es solo para socios aprobados (verificado en Microsoft Learn). Según la ficha del reto, numeral 2.8, no se conectará la API directa de LinkedIn y las postulaciones se simulan con *payloads* JSON; la integración con BUK sería solo por su API REST, con acceso controlado y guiado por un gestor acompañante. El equipo no tiene una llave de la API de BUK. Detalle: [docs/entrega/02_problema_y_contexto.md](docs/entrega/02_problema_y_contexto.md).
 
 ## La solución
 
 ![Flujo final](docs/entrega/img/flujo-final.png)
 
-*Oferta en LinkedIn con enlace externo → formulario público del Puente → API → Simulador BUK. La entrada JSON (Postman o cualquier fuente con token) y el importador de PDF entran al mismo núcleo.*
+*Oferta en LinkedIn con enlace externo (publicada por el equipo) → formulario público del Puente → API → Simulador BUK. La entrada JSON (Postman o cualquier fuente con token) y el importador de PDF entran al mismo núcleo.*
 
 ```mermaid
 flowchart LR
@@ -35,7 +47,8 @@ flowchart LR
 | Tiempo de registro por candidato | Mediana **1,2 s** (máx. 1,3 s) uno a la vez · **9,6 s** (máx. 10,4 s) con 10 a la vez | Del envío a la creación de la postulación en el ATS |
 | Campos mapeados correctamente | **450/450 = 100 %** | 10 campos × 45 postulaciones, incluido el SHA-256 del CV |
 | Fallos provocados (token, JSON, PDF falso, > 5 MB, vacante sin vínculo, duplicado, sin autorización…) | **12/12** rechazados, **0** llegaron al ATS | — |
-| Pruebas automáticas | 261 Vitest + 67 Playwright en dos vueltas idénticas sin fallos; tras 2 arreglos, 266 + 67 sin fallos | lint, typecheck y build en 0 |
+| Pruebas automáticas | 266 Vitest + 67 Playwright sin fallos | lint, typecheck y build en 0 |
+| Prueba con personas | El formulario funcionó | Hecha por el equipo; cantidad y fecha no registradas |
 
 Método, entorno y fallos provocados: [docs/entrega/06_pruebas_y_resultados.md](docs/entrega/06_pruebas_y_resultados.md).
 
@@ -46,25 +59,27 @@ Método, entorno y fallos provocados: [docs/entrega/06_pruebas_y_resultados.md](
 | **Puente** (`apps/puente`): formulario público, entrada JSON, importador, núcleo, procesador, panel | **Real** (es el producto) |
 | **Simulador BUK** (`apps/talentia`): ATS con procesos por etapas y API v1 propia | **Simulado** |
 | Adaptador de BUK real (`apps/puente/src/salidas/buk`) | **Deshabilitado**: PENDIENTE llave y `/apidocs` |
-| Oferta de LinkedIn con enlace externo | Función estándar de LinkedIn; PENDIENTE verificar la cuenta de la empresa |
+| Oferta de LinkedIn con enlace externo al formulario | **Real: publicada** por el equipo (costo: 300.000 pesos colombianos) |
 | **Simulador LinkedIn** (`apps/vinculo`) con Apply Connect simulado | **Simulado**, extensión fuera de la entrega |
-| Bot asistido (`apps/bot-linkedin`) | **Descartado** como vía de entrada (D-75); solo funciona contra el simulador |
+| Bot asistido (`apps/bot-linkedin`) | **Descartado** como vía de entrada (D-75; la Puerta 0 no se hizo); solo funciona contra el simulador |
 | Aviso de privacidad | **Borrador** pendiente de validación legal (Ley 1581 de 2012) |
 
 ## Uso de inteligencia artificial (declaración)
 
-**El desarrollo y la redacción de este proyecto se hicieron con apoyo MAYORITARIO de IA generativa.** Claude Code (Anthropic) programó, probó y documentó el sistema siguiendo especificaciones por fases. Claude (chat) apoyó el diseño, la auditoría y la redacción de los prompts. ChatGPT se usó al inicio. El equipo definió el problema, eligió entre alternativas, dirigió cada fase, probó el sistema y tomó las decisiones. No afirmamos que el código se haya revisado línea por línea.
+**El desarrollo, las pruebas y la redacción de este proyecto se hicieron con apoyo MAYORITARIO de IA generativa (Claude Code).** Claude (chat) apoyó el diseño, la auditoría y la redacción de los prompts. La auditoría externa que originó la V4 la hizo Julián Pérez Ortiz con Claude Pro. El equipo definió el problema, eligió entre alternativas, dirigió las fases, probó y tomó las decisiones. No afirmamos que el código se haya revisado línea por línea.
 
 | Qué hizo la IA | Qué hizo el equipo |
 |---|---|
-| Todo el código, las pruebas automáticas y los scripts (Claude Code) | Definió el problema a partir de la ficha y de la socialización del 15/10 |
+| Todo el código, las pruebas automáticas y los scripts (Claude Code) | Definió el problema a partir de la ficha del reto y del análisis de las interfaces de LinkedIn |
 | Las especificaciones y los prompts por fase (Claude chat) | Eligió entre alternativas: simular ambos extremos, tres sistemas, V4, descartar el bot, el formulario, los nombres visibles |
 | La documentación técnica y de entrega (Claude Code) | Dirigió cada fase (qué prompt y cuándo) y leyó los reportes |
-| La ejecución de pruebas, la medición y el despliegue por CLI | Creó el Blueprint de Render, aprobó el despliegue y probó el sistema |
+| La ejecución de pruebas, la medición y el despliegue por CLI | Creó el Blueprint de Render, aprobó el despliegue, publicó la oferta en LinkedIn y probó el formulario con personas |
 
 Detalle, evidencia y prompts: [docs/entrega/08_uso_de_ia.md](docs/entrega/08_uso_de_ia.md).
 
-**Contacto con la empresa:** no hubo correos ni mensajes. Lo que se sabe de la empresa viene de la ficha del reto y, para la socialización del 15/10 y el control del 29/10, de lo entendido por el equipo, sin evidencia escrita.
+**Fuentes:** no hubo correos, mensajes, entrevistas ni actas con la empresa. Lo que se sabe de la empresa viene de la ficha del reto; que la postulación empieza en LinkedIn lo dedujo el equipo analizando las interfaces de LinkedIn.
+
+**Costos:** Render gratuito (US$0) · LinkedIn: 300.000 pesos colombianos por la oferta publicada · planes de IA: por confirmar.
 
 ## Probarlo en línea (Render, plan gratuito)
 
@@ -142,10 +157,9 @@ Orden de lectura sugerido: [docs/INDICE.md](docs/INDICE.md).
 | 15 | [Lecciones aprendidas](docs/entrega/15_lecciones_aprendidas.md) | Qué se aprendió y de dónde sale |
 | 16 | [Anexo: decisiones](docs/entrega/16_anexo_decisiones.md) | Índice de D-01 a D-77 |
 | — | [Guía de ejecución](docs/entrega/GUIA_EJECUCION.md) | Windows (CMD y PowerShell), local y Render, guion de video de 5 minutos |
-| — | [Guía de capturas](docs/entrega/GUIA_CAPTURAS.md) | Capturas manuales que debe tomar el equipo |
-| — | [Descargables](docs/entrega/descargables/) | Documento completo en .docx y PDF, resumen para el docente, guías en .docx y paquete para Drive |
+| — | [Descargables](docs/entrega/descargables/) | Documento completo en .docx y PDF, resumen para el docente, guía de ejecución y paquete para Drive |
 | — | [Postman](docs/entrega/postman/) | Colección, ejemplos válidos e inválidos, guía de una página |
-| — | [Evidencia pendiente](docs/entrega/EVIDENCIA_PENDIENTE.md) | Lo que debe aportar el equipo |
+| — | [Pendientes y resueltos](docs/entrega/EVIDENCIA_PENDIENTE.md) | Lo que sigue sin respuesta |
 | — | [Decisiones](docs/decisiones.md) | D-01 a D-77 con alternativa descartada y motivo |
 
 ## Criterios de evaluación → evidencia
@@ -161,4 +175,4 @@ Orden de lectura sugerido: [docs/INDICE.md](docs/INDICE.md).
 
 ## Pendientes que NO están cumplidos
 
-Llave y API reales de BUK · validación legal del aviso de privacidad · correo de privacidad real · verificación de la cuenta de LinkedIn y oferta publicada con el enlace · capturas manuales ([guía](docs/entrega/GUIA_CAPTURAS.md)) · límite por IP en Render (encabezado confiable) · evidencia del equipo para la metodología ([lista](docs/entrega/EVIDENCIA_PENDIENTE.md)).
+Llave y API reales de BUK · validación legal del aviso de privacidad · correo real de privacidad en Render · tratamiento de los datos reales que lleguen por la oferta publicada · roles individuales · planes de IA y su costo (por confirmar) · límite por IP en Render (encabezado confiable). Detalle: [docs/entrega/EVIDENCIA_PENDIENTE.md](docs/entrega/EVIDENCIA_PENDIENTE.md).

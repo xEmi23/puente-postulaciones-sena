@@ -11,6 +11,7 @@
 | 5 | **Las pruebas encuentran lo que la revisión no.** Varios defectos aparecieron solo al probar (zona horaria, `--seco` en PowerShell, mensajes en inglés, aviso innecesario) | D-10, D-72, commits `e7a9871` y `ffcafcf` |
 | 6 | **Medir con cuidado también es parte del trabajo.** Una corrida de medición se descartó por un error del propio script | [medicion/RESULTADO.md](medicion/RESULTADO.md) |
 | 7 | **Los límites del entorno importan.** El plan gratuito de Render se duerme, el ATS limita a 120 peticiones por minuto y el modo desarrollo puede fallar donde la versión compilada no | [06](06_pruebas_y_resultados.md) §6.8 |
-| 8 | **Documentar lo que no se sabe.** Distinguir «verificado», «supuesto» y «pendiente» evitó presentar como hecho lo que solo se entendió de oídas | Etiquetas de todos los documentos; reescrituras del 12/11 |
+| 8 | **Documentar lo que no se sabe.** Distinguir «verificado», «supuesto» y «pendiente» evitó presentar como hecho lo que no estaba comprobado | Etiquetas de todos los documentos; reescrituras del 12/11 |
 | 9 | **La IA acelera, pero necesita dirección.** Las fases cortas con criterios verificables y un reporte por fase permitieron dirigir el trabajo de la IA | [08](08_uso_de_ia.md) |
-| 10 | **Dejar evidencia a tiempo.** Faltan capturas de conversaciones, acta y línea base porque no se guardaron cuando ocurrieron | [EVIDENCIA_PENDIENTE.md](EVIDENCIA_PENDIENTE.md) |
+| 10 | **Registrar los datos cuando ocurren.** La cantidad y la fecha de la prueba con personas no se registraron | [EVIDENCIA_PENDIENTE.md](EVIDENCIA_PENDIENTE.md) |
+| 11 | **Publicar trae responsabilidades.** Con la oferta publicada pueden llegar datos reales: el tratamiento y la validación legal deben estar listos antes | [07](07_seguridad_y_privacidad.md) §7.0 |

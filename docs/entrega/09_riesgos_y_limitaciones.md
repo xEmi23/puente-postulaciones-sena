@@ -7,16 +7,16 @@
 | Limitación | Consecuencia | Qué haría falta |
 |---|---|---|
 | **No hay conexión con BUK real.** El destino es el Simulador BUK; el adaptador de BUK está deshabilitado y vacío | No se puede afirmar que funcione con el ATS de la empresa | **PENDIENTE:** llave de la API y `/apidocs` de la cuenta de BUK de la empresa, en un entorno de pruebas con acompañamiento |
-| **No hay conexión con LinkedIn.** El candidato llega por el enlace externo de la oferta | Quien usa «Solicitud sencilla» dentro de LinkedIn no pasa por el Puente | Publicar la oferta con enlace externo; **PENDIENTE:** verificar la cuenta de LinkedIn de la empresa y que la opción esté disponible en su tipo de publicación |
-| El candidato llena un formulario más (además de ver la oferta) | Puede bajar la tasa de postulación frente a «Solicitud sencilla» | Medir con candidatos reales (**PENDIENTE**) |
-| El aviso de privacidad es un **borrador** | No sirve para datos reales | **PENDIENTE:** validación legal, responsable identificado y correo real |
-| Sin línea base de la empresa | No se puede cuantificar el ahorro de horas | **PENDIENTE:** horas por vacante y volumen semanal |
+| **No hay conexión con la API de LinkedIn.** El candidato llega por el enlace externo de la oferta (publicada) | Quien usa «Solicitud sencilla» dentro de LinkedIn no pasa por el Puente | Mantener la oferta con enlace externo |
+| El candidato llena un formulario más (además de ver la oferta) | Puede bajar la tasa de postulación frente a «Solicitud sencilla» | Medirlo con volumen real (el equipo probó el formulario con personas y funcionó; cantidad no registrada) |
+| El aviso de privacidad es un **borrador** y la oferta ya está publicada | Pueden llegar **datos reales** sin un tratamiento definido | **PENDIENTE:** tratamiento de esos datos, correo real de privacidad en Render y validación legal del aviso ([07](07_seguridad_y_privacidad.md) §7.0) |
+| Sin línea base de horas de la empresa | No se puede cuantificar el ahorro de horas | Horas por vacante y volumen semanal |
 | Límites anti-abuso en memoria | Con más de una instancia no se comparten | Moverlos a PostgreSQL si se escala |
 | Render gratuito | Se duerme a los 15 min (1–2 min para despertar); la base vence el **28/11/2026** | Plan pago o servidor de la empresa |
 | La API v1 del Simulador BUK es un contrato propio | Los nombres de campo y rutas no son los de BUK | Rehacer el adaptador con el `/apidocs` real |
 | Las cifras de tiempo se midieron en local | No representan la latencia de Render ni de BUK real | Repetir la medición contra el entorno de pruebas de BUK |
 
-*Figura 9.1 (pendiente de insertar): aviso de LinkedIn que pide esperar la verificación de la cuenta antes de publicar ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) b1).*
+> **Advertencia:** como la oferta está publicada en LinkedIn, pueden llegar postulaciones con **datos reales**. Su tratamiento, el correo real de privacidad en Render y la validación legal del aviso están **PENDIENTES** (ver [07](07_seguridad_y_privacidad.md) §7.0 y el riesgo R11).
 
 ## 9.2 Matriz de riesgos (flujo final)
 
@@ -32,6 +32,7 @@
 | R8 | El candidato desconfía de un formulario fuera de LinkedIn | Media | Media | Alta (4) | Ficha de la vacante, aviso claro, confirmación con referencia | Validar con usuarios (**PENDIENTE**) |
 | R9 | Términos de LinkedIn sobre enlaces externos o tipo de publicación | Baja | Media | Media (2) | No se automatiza nada en LinkedIn | **PENDIENTE:** verificar con la cuenta de la empresa |
 | R10 | Mantenimiento por la empresa (Next.js, PostgreSQL) | Media | Media | Alta (4) | Documentación, pruebas automáticas, instalación en 5 minutos | — |
+| R11 | Llegan **datos personales reales** por la oferta publicada sin tratamiento definido, correo de privacidad ni aviso validado | Alta | Alta | **Crítica (9)** | Aviso y autorización obligatoria, prueba del consentimiento, retención del CV, borrado a pedido | **PENDIENTE:** definir el tratamiento, poner el correo real de privacidad en Render y validar el aviso; si no se puede, desactivar el enlace en Panel → Formulario público |
 
 ## 9.3 Riesgos descartados por diseño
 

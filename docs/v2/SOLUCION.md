@@ -1,6 +1,6 @@
 # Solución v2: puente de postulaciones red profesional → ATS
 
-> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Ajuste posterior del mismo día: lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+> Actualizado por Claude Code (2026-11-12): no hubo correos, mensajes, entrevistas ni actas con la empresa. Lo relativo a la API de LinkedIn y a la llave de BUK cita la ficha del reto, numeral 2.8 (acceso a BUK controlado y guiado por un gestor acompañante; el equipo no tiene llave; no se afirma que la empresa se haya negado). Que la postulación empieza en LinkedIn lo dedujo el equipo analizando las interfaces de LinkedIn.
 
 > Documento del equipo (28/10/2026). Fuente de verdad del **qué** y el **por qué**. El **cómo** detallado está en `docs/v2/ESPECIFICACION.md`.
 > Etiquetas: **Verificado** (con fuente y fecha) · **Decisión interna** · **Supuesto pendiente**.

@@ -3,6 +3,19 @@
 > Prototipo académico con **datos ficticios** (`@demo.test`). **No es una evaluación de seguridad ni asesoría jurídica**, y no se afirma cumplimiento de ninguna norma. Etiquetas: **Verificado** (en código y pruebas), **Decisión interna** ([docs/decisiones.md](../decisiones.md)), **Supuesto pendiente**, **PENDIENTE** (lo debe resolver la empresa o el equipo).
 > Detalle técnico completo: [docs/seguridad.md](../seguridad.md).
 
+## 7.0 Advertencia: pueden llegar datos reales
+
+**La oferta se publicó en LinkedIn con el enlace externo al formulario del Puente.** Por eso pueden llegar postulaciones con **datos personales reales** (nombres, correos, teléfonos, ciudad y hojas de vida) al Puente desplegado en Render y, desde ahí, al Simulador BUK. Esto **no** es parte de las pruebas con datos ficticios descritas en este documento.
+
+| Tema | Estado |
+|---|---|
+| Tratamiento de los datos reales recibidos (quién los consulta, para qué, cuánto se conservan, cómo se borran al terminar el ejercicio) | **PENDIENTE** |
+| Correo real de privacidad en Render (`PRIVACIDAD_CORREO`; hoy es un marcador y el aviso dice «pendiente de configurar») | **PENDIENTE** |
+| Validación legal del aviso de privacidad (Ley 1581 de 2012) y responsable identificado | **PENDIENTE** |
+| Base de Render (plan gratuito, fuera de Colombia) | Vence el 28/11/2026; los datos que tenga se pierden con ella. Transmisión internacional: **PENDIENTE** |
+
+Herramientas que ya existen para atenderlo: el aviso y la casilla de autorización, la prueba del consentimiento, la retención del CV (se borra del Puente al llegar al ATS), «Borrar datos del candidato» en el panel y la opción de **desactivar el enlace** en Panel → Formulario público.
+
 ## 7.1 Controles del Puente
 
 | Área | Control | Etiqueta |
@@ -58,7 +71,5 @@ Captura: [11_manual_de_uso.md](11_manual_de_uso.md), figura del aviso.
 | Datos en Render | La base gratuita vence el 28/11/2026 | Fecha anotada |
 
 ## 7.4 Lo que NO se versiona (verificado el 11/11/2026)
-
-*Figura 7.1 (pendiente de insertar): variables de entorno del Puente en Render, con los valores secretos ocultos ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) g).*
 
 `.env` y `.env.*` (salvo `.env.example`), perfiles del navegador del bot (`.bot-perfil*`), la ficha del reto (`docs/ficha/`), los insumos internos del equipo (`docs/insumos/`), `PROMPT_DOCUMENTACION.md`, `datos.json`, páginas originales de LinkedIn (`fixtures/linkedin/originales/`), capturas de trabajo (`capturas/`) y configuraciones locales de herramientas de IA. Comprobación con `git check-ignore` y `git ls-files` en [06_pruebas_y_resultados.md](06_pruebas_y_resultados.md) §6.6.

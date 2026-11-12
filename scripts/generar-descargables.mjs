@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Genera los documentos descargables de la entrega en docs/entrega/descargables/:
 //   Documento_Entrega_Completo.docx y .pdf (portada, índice, 01–16 y anexos), Resumen_para_el_Docente.docx y .pdf,
-//   Guia_de_Capturas.docx y .pdf, Guia_de_Ejecucion.docx y .pdf, y Entrega_Drive.zip.
+//   Guia_de_Ejecucion.docx y .pdf, y Entrega_Drive.zip.
 //
 // Sin pandoc: Markdown → HTML con «marked», HTML → DOCX con «html-to-docx» y HTML → PDF con el Chromium de Playwright.
 // «marked» y «html-to-docx» NO son dependencias del proyecto; se instalan aparte:
@@ -43,7 +43,7 @@ const CAPITULOS = [
   ["13_glosario.md", "13"], ["14_preguntas_sustentacion.md", "14"], ["15_lecciones_aprendidas.md", "15"],
   ["16_anexo_decisiones.md", "16"],
   ["medicion/RESULTADO.md", "Anexo A"], ["postman/GUIA.md", "Anexo B"], ["postman/resultados-ejemplos.md", "Anexo C"],
-  ["EVIDENCIA_PENDIENTE.md", "Anexo D"], ["GUIA_EJECUCION.md", "Anexo E"], ["GUIA_CAPTURAS.md", "Anexo F"],
+  ["EVIDENCIA_PENDIENTE.md", "Anexo D"], ["GUIA_EJECUCION.md", "Anexo E"],
 ];
 const SECCION = new Map(CAPITULOS.map(([f, n]) => [path.join(ENTREGA, f), n]));
 
@@ -152,10 +152,17 @@ const portada = `
     <h1>Puente de postulaciones</h1>
     <p><strong>Documento de entrega completo</strong></p>
     <p>Reto #1 SENA · Innovación Abierta 2026-2<br/>CUEE 2.0 · SENA Regional Antioquia</p>
-    <p>Entrega y sustentación: 13 de noviembre de 2026<br/>Versión del documento: ${FECHA} (etiqueta v1.1-entrega)</p>
+    <p>Entrega y sustentación: 13 de noviembre de 2026<br/>Versión del documento: ${FECHA} (etiqueta v1.3-entrega)</p>
     <p>Publicación anonimizada: la empresa que propuso el reto se nombra «la empresa retadora».</p>
-    <p>Entorno de simulación: no hay conexión con LinkedIn ni con BUK. Datos ficticios.</p>
-    <p><em>Desarrollo y redacción con apoyo mayoritario de IA generativa (ver sección 08).</em></p>
+    <p>Entorno de simulación: no hay conexión con la API de LinkedIn ni con BUK. Pruebas con datos ficticios.</p>
+    <table style="margin:12px auto;width:60%;font-size:11pt"><thead><tr><th>Equipo</th><th>Rol</th></tr></thead><tbody>
+      <tr><td>Emiliano Serna Ortega</td><td>Integrante del equipo</td></tr>
+      <tr><td>Julián Pérez Ortiz</td><td>Integrante del equipo</td></tr>
+      <tr><td>Moisés Elio Obregón</td><td>Integrante del equipo</td></tr>
+      <tr><td>Katherine Acosta</td><td>Integrante del equipo</td></tr>
+      <tr><td>Walver Rodríguez</td><td>Docente</td></tr>
+    </tbody></table>
+    <p><em>Desarrollo, pruebas y redacción con apoyo mayoritario de IA generativa (ver sección 08).</em></p>
     <p>Repositorio privado: puente-postulaciones-sena · rama «entrega»</p>
   </div>`;
 
@@ -165,7 +172,7 @@ function titulo(archivo) {
 }
 
 const indice = `<h1>Índice</h1><ol style="list-style:none;padding-left:0">${CAPITULOS.map(([f, n]) => `<li><strong>${n}</strong> · ${titulo(f).replace(/^\d+\.\s*/, "")}</li>`).join("")}</ol>
-  <p>Los diagramas Mermaid de los documentos se incluyen como imágenes exportadas. Las figuras marcadas «pendiente de insertar» son capturas manuales que aporta el equipo (Anexo F).</p>`;
+  <p>Los diagramas Mermaid de los documentos se incluyen como imágenes exportadas. Las capturas de pantalla se tomaron con Playwright sobre la versión local, con datos ficticios.</p>`;
 
 async function principal() {
   mkdirSync(SALIDA, { recursive: true });
@@ -186,7 +193,6 @@ async function principal() {
 
     // (d) Guías
     for (const [f, nombre, t] of [
-      ["GUIA_CAPTURAS.md", "Guia_de_Capturas", "Guía de capturas manuales"],
       ["GUIA_EJECUCION.md", "Guia_de_Ejecucion", "Guía de ejecución"],
     ]) {
       const html = documento(t, aHtml(path.join(ENTREGA, f), { conSeccion: false }));
@@ -221,12 +227,13 @@ async function principal() {
       "",
       "Documento_Entrega_Completo (.docx y .pdf): documentos 01-16 y anexos.",
       "Resumen_para_el_Docente: una pagina.",
-      "Guia_de_Capturas y Guia_de_Ejecucion: guias para el equipo y para quien comprueba el proyecto.",
+      "Guia_de_Ejecucion: como ejecutar el proyecto y grabar el video.",
       "postman/: coleccion (sin tokens reales) y ejemplos JSON validos e invalidos.",
       "imagenes/: diagramas y capturas de pantalla (datos ficticios).",
       "medicion/: resultado y datos crudos de la medicion de criterios de exito.",
       "",
-      "Entorno de simulacion: no hay conexion con LinkedIn ni con BUK. Desarrollo y redaccion con apoyo mayoritario de IA.",
+      "Equipo: Emiliano Serna Ortega, Julian Perez Ortiz, Moises Elio Obregon, Katherine Acosta (integrantes). Docente: Walver Rodriguez.",
+      "Entorno de simulacion: no hay conexion con la API de LinkedIn ni con BUK. Desarrollo, pruebas y redaccion con apoyo mayoritario de IA.",
       "Repositorio privado: puente-postulaciones-sena, rama entrega.",
     ].join("\r\n"),
   );

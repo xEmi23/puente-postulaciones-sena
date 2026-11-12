@@ -10,7 +10,7 @@
 | Formulario público `/postular/<código>` | **Real** (parte del Puente) | Lo abre el candidato desde el enlace externo de la oferta |
 | Entrada genérica `POST /api/entradas/v1/postulaciones` | **Real** (parte del Puente) | Contrato propio (Decisión interna), token por fuente |
 | Importador manual de PDF | **Real** (parte del Puente) | Alternativa legal cuando hay CV descargados |
-| Oferta en LinkedIn con enlace externo | **Función estándar de LinkedIn; oferta aún no publicada** (borrador: Figura 4.4, pendiente de insertar; ver [GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) a–c) | **PENDIENTE:** verificar la cuenta de LinkedIn de la empresa |
+| Oferta en LinkedIn con enlace externo | **Real: publicada** por el equipo con el enlace externo al formulario del Puente | Pueden llegar datos reales: ver [07](07_seguridad_y_privacidad.md) §7.0 |
 | ATS de la demo: **Simulador BUK** (`apps/talentia`) | **Simulado** | Reproduce la estructura del ATS observado y una API v1 propia («contrato del simulador») |
 | Adaptador BUK real (`src/salidas/buk/index.ts`) | **Deshabilitado** | Sin rutas ni encabezados: falta su `/apidocs` y la llave. **PENDIENTE: llave y API reales de BUK** |
 | **Simulador LinkedIn** (`apps/vinculo`) | **Simulado**, fuera de esta entrega | Red profesional con «Solicitud sencilla» y API modelada sobre Apply Connect (apagada por defecto, D-68). Demuestra la «vía oficial futura» |
@@ -152,8 +152,6 @@ stateDiagram-v2
 | Simulador BUK | http://localhost:3002 | https://talentia-simulado.onrender.com (rama `v4`) |
 | Simulador LinkedIn | http://localhost:3001 | https://vinculo-simulado.onrender.com (rama `v2`, fuera de esta entrega) |
 | Base | PostgreSQL local (`.pgdata`, puerto 5435), un esquema por app | PostgreSQL gratuito, **vence el 28/11/2026** |
-
-*Figura 4.6 (pendiente de insertar): los servicios en verde en el panel de Render ([GUIA_CAPTURAS.md](GUIA_CAPTURAS.md) g1).*
 
 Los servicios gratuitos se duermen tras unos 15 minutos y tardan 1–2 minutos en despertar. Detalle: [docs/despliegue.md](../despliegue.md).
 
