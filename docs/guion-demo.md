@@ -1,5 +1,7 @@
 # Guion de la demostración (6 a 7 minutos)
 
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+
 > Creado por Claude Code (2026-10-25). Pensado para el control del 29/10. Todo con datos ficticios.
 
 ## Antes de empezar (5 minutos antes)
@@ -13,7 +15,7 @@
 
 | Tiempo | Qué se muestra | Qué se dice |
 |---|---|---|
-| 0:00–0:45 | Diapositiva o pantalla de inicio (`/`) | «Hoy el reclutador descarga cada CV de LinkedIn y lo sube al ATS: entre 2 y 4 días hábiles de retraso. La empresa no puede darnos la API de BUK y LinkedIn solo abre Apply Connect a socios certificados. Por eso **simulamos los dos extremos con sus contratos documentados** y construimos el puente como si fuera real.» |
+| 0:00–0:45 | Diapositiva o pantalla de inicio (`/`) | «Hoy el reclutador descarga cada CV de LinkedIn y lo sube al ATS: entre 2 y 4 días hábiles de retraso. No tenemos una llave de la API de BUK y LinkedIn solo abre Apply Connect a socios certificados. Por eso **simulamos los dos extremos con sus contratos documentados** y construimos el puente como si fuera real.» |
 | 0:45–1:30 | `/origen/admin` → «Publicar vacante»; `/ats` → «Nuevo proceso»; `/puente/correspondencias` → vincular | **Criterio 1.** «Preparamos la vacante en el origen y el proceso en el ATS, y los vinculamos. El puente no adivina procesos.» (Si el tiempo es corto, usar la vacante sembrada RT-2026-101 → 9001.) |
 | 1:30–2:30 | `/origen` → vacante → formulario con datos ficticios y el PDF | **Criterio 2.** «Postulación sin cuenta. La validación es del servidor: probemos un archivo que no es PDF…» (mostrar el error) «…y ahora el PDF correcto.» |
 | 2:30–3:15 | La confirmación cambia sola a «Entregada a la empresa»; pestaña del panel: operación **Completado** y sus 4 pasos | **Criterio 3.** «Nadie copió nada: el portal firmó el evento con HMAC, el puente verificó la firma, descargó el CV y llamó al ATS paso a paso. Aquí se ve cada paso con su hora.» |
@@ -32,7 +34,7 @@
 
 ## Preguntas probables
 
-- **¿Por qué no BUK de verdad?** No hay API documentada disponible para el equipo y la empresa no la facilitará (D-01). El destino es reemplazable: el puente habla con el ATS por un cliente HTTP aislado (`ats-cliente.ts`).
+- **¿Por qué no BUK de verdad?** No hay API documentada disponible para el equipo y, según lo entendido por el equipo, la llave no se facilitaría; sin evidencia escrita (D-01). El destino es reemplazable: el puente habla con el ATS por un cliente HTTP aislado (`ats-cliente.ts`).
 - **¿Esto funcionaría con LinkedIn?** El origen respeta el contrato publicado de Apply Connect (payload, firma, challenge, códigos de error), pero usarlo requiere ser socio certificado (docs/contratos.md F3). La alternativa sin desarrollo es la integración nativa de BUK, que publica la vacante y redirige al formulario de BUK (F5).
 - **¿Qué pasa con datos personales?** Datos ficticios; el puente guarda lo mínimo, borra la copia del CV al terminar y no guarda la autoidentificación voluntaria (D-09).
 

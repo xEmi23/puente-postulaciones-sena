@@ -16,10 +16,10 @@ Ahí el ATS ya califica a los candidatos y el proceso sigue por etapas. **El dol
 
 | Efecto | Qué dice la ficha del reto (resumen, no cita) | Estado del dato |
 |---|---|---|
-| Tiempo de contratación | El cuello de botella retrasa el avance de los candidatos entre 2 y 4 días hábiles | Declarado por la empresa |
+| Tiempo de contratación | El cuello de botella retrasa el avance de los candidatos entre 2 y 4 días hábiles | Según la ficha del reto |
 | Horas del equipo | «Horas semanales» en tareas repetitivas; la propia evaluación de la ficha pide cuantificarlas | **PENDIENTE: línea base de la empresa** (horas por vacante y volumen semanal) |
-| Calidad del dato | Riesgo de errores al volver a digitar | Declarado, sin cifra |
-| Antecedente | Un piloto con agentes del propio ATS no dio el alcance esperado | Declarado |
+| Calidad del dato | Riesgo de errores al volver a digitar | Según la ficha del reto, sin cifra |
+| Antecedente | Un piloto con agentes del propio ATS no dio el alcance esperado | Según la ficha del reto |
 
 ## 2.2 Usuarios y actores
 
@@ -39,7 +39,7 @@ Ahí el ATS ya califica a los candidatos y el proceso sigue por etapas. **El dol
 | El Acuerdo de Usuario de LinkedIn (cláusula 8.2) prohíbe bots y extracción automatizada | **Verificado** (texto público del acuerdo; ver [docs/v4/CONTEXTO_V4.md](../v4/CONTEXTO_V4.md)) | El bot quedó como experimento sobre el simulador y fue **descartado** como vía de entrada (D-75) |
 | La ficha pide simular las postulaciones con *payloads* JSON (Postman o interfaz de pruebas) | Ficha del reto, restricciones | Entrada genérica con contrato JSON propio, colección de Postman y ejemplos |
 | La integración con BUK sería por su API REST, con acceso controlado | Ficha del reto | Salida detrás de una interfaz (`ConectorATS`) |
-| La empresa no entregó la llave de la API de BUK | Dicho al equipo (fecha y canal: **PENDIENTE: evidencia del equipo**) | El destino de la demo es el **Simulador BUK** (Talentia). El adaptador de BUK está **deshabilitado** y no contiene rutas inventadas |
+| El equipo no tiene la llave de la API de BUK | Según lo entendido por el equipo, no se entregaría; sin evidencia escrita. La ficha condiciona el acceso a la API de BUK a un acompañamiento de la empresa. **PENDIENTE: el equipo debe confirmar cómo se supo** | El destino de la demo es el **Simulador BUK** (Talentia). El adaptador de BUK está **deshabilitado** y no contiene rutas inventadas |
 | BUK tiene API de Selección con API Key y permisos de lectura y modificación | **Verificado** en el centro de ayuda público de BUK (28/10/2026; URL en [docs/contratos.md](../contratos.md) §4) | Rutas, encabezado, subida del CV e idempotencia de BUK: **Supuesto pendiente** |
 | No modificar el ATS de la empresa | Ficha del reto | El Puente solo usa la API; nada se instala en el ATS |
 | Publicación anonimizada | Ficha del reto | Sin nombre de la empresa en código, datos ni documentos |

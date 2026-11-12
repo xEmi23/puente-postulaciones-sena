@@ -1,12 +1,14 @@
 # Registro de decisiones
 
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+
 > Creado por Claude Code (2026-10-25) en modo autónomo. Cada decisión es reversible salvo que se indique lo contrario.
 > Formato: fecha · decisión · alternativa descartada · motivo.
 
 ## D-01 · Simular ambos extremos (diferencia con la ficha)
 
 - **Fecha:** 2026-10-25
-- **Contexto:** la ficha (numerales 2.8 y 3.2) pide registrar las postulaciones «en BUK mediante su API REST, en un entorno de pruebas con acceso controlado». El equipo informa que **la empresa no facilitará la API de BUK por seguridad**. LinkedIn tampoco da acceso: Apply Connect es solo para socios ATS certificados con licencia Recruiter (docs/contratos.md F3).
+- **Contexto:** la ficha (numerales 2.8 y 3.2) pide registrar las postulaciones «en BUK mediante su API REST, en un entorno de pruebas con acceso controlado». Según lo entendido por el equipo (sin evidencia escrita; actualizado por Claude Code el 2026-11-12), **la API de BUK no se facilitaría por seguridad**. PENDIENTE: el equipo debe confirmar cómo se supo. LinkedIn tampoco da acceso: Apply Connect es solo para socios ATS certificados con licencia Recruiter (docs/contratos.md F3).
 - **Decisión:** simular los dos extremos: un portal de origen que entrega con el **contrato documentado de LinkedIn Apply Connect** y un ATS de destino con un **contrato del simulador** propio. El puente, que es lo que se propone, se construye como si fuera real.
 - **Alternativa descartada:** inventar una API «tipo BUK». No hay documentación pública y podría confundirse con la real.
 - **Motivo:** demostrar el recorrido completo, con fiabilidad y pruebas, sin credenciales ni datos reales y sin atribuir a BUK lo que no está verificado.

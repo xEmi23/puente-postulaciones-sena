@@ -1,5 +1,7 @@
 # Prompts para Claude Code — talent-bridge
 
+> Nota (2026-11-12, Claude Code): este archivo es el texto de los prompts tal como se usaron y no se reescribe. Donde dice que la empresa «no la facilitará por seguridad», es lo entendido por el equipo; no hay evidencia escrita (el equipo no se comunicó por escrito con la empresa).
+
 Cómo usar:
 1. Crea la carpeta `talent-bridge`, copia ahí `CLAUDE.md` y `docs/referencia-ats.md`, y pon la ficha del reto en `docs/ficha/` (la ficha NO se publica en un repositorio público).
 2. Abre Claude Code en esa carpeta.

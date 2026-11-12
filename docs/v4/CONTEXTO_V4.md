@@ -1,5 +1,7 @@
 # Contexto V4 para Claude Code — léelo completo antes de cualquier fase
 
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+
 > Documento del equipo (02/11/2026). Resume todo lo que pasó antes de la V4 y cómo se trabaja ahora. No lo reescribas; si algo aquí contradice el código real, repórtalo en el informe de la fase.
 
 ## 1. El reto en una línea
@@ -12,14 +14,14 @@ Reto #1 de Innovación Abierta 2026-2 (SENA Regional Antioquia, CUEE 2.0): pasar
 | --- | --- | --- |
 | v1 | Una sola app Next.js que simulaba origen, puente y ATS | Carpeta `talent-bridge` (rama `master`). **No se toca.** |
 | v2 | Tres sistemas independientes: **Vínculo** (red tipo LinkedIn simulada, con API modelada sobre Apply Connect), **Talentia** (ATS simulado tipo BUK, con API Key y `/apidocs`) y **Puente** (el producto) | Esta carpeta, rama `v2`. Desplegada en Render. 129 pruebas Vitest + 37 Playwright en verde (166). Decisiones D-01 a D-51 |
-| v3 | Después del control del 29/10 la empresa dijo que nunca tendrá la API de LinkedIn y pidió una alternativa en la que la postulación siga en LinkedIn. El equipo eligió un **bot asistido** (Playwright con la sesión del reclutador) | Solo especificación: `docs/v3/ESPECIFICACION_BOT.md` y `PROMPTS_BOT.md`. **Nunca se construyó.** Queda como historia |
+| v3 | Después del control del 29/10, según lo entendido por el equipo (sin evidencia escrita), no habrá API de LinkedIn y se busca una alternativa en la que la postulación siga en LinkedIn. El equipo eligió un **bot asistido** (Playwright con la sesión del reclutador) | Solo especificación: `docs/v3/ESPECIFICACION_BOT.md` y `PROMPTS_BOT.md`. **Nunca se construyó.** Queda como historia |
 | **V4** | Auditoría externa de la V3. Cambios: el Puente es el producto y no depende de la fuente; el bot pasa a ser un adaptador **experimental** que solo se construye si una verificación manual en LinkedIn (Puerta 0) sale bien; se agrega un **importador manual** legal; la salida al ATS va detrás de una interfaz con Talentia activa y BUK deshabilitado | **Vigente.** `docs/v4/ESPECIFICACION_V4.md` (fuente de verdad), `PROMPTS_V4.md`, `docs/v4/PUERTA0.md` |
 
 ## 3. Hechos que condicionan el diseño (no los cambies ni los «mejores»)
 
 - **LinkedIn:** sus API de reclutamiento son solo para socios aprobados (Microsoft Learn). Su Acuerdo de Usuario (cláusula 8.2) prohíbe bots y extracción automatizada. Por eso el bot es experimental, se demuestra solo con una cuenta del equipo y CV ficticios, y nunca se presenta como solución estable.
 - **No verificado en LinkedIn** (lo resuelve la Puerta 0, a mano, fuera de tu alcance): si una vacante gratuita deja ver y descargar los CV, qué datos de contacto aparecen, si el CV es obligatorio y si hay identificadores estables.
-- **BUK:** tiene API de Selección con API Key y permisos de Lectura/Modificación (verificado en su centro de ayuda). **La empresa no entrega la llave.** Rutas, encabezado (`auth_token` es solo un indicio de terceros), subida de CV e idempotencia **no están verificados**. No escribas nada específico de BUK.
+- **BUK:** tiene API de Selección con API Key y permisos de Lectura/Modificación (verificado en su centro de ayuda). **El equipo no tiene la llave** (según lo entendido por el equipo, no se entregaría; sin evidencia escrita). Rutas, encabezado (`auth_token` es solo un indicio de terceros), subida de CV e idempotencia **no están verificados**. No escribas nada específico de BUK.
 - **Talentia y Vínculo son simulaciones.** Nunca se presentan como servicios reales.
 
 ## 4. Lo que ya existe y debe seguir funcionando
@@ -50,4 +52,4 @@ El resto de reglas de `CLAUDE.md` sigue igual: sin nombre de la empresa, datos f
 
 ## 7. Decisiones abiertas que no te tocan (no las resuelvas tú)
 
-Evidencia escrita de la empresa (sin API de LinkedIn, sin llave de BUK) · postura de la empresa y el mentor sobre mostrar el bot · tiempo actual del traslado manual · API real de BUK · obligaciones de datos personales (Ley 1581 de 2012). Están en la pestaña «Validaciones pendientes» del documento del equipo; en la V4 se documentan como pendientes, nunca como resueltas.
+Cómo se supo que no habrá API de LinkedIn ni llave de BUK (no hay evidencia escrita: el equipo no se comunicó por escrito con la empresa) · postura de la empresa y el mentor sobre mostrar el bot · tiempo actual del traslado manual · API real de BUK · obligaciones de datos personales (Ley 1581 de 2012). Están en la pestaña «Validaciones pendientes» del documento del equipo; en la V4 se documentan como pendientes, nunca como resueltas.

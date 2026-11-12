@@ -1,5 +1,7 @@
 # Especificación V4 — Puente de postulaciones (fuente de verdad para Claude Code)
 
+> Actualizado por Claude Code (2026-11-12): por pedido del equipo, las frases que decían que la empresa «dijo», «pidió», «informó» o «no entrega» algo se reescribieron como «según lo entendido por el equipo; sin evidencia escrita». El equipo no se comunicó por correo ni por mensaje con la empresa. Lista de cambios: `docs/entrega/EVIDENCIA_PENDIENTE.md`.
+
 > Documento del equipo (01/11/2026). Reemplaza a docs/v3/ESPECIFICACION_BOT.md como especificación vigente; docs/v3 queda como historia.
 > Etiquetas: **Comprobado** · **Hipótesis** · **Recomendación** · **Simulado**. Lo marcado **[V4]** es nuevo frente a la V3.
 > Este archivo es del equipo: no lo reescribas. Si algo no se puede cumplir, regístralo en docs/decisiones.md con motivo y alternativa.
@@ -41,7 +43,7 @@ Los cambios frente a la V3 llevan la marca **\[V4\]** y se explican en la pesta�
 | --- | --- |
 | Sin API de LinkedIn: es solo para socios aprobados (**Comprobado**, Microsoft Learn) | Cualquier entrada desde LinkedIn es manual, un bot o la integración oficial que active el fabricante del ATS |
 | Sin API Key de BUK; no se puede modificar BUK | El destino de la demo es Talentia (**Simulado**). BUK real queda preparado, pero deshabilitado |
-| La empresa pide que la postulación siga ocurriendo en LinkedIn y que no dependa de su API (instrucción después del 29/10; evidencia escrita: **Hipótesis**) | Se descartan las fuentes que sacan al candidato de LinkedIn |
+| Según lo entendido por el equipo después del 29/10 (sin evidencia escrita: **Hipótesis**), la postulación debe seguir ocurriendo en LinkedIn y no depender de su API | Se descartan las fuentes que sacan al candidato de LinkedIn |
 | 12 días hasta la entrega; prototipo sin aprobaciones externas | Alcance mínimo y demostrable; fechas de decisión fijas |
 | El repositorio se publica anonimizado | Sin el nombre de la empresa en código ni en documentos públicos |
 
@@ -88,7 +90,7 @@ Los cambios frente a la V3 llevan la marca **\[V4\]** y se explican en la pesta�
 | **Apply Connect** (oficial, activado por el ATS) | Sí | Cumple | Sí | Que BUK lo ofrezca y la empresa lo active | **Objetivo futuro**; demostrado con Vínculo (**Simulado**) |
 | **Importar la exportación de Recruiter** («Export all to XLSX») | Sí | Cumple | No: un clic | Licencia de Recruiter (no Lite) | **Opcional.** Solo si la empresa tiene Recruiter; el importador acepta ese XLSX |
 | **Correo de notificación** de LinkedIn | Sí | Cumple si es correo propio | Sí | Que exista la opción y que el correo traiga el CV (**Hipótesis**) | **Condicionado** a la Puerta 0; no se programa sin evidencia |
-| Formulario propio, buzón o WhatsApp | No | Cumple | Sí | — | Descartado: la empresa exige LinkedIn |
+| Formulario propio, buzón o WhatsApp | No | Cumple | Sí | — | Descartado: según lo entendido por el equipo (sin evidencia escrita), la postulación debe empezar en LinkedIn |
 | Bot en la nube, agente de IA o extensión de navegador | Sí | Infringe | Sí | — | Descartado: más riesgo de bloqueo y la sesión de LinkedIn fuera del PC del reclutador |
 
 **Por qué el importador es indispensable aunque no sea automático:** el dolor del reto es doble, descargar y volver a digitar. El importador elimina la digitación y la carga en BUK, cumple los términos, no depende de selectores y sigue funcionando si LinkedIn cambia o bloquea. Con él, la demo siempre muestra un recorrido completo y real hasta el ATS.

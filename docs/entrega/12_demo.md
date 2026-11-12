@@ -20,7 +20,7 @@
 
 | Min | Qué se muestra | Qué se dice |
 |---|---|---|
-| 0:00 | Diapositiva o README: el problema | «Hoy el reclutador descarga cada CV de LinkedIn y lo vuelve a digitar en el ATS. No hay API de LinkedIn para la empresa ni llave de BUK para nosotros.» |
+| 0:00 | Diapositiva o README: el problema | «Hoy el reclutador descarga cada CV de LinkedIn y lo vuelve a digitar en el ATS. La API de LinkedIn es solo para socios aprobados y no tenemos una llave de la API de BUK.» |
 | 0:45 | Puente → **Formulario público**: el enlace de la vacante con «Copiar» | «La oferta en LinkedIn lleva este enlace externo. Es una función estándar de la oferta: no automatizamos LinkedIn.» |
 | 1:15 | El formulario público (sin sesión), el aviso de privacidad | «El candidato llena siete campos y autoriza el tratamiento. El aviso es un borrador pendiente de validación legal.» |
 | 2:00 | Enviar con el CV ficticio → confirmación con referencia | «Recibimos la postulación; el candidato ve su referencia.» |
